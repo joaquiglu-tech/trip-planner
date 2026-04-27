@@ -128,10 +128,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .sq-card.sel { border-color: var(--orange); background: var(--orange-light) }
 .sq-card.conf { border-color: var(--green); background: var(--green-light) }
 
-.sq-thumb { aspect-ratio: 16/9; overflow: hidden; background: var(--bg-card-hd) }
-.sq-thumb img { width: 100%; height: 100%; object-fit: cover; display: block }
-
-.sq-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 4px; flex: 1 }
+.sq-body { padding: 10px; display: flex; flex-direction: column; gap: 4px; flex: 1 }
 
 .sq-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px }
 .sq-badges { display: flex; flex-wrap: wrap; gap: 3px }
@@ -198,6 +195,20 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 
 .detail-upload-row { margin-bottom: 10px }
 .detail-upload-btn { display: block; width: 100%; padding: 10px; border: 1.5px dashed var(--border); border-radius: 10px; text-align: center; font-size: 12px; color: var(--text-muted); cursor: pointer; background: none }
+
+/* Detail sections */
+.detail-section { margin-bottom: 14px }
+.detail-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); margin-bottom: 6px }
+.detail-tips { padding-left: 16px; font-size: 12px; color: var(--text-secondary); line-height: 1.6 }
+.detail-tips li { margin-bottom: 4px }
+
+/* Transport comparison options */
+.transport-option { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 6px; text-decoration: none; color: var(--text); transition: background .15s }
+.transport-option:hover { background: var(--bg-card-hd) }
+.transport-option-info { display: flex; flex-direction: column; gap: 2px }
+.transport-option-name { font-size: 13px; font-weight: 700 }
+.transport-option-detail { font-size: 11px; color: var(--text-muted) }
+.transport-option-price { font-size: 14px; font-weight: 800; color: var(--orange); white-space: nowrap }
 
 .detail-action-bar { position: sticky; bottom: 0; padding: 12px 16px; background: var(--bg-card); border-top: 1px solid var(--border-light); padding-bottom: max(12px, env(safe-area-inset-bottom)) }
 

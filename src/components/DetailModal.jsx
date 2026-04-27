@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { $f, usd, TYPE_LABEL, SUBCAT_BADGE } from '../data/items';
 import { uploadFile, deleteFile } from '../lib/storage';
 
-export default function DetailModal({ it, status, setStatus, updatedBy, onClose }) {
+export default function DetailModal({ it, status, setStatus, onClose }) {
   const st = status || '';
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -34,96 +34,154 @@ export default function DetailModal({ it, status, setStatus, updatedBy, onClose 
 
   const statusBtn = st === 'conf' ? '✓ Confirmed' : st === 'sel' ? '● Selected' : 'Select';
   const statusClass = st === 'conf' ? 'detail-btn conf' : st === 'sel' ? 'detail-btn sel' : 'detail-btn';
-
-  // Build image URL: use item's imageUrl, or fallback to Google favicon of link domain
-  const imageUrl = it.imageUrl || null;
   const faviconUrl = it.link ? `https://www.google.com/s2/favicons?domain=${new URL(it.link).hostname}&sz=64` : null;
 
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
-        {/* Close button */}
         <button className="detail-close" onClick={onClose}>✕</button>
 
-        {/* Hero image */}
-        {imageUrl && (
+        {/* Hero image — only in modal */}
+        {it.imageUrl && (
           <div className="detail-hero">
-            <img src={imageUrl} alt={it.name} onError={(e) => { e.target.style.display = 'none'; }} />
+            <img src={it.imageUrl} alt={it.name} onError={(e) => { e.target.parentElement.style.display = 'none'; }} />
             <div className="detail-hero-gradient" />
           </div>
         )}
 
-        {/* Content */}
         <div className="detail-content">
           {/* Badges */}
           <div className="detail-badges">
             <span className={`badge b-${it.type}`}>{TYPE_LABEL[it.type]}</span>
             <span className="badge b-city">{it.city}</span>
             {it.urgent && <span className="badge b-urgent">⚠️ Book Now</span>}
-            {it.subcat && SUBCAT_BADGE[it.subcat] && (
-              <span className={`badge ${SUBCAT_BADGE[it.subcat].cls}`}>{SUBCAT_BADGE[it.subcat].label}</span>
-            )}
+            {it.subcat && SUBCAT_BADGE[it.subcat] && <span className={`badge ${SUBCAT_BADGE[it.subcat].cls}`}>{SUBCAT_BADGE[it.subcat].label}</span>}
             {it.tier && <span className="badge b-bar">{it.tier}</span>}
           </div>
 
-          {/* Name */}
           <h2 className="detail-name">{it.name}</h2>
-
-          {/* Address */}
           {it.address && <div className="detail-address">📍 {it.address}</div>}
 
-          {/* Dish */}
-          {it.dish && (
-            <div className="detail-dish-block">
-              <span className="detail-dish-label">What to order</span>
-              <span className="detail-dish-text">{it.dish}</span>
-            </div>
+          {/* ═══ TRANSPORT — comparison view ═══ */}
+          {it.type === 'transport' && (
+            <>
+              <p className="detail-desc-full">{it.desc}</p>
+              {it.options && (
+                <div className="detail-section">
+                  <div className="detail-section-title">Compare & Book</div>
+                  {it.options.map((opt, i) => (
+                    <a key={i} href={opt.url} target="_blank" rel="noopener" className="transport-option">
+                      <div className="transport-option-info">
+                        <span className="transport-option-name">{opt.name}</span>
+                        {opt.detail && <span className="transport-option-detail">{opt.detail}</span>}
+                      </div>
+                      <span className="transport-option-price">{opt.price}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+              {it.tips && (
+                <div className="detail-section">
+                  <div className="detail-section-title">Tips</div>
+                  <ul className="detail-tips">{it.tips.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Description */}
-          <p className="detail-desc-full">{it.desc}</p>
-
-          {/* Quote (Bourdain etc.) */}
-          {it.quote && (
-            <blockquote className="detail-quote">
-              "{it.quote}"
-              {it.quoteSource && <cite>— {it.quoteSource}</cite>}
-            </blockquote>
+          {/* ═══ STAY — hotel/apartment detail ═══ */}
+          {it.type === 'stay' && (
+            <>
+              <p className="detail-desc-full">{it.desc}</p>
+              {it.highlights && (
+                <div className="detail-section">
+                  <div className="detail-section-title">Highlights</div>
+                  <ul className="detail-tips">{it.highlights.map((h, i) => <li key={i}>{h}</li>)}</ul>
+                </div>
+              )}
+              <div className="detail-section">
+                <div className="detail-section-title">Pricing</div>
+                <div className="detail-price-table">
+                  <div className="dpt-row"><span>Tier</span><span>{it.tier}</span></div>
+                  <div className="dpt-row"><span>Per night</span><span>{$f(usd(it.pn || 0))}</span></div>
+                  <div className="dpt-row"><span>Nights</span><span>{it.nights}</span></div>
+                  <div className="dpt-row total"><span>Total</span><span>{$f(usd((it.pn || 0) * (it.nights || 1)))}</span></div>
+                </div>
+              </div>
+            </>
           )}
 
-          {/* Price info table */}
-          <div className="detail-price-table">
-            {it.type === 'stay' && (
-              <>
-                <div className="dpt-row"><span>Per night</span><span>{$f(usd(it.pn || 0))}</span></div>
-                <div className="dpt-row"><span>Nights</span><span>{it.nights}</span></div>
-                <div className="dpt-row total"><span>Total</span><span>{$f(usd((it.pn || 0) * (it.nights || 1)))}</span></div>
-              </>
-            )}
-            {it.type === 'activity' && (
-              <>
-                <div className="dpt-row"><span>Per person</span><span>{it.eur === 0 ? 'Free' : $f(usd(it.eur))}</span></div>
-                {it.eur > 0 && <div className="dpt-row total"><span>Couple</span><span>{$f(usd(it.eur * 2))}</span></div>}
-                {it.hrs && <div className="dpt-row"><span>Duration</span><span>{it.hrs}h</span></div>}
-              </>
-            )}
-            {it.type === 'special' && (
-              <>
-                <div className="dpt-row"><span>Per person</span><span>{$f(usd(it.ppEur || 0))}</span></div>
-                <div className="dpt-row total"><span>Couple</span><span>{$f(usd((it.ppEur || 0) * 2))}</span></div>
-              </>
-            )}
-            {it.type === 'dining' && (
-              <>
-                <div className="dpt-row"><span>Avg per person</span><span>{$f(usd(it.eur || 0))}</span></div>
-                {it.eur > 0 && <div className="dpt-row total"><span>Couple</span><span>{$f(usd(it.eur * 2))}</span></div>}
-              </>
-            )}
-            {it.type === 'transport' && it.priceLabel && (
-              <div className="dpt-row total"><span>Est. cost</span><span>{it.priceLabel}</span></div>
-            )}
-            <div className="dpt-row"><span>Location</span><span>{it.city}</span></div>
-          </div>
+          {/* ═══ ACTIVITY ═══ */}
+          {it.type === 'activity' && (
+            <>
+              <p className="detail-desc-full">{it.desc}</p>
+              {it.whatToExpect && (
+                <div className="detail-section">
+                  <div className="detail-section-title">What to Expect</div>
+                  <ul className="detail-tips">{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </div>
+              )}
+              <div className="detail-section">
+                <div className="detail-section-title">Details</div>
+                <div className="detail-price-table">
+                  {it.hrs && <div className="dpt-row"><span>Duration</span><span>{it.hrs} hours</span></div>}
+                  <div className="dpt-row"><span>Per person</span><span>{it.eur === 0 ? 'Free' : $f(usd(it.eur))}</span></div>
+                  {it.eur > 0 && <div className="dpt-row total"><span>Couple</span><span>{$f(usd(it.eur * 2))}</span></div>}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ═══ DINING / SPECIAL MEAL ═══ */}
+          {(it.type === 'dining' || it.type === 'special') && (
+            <>
+              {it.dish && (
+                <div className="detail-dish-block">
+                  <span className="detail-dish-label">What to order</span>
+                  <span className="detail-dish-text">{it.dish}</span>
+                </div>
+              )}
+              <p className="detail-desc-full">{it.desc}</p>
+              {it.quote && (
+                <blockquote className="detail-quote">
+                  "{it.quote}"
+                  {it.quoteSource && <cite>— {it.quoteSource}</cite>}
+                </blockquote>
+              )}
+              {it.whatToExpect && (
+                <div className="detail-section">
+                  <div className="detail-section-title">What You'll Find</div>
+                  <ul className="detail-tips">{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </div>
+              )}
+              {it.proTips && (
+                <div className="detail-section">
+                  <div className="detail-section-title">Pro Tips</div>
+                  <ul className="detail-tips">{it.proTips.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                </div>
+              )}
+              <div className="detail-section">
+                <div className="detail-section-title">Pricing</div>
+                <div className="detail-price-table">
+                  {it.type === 'special' ? (
+                    <>
+                      <div className="dpt-row"><span>Per person</span><span>{$f(usd(it.ppEur || 0))}</span></div>
+                      <div className="dpt-row total"><span>Couple</span><span>{$f(usd((it.ppEur || 0) * 2))}</span></div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="dpt-row"><span>Avg per person</span><span>{$f(usd(it.eur || 0))}</span></div>
+                      {it.eur > 0 && <div className="dpt-row total"><span>Couple</span><span>{$f(usd(it.eur * 2))}</span></div>}
+                    </>
+                  )}
+                  <div className="dpt-row"><span>Location</span><span>{it.city}</span></div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ═══ COMMON: Reserve note ═══ */}
+          {it.reserveNote && <div className="detail-reserve-note">⚠️ {it.reserveNote}</div>}
 
           {/* Source */}
           {it.src && (
@@ -133,12 +191,7 @@ export default function DetailModal({ it, status, setStatus, updatedBy, onClose 
             </div>
           )}
 
-          {/* Reserve info */}
-          {it.reserveNote && (
-            <div className="detail-reserve-note">⚠️ {it.reserveNote}</div>
-          )}
-
-          {/* Link with favicon */}
+          {/* Book link */}
           {it.link && (
             <a href={it.link} target="_blank" rel="noopener" className="detail-book-link">
               {faviconUrl && <img src={faviconUrl} alt="" className="detail-favicon" />}
@@ -163,7 +216,7 @@ export default function DetailModal({ it, status, setStatus, updatedBy, onClose 
           )}
         </div>
 
-        {/* Sticky bottom action bar */}
+        {/* Sticky action bar */}
         <div className="detail-action-bar">
           <button className={statusClass} onClick={cycleStatus}>{statusBtn}</button>
         </div>
