@@ -59,50 +59,94 @@ export const ENRICHMENT = {
   's-rome1': {
     imageUrl: 'https://images.unsplash.com/photo-1529290130-4ca3753253ae?w=600&h=300&fit=crop',
     highlights: ['Family-run since 1923', "Near Campo de' Fiori — Rome's liveliest piazza", 'Walk to Pantheon, Navona, Trastevere in 10 min', 'Breakfast included'],
+    options: [
+      { name: 'Booking.com', detail: 'Free cancellation, 8.3 rating', price: '~€160/n', url: 'https://www.booking.com/hotel/it/smeraldo-roma.html' },
+      { name: 'Hotels.com', detail: 'Collect stamps for free nights', price: '~€165/n', url: 'https://www.hotels.com' },
+    ],
   },
   's-rome2': {
     imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&h=300&fit=crop',
     highlights: ["Via Giulia — one of Rome's most elegant streets", 'Rooftop terrace with Palazzo Farnese views', 'Design hotel, IHG flagship'],
+    options: [
+      { name: 'IHG (direct)', detail: 'Best rate guarantee, earn points', price: '~€240/n', url: 'https://www.ihg.com/hotelindigo/hotels/us/en/rome/romsg/hoteldetail' },
+      { name: 'Booking.com', detail: 'Free cancellation', price: '~€250/n', url: 'https://www.booking.com' },
+    ],
   },
   's-rome4': {
     imageUrl: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&h=300&fit=crop',
     highlights: ['Secret garden between Spanish Steps and Piazza del Popolo', 'Rocco Forte group', 'Forbes 5-Star'],
+    options: [
+      { name: 'Rocco Forte (direct)', detail: 'Best rate, hotel perks', price: '~€750/n', url: 'https://www.roccofortehotels.com/hotels-and-resorts/hotel-de-russie/' },
+      { name: 'Booking.com', detail: 'Free cancellation', price: '~€780/n', url: 'https://www.booking.com' },
+    ],
   },
   's-flo1': {
     imageUrl: 'https://images.unsplash.com/photo-1541370976299-4d24ebbc9077?w=600&h=300&fit=crop',
     highlights: ['Booking.com 9.2 Wonderful', 'Walk to Duomo and Uffizi', 'Family-run, breakfast included', 'Most consistent mid-range pick in Florence'],
+    options: [
+      { name: 'Hotel direct', detail: 'Best price guarantee', price: '~€170/n', url: 'https://www.hoteldavanzati.it/' },
+      { name: 'Booking.com', detail: '9.2 rating, free cancel', price: '~€175/n', url: 'https://www.booking.com' },
+    ],
   },
   's-mon1': {
     imageUrl: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=600&h=300&fit=crop',
     highlights: ["Inside medieval walls on Piazza San Francesco", "Panoramic Val d'Orcia valley views"],
+    options: [
+      { name: 'Booking.com', detail: 'Top-rated, free cancel', price: '~€150/n', url: 'https://www.booking.com/hotel/it/locanda-san-francesco-montepulciano.html' },
+    ],
   },
   's-vd1': {
     imageUrl: 'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=600&h=300&fit=crop',
     highlights: ['Working family farm — their own wine, pecorino, olive oil', 'Drive there SOBER in the morning, drink all day', 'Communal farm dinner — book by email: info@poderilcasale.it', 'Slow Food certified'],
+    options: [
+      { name: 'Email direct', detail: 'info@poderilcasale.it — small family farm', price: '~€200/n', url: 'https://www.poderilcasale.it/' },
+    ],
   },
   's-ler1': {
     imageUrl: 'https://images.unsplash.com/photo-1537799943037-f5da89a65689?w=600&h=300&fit=crop',
     highlights: ['On the Lerici bay waterfront', 'Medieval fishing village', 'Walk to seafood restaurants and castle'],
+    options: [
+      { name: 'Booking.com', detail: '8.5+ rating', price: '~€140/n', url: 'https://www.booking.com/hotel/it/shelley-e-delle-palme.html' },
+    ],
   },
   's-bg1': {
     imageUrl: 'https://images.unsplash.com/photo-1568084680786-a84f91d1153c?w=600&h=300&fit=crop',
     highlights: ['Inside UNESCO Venetian walls', 'Directly on Piazza Vecchia — the most beautiful piazza in Bergamo'],
+    options: [
+      { name: 'Booking.com', detail: 'Best inside-walls option', price: '~€160/n', url: 'https://www.booking.com/hotel/it/piazza-vecchia.html' },
+    ],
   },
   's-bel1': {
     imageUrl: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&h=300&fit=crop',
     highlights: ['Right on Bellagio harbor', 'Family-run since 1850', 'Walk to the ferry'],
+    options: [
+      { name: 'Hotel direct', detail: 'Best rate', price: '~€220/n', url: 'https://www.hotelflorencebellagio.it/' },
+      { name: 'Booking.com', detail: '8.6 rating', price: '~€230/n', url: 'https://www.booking.com' },
+    ],
   },
   's-sir1': {
     imageUrl: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=600&h=300&fit=crop',
     highlights: ['4-star with thermal pool', '5-min walk to walled medieval town', 'Lake Garda views'],
+    options: [
+      { name: 'Hotel direct', detail: 'Thermal pool included', price: '~€190/n', url: 'https://www.hotelolivi.com/' },
+      { name: 'Booking.com', detail: '8.7 rating', price: '~€195/n', url: 'https://www.booking.com' },
+    ],
   },
   's-ver1': {
     imageUrl: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=600&h=300&fit=crop',
     highlights: ['ON Piazza delle Erbe — the main square', 'Balconies overlooking evening aperitivo crowd', 'Booking.com 9.0'],
+    options: [
+      { name: 'Hotel direct', detail: 'Best central value', price: '~€150/n', url: 'https://www.hotelaurora.biz/' },
+      { name: 'Booking.com', detail: '9.0 rating', price: '~€155/n', url: 'https://www.booking.com' },
+    ],
   },
   's-ven1': {
     imageUrl: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=600&h=300&fit=crop',
     highlights: ['Castello district near Rialto', 'Courtyard wellness area', 'Walk to all the best bacari'],
+    options: [
+      { name: 'Hotel direct', detail: '4-star, wellness area', price: '~€200/n', url: 'https://www.hotelaireali.com/' },
+      { name: 'Booking.com', detail: '9.0 rating', price: '~€210/n', url: 'https://www.booking.com' },
+    ],
   },
 
   // ═══ ACTIVITIES ═══

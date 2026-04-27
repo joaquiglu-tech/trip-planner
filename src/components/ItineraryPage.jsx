@@ -70,6 +70,43 @@ function DayMap({ day, selections, active }) {
     bounds.extend({ lat: day.lat, lng: day.lng });
     let hasExtra = false;
 
+    // Draw driving route if this is a road trip day
+    if (day.driveFrom) {
+      const routePath = [day.driveFrom];
+      if (day.driveVia) day.driveVia.forEach((v) => routePath.push(v));
+      routePath.push({ lat: day.lat, lng: day.lng });
+
+      new window.google.maps.Polyline({
+        path: routePath, geodesic: true, strokeColor: '#ea580c', strokeOpacity: 0.8, strokeWeight: 3, map: m,
+      });
+
+      // Add via-stop markers
+      if (day.driveVia) {
+        day.driveVia.forEach((v) => {
+          const vm = new window.google.maps.Marker({
+            position: v, map: m, title: v.label,
+            icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 5, fillColor: '#92400e', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+          });
+          const viw = new window.google.maps.InfoWindow({
+            content: `<div style="font-family:system-ui;font-size:12px"><strong>${v.label}</strong><br><span style="color:#78716c;font-size:11px">Stop</span></div>`,
+          });
+          vm.addListener('click', () => viw.open(m, vm));
+          markersRef.current.push(vm);
+          bounds.extend(v);
+        });
+      }
+
+      // Start marker
+      const startM = new window.google.maps.Marker({
+        position: day.driveFrom, map: m, title: 'Start',
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#78716c', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+      });
+      markersRef.current.push(startM);
+      bounds.extend(day.driveFrom);
+      hasExtra = true;
+    }
+
+    // Plot selected items
     selections.forEach((it) => {
       const coord = ITEM_COORDS[it.id];
       if (!coord) return;

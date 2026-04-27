@@ -101,6 +101,20 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete }
           {it.type === 'stay' && (
             <>
               <p className="detail-desc-full">{it.desc}</p>
+              {it.options && (
+                <div className="detail-section">
+                  <div className="detail-section-title">Compare & Book</div>
+                  {it.options.map((opt, i) => (
+                    <a key={i} href={opt.url} target="_blank" rel="noopener" className="transport-option">
+                      <div className="transport-option-info">
+                        <span className="transport-option-name">{opt.name}</span>
+                        {opt.detail && <span className="transport-option-detail">{opt.detail}</span>}
+                      </div>
+                      <span className="transport-option-price">{opt.price}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
               {it.highlights && (
                 <div className="detail-section">
                   <div className="detail-section-title">Highlights</div>

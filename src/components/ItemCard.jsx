@@ -4,13 +4,24 @@ export default function ItemCard({ it, status, onTap }) {
   const st = status || '';
   const stClass = st === 'conf' ? 'conf' : st === 'sel' ? 'sel' : '';
 
-  // Show total cost for couple, not per-person/per-night
+  // Total cost for couple / full stay
   let price = '';
-  if (it.type === 'stay') price = $f(usd((it.pn || 0) * (it.nights || 1)));
-  else if (it.type === 'activity') price = it.eur === 0 ? 'Free' : $f(usd(it.eur * 2));
-  else if (it.type === 'special') price = $f(usd((it.ppEur || 0) * 2));
-  else if (it.type === 'dining') price = it.eur === 0 ? 'Free' : $f(usd((it.eur || 0) * 2));
-  else if (it.priceLabel) price = it.priceLabel;
+  let priceNote = '';
+  if (it.type === 'stay') {
+    price = $f(usd((it.pn || 0) * (it.nights || 1)));
+    priceNote = `${it.nights}n total`;
+  } else if (it.type === 'activity') {
+    if (it.eur === 0) { price = 'Free'; }
+    else { price = $f(usd(it.eur * 2)); priceNote = '2 ppl'; }
+  } else if (it.type === 'special') {
+    price = $f(usd((it.ppEur || 0) * 2));
+    priceNote = '2 ppl';
+  } else if (it.type === 'dining') {
+    if (!it.eur || it.eur === 0) { price = 'Free'; }
+    else { price = $f(usd(it.eur * 2)); priceNote = '2 ppl'; }
+  } else if (it.priceLabel) {
+    price = it.priceLabel;
+  }
 
   return (
     <div className={`sq-card ${stClass}`} onClick={() => onTap(it)}>
@@ -31,7 +42,10 @@ export default function ItemCard({ it, status, onTap }) {
         {!it.dish && it.type === 'activity' && <div className="sq-dish">{it.city}{it.hrs ? ` · ${it.hrs}h` : ''}</div>}
         {!it.dish && it.type === 'transport' && <div className="sq-dish">{it.city}</div>}
         <div className="sq-bottom">
-          <span className="sq-price-main">{price}</span>
+          <div className="sq-price-group">
+            <span className="sq-price-main">{price}</span>
+            {priceNote && <span className="sq-price-note">{priceNote}</span>}
+          </div>
         </div>
       </div>
     </div>
