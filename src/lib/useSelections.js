@@ -25,7 +25,8 @@ export function useSelections(currentUserEmail) {
   // Load selections + files on mount
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('selections').select('item_id, status, updated_by, paid_price, notes');
+      const { data, error } = await supabase.from('selections').select('item_id, status, updated_by, paid_price, notes');
+      if (error) { console.warn('Failed to load selections:', error); setLoaded(true); return; }
       if (data && data.length > 0) {
         const nextS = {};
         const pp = {};
@@ -40,15 +41,19 @@ export function useSelections(currentUserEmail) {
         setPaidPricesState(pp);
         setNotesState(nn);
 
-        // Load files for items that have selections
-        const fileMap = {};
-        for (const row of data) {
-          if (row.status === 'conf' || row.status === 'sel') {
-            const itemFiles = await listFiles(row.item_id);
-            if (itemFiles.length > 0) fileMap[row.item_id] = itemFiles[0];
+        // Load files for confirmed items (non-blocking)
+        try {
+          const fileMap = {};
+          for (const row of data) {
+            if (row.status === 'conf') {
+              try {
+                const itemFiles = await listFiles(row.item_id);
+                if (itemFiles.length > 0) fileMap[row.item_id] = itemFiles[0];
+              } catch { /* skip failed file loads */ }
+            }
           }
-        }
-        setFiles(fileMap);
+          setFiles(fileMap);
+        } catch { /* ignore file loading errors entirely */ }
       }
       setLoaded(true);
     }
