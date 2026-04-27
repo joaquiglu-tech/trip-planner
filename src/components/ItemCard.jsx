@@ -23,7 +23,7 @@ function ItemCard({ it, status, onTap, photoUrl: googlePhoto }) {
         {photoUrl ? (
           <img src={photoUrl} alt="" loading="lazy" onError={(e) => { e.target.style.display = 'none'; }} />
         ) : (
-          TYPE_EMOJI[it.type] || '📌'
+          <span className="ic-photo-emoji">{TYPE_EMOJI[it.type] || '📌'}</span>
         )}
         {st && <div className={`ic-status-dot ${st}`} />}
       </div>

@@ -5,7 +5,7 @@ import { ITEM_COORDS } from '../data/coords';
 import { ROUTE_STOPS, ROUTE_LINES } from '../data/routes';
 import DetailModal from './DetailModal';
 
-const PHASE_LABEL = { spain: '🇪🇸 Spain', rome: '🇮🇹 Rome', roadtrip: '🚗 Road Trip', venice: '🇮🇹 Venice' };
+const PHASE_LABEL = { spain: 'Spain', rome: 'Rome', roadtrip: 'Road Trip', venice: 'Venice' };
 
 // Valentina's travel tips per city
 const DAY_TIPS = {
@@ -302,7 +302,7 @@ function TripCountdown() {
   const diff = Math.ceil((tripStart - now) / (1000 * 60 * 60 * 24));
   if (diff <= 0 && diff > -22) return <div className="trip-countdown font-display">Day {Math.abs(diff) + 1} of your adventure!</div>;
   if (diff <= 0) return null;
-  return <div className="trip-countdown font-display">{diff} days until Spain & Italy</div>;
+  return <div className="trip-countdown font-display">{diff} days until your trip</div>;
 }
 
 function FullTripRouteMap() {

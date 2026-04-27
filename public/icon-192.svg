@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#1c1917"/>
-  <text x="96" y="72" text-anchor="middle" font-size="56" font-family="system-ui" fill="#fff">🇪🇸</text>
-  <text x="96" y="136" text-anchor="middle" font-size="56" font-family="system-ui" fill="#fff">🇮🇹</text>
+  <rect width="192" height="192" rx="40" fill="#111111"/>
+  <circle cx="96" cy="82" r="28" fill="none" stroke="#8B5CF6" stroke-width="12" stroke-linecap="round"/>
+  <path d="M124 60 L124 110 Q124 130 112 140 L96 156" fill="none" stroke="#8B5CF6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="96" cy="156" r="6" fill="#22C55E"/>
 </svg>

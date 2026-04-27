@@ -77,9 +77,8 @@ export default function ProfilePage({ active, session }) {
       <div className="card">
         <div className="card-hd">About</div>
         <div className="card-bd" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          <span className="font-display" style={{ fontSize: 16 }}>Anisita</span><br />
-          Our Spain & Italy 2026 adventure planner<br />
-          Real-time sync · Joaquin & Ania
+          <span style={{ fontSize: 15, fontWeight: 700 }}>Anisita</span><br />
+          Trip planner · Real-time sync
         </div>
       </div>
     </div>
