@@ -3,6 +3,7 @@ import { ITEMS, itemCost, $f, BASE_COST } from '../data/items';
 import Timeline from './Timeline';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
+import DetailModal from './DetailModal';
 
 const TYPE_LABEL = { transport: '🚗 Transport', stay: '🏨 Stay', activity: '🎟️ Activity', special: '⭐ Special Meal', dining: '🍝 Dining' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
@@ -11,6 +12,7 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [pulling, setPulling] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const { selV, confV, confCount, totalItems } = useMemo(() => {
     let selV = 0, confV = 0, confCount = 0, totalItems = 0;
@@ -50,11 +52,8 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
     return g;
   }, [filtered]);
 
-  function onCityClick(city) {
-    setFilters((f) => ({ ...f, city }));
-  }
+  function onCityClick(city) { setFilters((f) => ({ ...f, city })); }
 
-  // Pull-to-refresh
   const handlePullRefresh = useCallback(async () => {
     setPulling(true);
     if (onRefresh) await onRefresh();
@@ -63,26 +62,19 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
 
   return (
     <div id="page-select" className={`page ${active ? 'active' : ''}`}>
-      {/* Collapsible Summary */}
       <div className="card summary-card" onClick={() => setSummaryCollapsed(!summaryCollapsed)}>
         <div className="card-bd" style={{ padding: summaryCollapsed ? '8px 12px' : 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'baseline' }}>
-              <div>
-                <span className="summary-label">Selected </span>
-                <span className="summary-val orange">{$f(selV)}</span>
-              </div>
-              <div>
-                <span className="summary-label">Confirmed </span>
-                <span className="summary-val green">{$f(confV)}</span>
-              </div>
+              <div><span className="summary-label">Selected </span><span className="summary-val orange">{$f(selV)}</span></div>
+              <div><span className="summary-label">Confirmed </span><span className="summary-val green">{$f(confV)}</span></div>
             </div>
             <span style={{ fontSize: 10, color: '#a8a29e' }}>{summaryCollapsed ? '▼' : '▲'}</span>
           </div>
           {!summaryCollapsed && (
             <>
               <div style={{ marginTop: 8, fontSize: 11, color: '#78716c' }}>
-                + Base costs: <strong style={{ color: '#a8a29e' }}>$4,795</strong> · Total sel: <strong style={{ color: '#fb923c' }}>{$f(selV + BASE_COST)}</strong> · Total conf: <strong style={{ color: '#4ade80' }}>{$f(confV + BASE_COST)}</strong>
+                + Base: <strong style={{ color: '#a8a29e' }}>$4,795</strong> · Total sel: <strong style={{ color: '#fb923c' }}>{$f(selV + BASE_COST)}</strong> · Total conf: <strong style={{ color: '#4ade80' }}>{$f(confV + BASE_COST)}</strong>
               </div>
               <div className="prog-bar" style={{ marginTop: 6 }}><div className="prog-fill" style={{ width: pct + '%' }}></div></div>
               <div style={{ fontSize: 10, color: '#a8a29e', marginTop: 3 }}>{confCount} confirmed / {totalItems} selected</div>
@@ -94,7 +86,6 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
       <Timeline S={S} onCityClick={onCityClick} />
       <FilterBar filters={filters} setFilters={setFilters} />
 
-      {/* Pull to refresh indicator */}
       {pulling && <div style={{ textAlign: 'center', padding: 8, fontSize: 12, color: 'var(--text-muted)' }}>Refreshing...</div>}
       <button className="pull-refresh-btn" onClick={handlePullRefresh}>↻ Refresh</button>
 
@@ -110,13 +101,24 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
               <div className={`sect-title ic-section-${type}`}>{TYPE_LABEL[type] || type} ({group.length})</div>
               <div className="items-grid">
                 {group.map((it) => (
-                  <ItemCard key={it.id} it={it} status={S[it.id] || ''} setStatus={setStatus} updatedBy={updatedBy?.[it.id]} />
+                  <ItemCard key={it.id} it={it} status={S[it.id] || ''} onTap={setSelectedItem} />
                 ))}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Full-screen detail modal */}
+      {selectedItem && (
+        <DetailModal
+          it={selectedItem}
+          status={S[selectedItem.id] || ''}
+          setStatus={setStatus}
+          updatedBy={updatedBy?.[selectedItem.id]}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </div>
   );
 }

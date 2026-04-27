@@ -1,3 +1,5 @@
+import { ENRICHMENT } from './enrichment';
+
 export const EUR = 1.17;
 export const BASE_COST = 4795;
 
@@ -145,3 +147,9 @@ export const ITEMS = [
   { id: 'd-schiavi', type: 'dining', subcat: 'bar', city: 'Venice', name: 'Cantina del Vino già Schiavi', eur: 15, dish: 'Canalside crostini + ombre', desc: 'Locals sit on the bridge steps eating cicchetti. Most photogenic bacaro in Venice.', link: 'https://www.cantinaschiavi.com/', src: 'Eater Venice · Travel Folk', def: 'sel' },
   { id: 'd-lele', type: 'dining', subcat: 'cheap', city: 'Venice', name: 'Bacareto da Lele', eur: 5, dish: 'Mini panini $1.75 + wine $1.20', desc: 'Student favorite. Cheapest wine + sandwiches in Venice. Sit on the church steps.', link: 'https://www.facebook.com/bacarettodalele', src: 'Culture Trip Venice guide', def: '' },
 ];
+
+// Merge enrichment data into items
+ITEMS.forEach((it) => {
+  const extra = ENRICHMENT[it.id];
+  if (extra) Object.assign(it, extra);
+});
