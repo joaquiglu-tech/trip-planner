@@ -1,34 +1,47 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase';
 import { fetchPlaceData } from './googlePlaces';
+import { ITEMS } from '../data/items';
 
-// Load all cached place data on mount, fetch missing on demand
 export function usePlaceData() {
   const [places, setPlaces] = useState({});
+  const prefetching = useRef(false);
 
-  // Load cache on mount
+  // Load cache on mount, then pre-fetch missing items in background
   useEffect(() => {
-    async function loadCache() {
+    async function loadAndPrefetch() {
+      // Load existing cache
       const { data } = await supabase.from('place_cache').select('*');
-      if (data) {
-        const map = {};
-        data.forEach((row) => { map[row.item_id] = row; });
-        setPlaces(map);
+      const map = {};
+      if (data) data.forEach((row) => { map[row.item_id] = row; });
+      setPlaces(map);
+
+      // Pre-fetch missing items in background (non-transport only)
+      if (prefetching.current) return;
+      prefetching.current = true;
+
+      const toFetch = ITEMS.filter((it) => it.type !== 'transport' && !map[it.id]?.photo_url);
+      // Fetch in small batches to stay within free tier
+      for (let i = 0; i < Math.min(toFetch.length, 30); i++) {
+        const it = toFetch[i];
+        try {
+          const result = await fetchPlaceData(it.id, it.name, it.city);
+          if (result) setPlaces((prev) => ({ ...prev, [it.id]: result }));
+        } catch { /* skip failures */ }
+        // Small delay to avoid rate limiting
+        await new Promise((r) => setTimeout(r, 200));
       }
     }
-    loadCache();
+    loadAndPrefetch();
   }, []);
 
-  // Fetch place data for a specific item (called from DetailModal)
   const getPlaceData = useCallback(async (itemId, name, city) => {
-    // Already have it
     if (places[itemId]?.photo_url) return places[itemId];
-
-    const result = await fetchPlaceData(itemId, name, city);
-    if (result) {
-      setPlaces((prev) => ({ ...prev, [itemId]: result }));
-    }
-    return result;
+    try {
+      const result = await fetchPlaceData(itemId, name, city);
+      if (result) setPlaces((prev) => ({ ...prev, [itemId]: result }));
+      return result;
+    } catch { return null; }
   }, [places]);
 
   return { places, getPlaceData };

@@ -150,6 +150,17 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: v
 .ic-tag { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: var(--radius-pill); background: var(--bg-card-hd); color: var(--text-secondary); line-height: 1.3 }
 .ic-tag.urgent { background: #FEF2F2; color: #DC2626 }
 
+/* Card stagger animation */
+@keyframes card-in { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+.items-grid .item-card { animation: card-in .3s var(--ease-spring) both }
+.items-grid .item-card:nth-child(1) { animation-delay: 0ms }
+.items-grid .item-card:nth-child(2) { animation-delay: 40ms }
+.items-grid .item-card:nth-child(3) { animation-delay: 80ms }
+.items-grid .item-card:nth-child(4) { animation-delay: 120ms }
+.items-grid .item-card:nth-child(5) { animation-delay: 160ms }
+.items-grid .item-card:nth-child(6) { animation-delay: 200ms }
+.items-grid .item-card:nth-child(n+7) { animation-delay: 240ms }
+
 /* ═══ DETAIL MODAL ═══ */
 .detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 600; display: flex; align-items: flex-end; justify-content: center; animation: fade-in .2s ease }
 .detail-sheet { background: var(--bg-card); width: 100%; max-width: 480px; max-height: 95vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; animation: sheet-up .4s var(--ease-spring); box-shadow: 0 -8px 40px rgba(0,0,0,.12) }
@@ -366,6 +377,9 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 10px 0
 .dic-status { font-size: 14px }
 .dic-status.conf { color: var(--green) }
 .dic-status.sel { color: var(--orange) }
+.dic-actions { display: flex; gap: 6px; flex-shrink: 0 }
+.dic-action-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-card-hd); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 16px; transition: background var(--duration) }
+.dic-action-btn:hover { background: var(--border) }
 .drive-info-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--orange) }
 .drive-info-dist { color: var(--text-muted); font-weight: 400 }
 
