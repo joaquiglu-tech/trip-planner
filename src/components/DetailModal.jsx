@@ -78,7 +78,7 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
           </div>
         )}
         {loadingPlace && !heroImage && (
-          <div className="detail-hero-loading">Loading photo...</div>
+          <div className="detail-hero-loading" />
         )}
 
         <div className="detail-content">

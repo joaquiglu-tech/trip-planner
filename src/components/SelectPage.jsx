@@ -136,7 +136,11 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
 
       <div id="items-container">
         {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 14 }}>No items match your filters.</div>
+          <div className="empty-state">
+            <div className="empty-state-icon">🔍</div>
+            <div className="empty-state-title">No items found</div>
+            <div className="empty-state-text">Try adjusting your filters or search to find what you're looking for.</div>
+          </div>
         )}
         {sections.map(({ key, label, items }) => (
           <div key={key}>

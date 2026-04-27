@@ -241,7 +241,11 @@ function DayDetail({ day, S, active }) {
       )}
 
       {selections.length === 0 && (
-        <div className="day-no-sel">No selections yet for {day.city}. Go to Select & Price to choose stays, activities, and restaurants.</div>
+        <div className="empty-state" style={{ padding: 24 }}>
+          <div className="empty-state-icon">📋</div>
+          <div className="empty-state-title">Nothing selected yet</div>
+          <div className="empty-state-text">Go to the Planner tab to pick stays, restaurants, and activities for {day.city}.</div>
+        </div>
       )}
 
       {day.lat && (
