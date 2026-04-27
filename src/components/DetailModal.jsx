@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { $f, usd, TYPE_LABEL, SUBCAT_BADGE } from '../data/items';
 import { uploadFile, deleteFile } from '../lib/storage';
 
-export default function DetailModal({ it, status, setStatus, onClose }) {
+export default function DetailModal({ it, status, setStatus, onClose, onDelete }) {
   const st = status || '';
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -219,6 +219,9 @@ export default function DetailModal({ it, status, setStatus, onClose }) {
         {/* Sticky action bar */}
         <div className="detail-action-bar">
           <button className={statusClass} onClick={cycleStatus}>{statusBtn}</button>
+          {onDelete && (
+            <button className="detail-btn-delete" onClick={() => { if (confirm('Delete this item?')) onDelete(); }}>Delete</button>
+          )}
         </div>
       </div>
     </div>

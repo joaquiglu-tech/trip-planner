@@ -215,6 +215,17 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .detail-btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .15s; background: var(--bg-card-hd); color: var(--text-muted) }
 .detail-btn.sel { background: var(--orange); color: #fff }
 .detail-btn.conf { background: var(--green); color: #fff }
+.detail-btn-delete { width: 100%; padding: 10px; border-radius: 10px; border: 1.5px solid #ef4444; background: none; color: #ef4444; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 6px }
+
+/* Add item button */
+.add-item-btn { display: block; width: 100%; padding: 12px; border: 2px dashed var(--border); border-radius: 10px; background: none; color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 12px; transition: background .15s }
+.add-item-btn:hover { background: var(--bg-card-hd) }
+
+/* Add item form */
+.add-url-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--bg); color: var(--text) }
+.add-form { display: flex; flex-direction: column; gap: 4px }
+.add-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); margin-top: 8px }
+.add-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical }
 .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border-lighter) }
 .detail-row:last-child { border-bottom: none }
 .detail-label { font-size: 11px; color: var(--text-muted); font-weight: 600 }

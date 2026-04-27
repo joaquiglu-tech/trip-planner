@@ -4,15 +4,38 @@ import Timeline from './Timeline';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
 import DetailModal from './DetailModal';
+import AddItemModal from './AddItemModal';
 
-const TYPE_LABEL = { transport: '🚗 Transport', stay: '🏨 Stay', activity: '🎟️ Activity', special: '⭐ Special Meal', dining: '🍝 Dining' };
+const TYPE_LABEL = { transport: '🚗 Transport', stay: '🏨 Stay', activity: '🎟️ Activity', special: '⭐ Special Meal', dining: '🍝 Dining', custom: '📌 Added by You' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
 
-export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh }) {
+export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh, customItems, addItem, deleteItem, userEmail }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [pulling, setPulling] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Convert custom items to same shape as ITEMS
+  const customAsItems = useMemo(() => {
+    return (customItems || []).map((c) => ({
+      id: `custom-${c.id}`,
+      customId: c.id,
+      type: c.type || 'dining',
+      city: c.city || '',
+      name: c.name || '',
+      desc: c.desc_text || '',
+      dish: c.dish || '',
+      link: c.link || '',
+      imageUrl: c.image_url || '',
+      priceLabel: c.price_label || '',
+      src: 'Added by ' + (c.created_by || '').split('@')[0],
+      isCustom: true,
+      def: 'sel',
+    }));
+  }, [customItems]);
+
+  const allItems = useMemo(() => [...ITEMS, ...customAsItems], [customAsItems]);
 
   const { selV, confV, confCount, totalItems } = useMemo(() => {
     let selV = 0, confV = 0, confCount = 0, totalItems = 0;
@@ -30,11 +53,11 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
 
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase();
-    return ITEMS.filter((it) => {
-      if (filters.type !== 'all' && it.type !== filters.type) return false;
+    return allItems.filter((it) => {
+      if (filters.type !== 'all' && it.type !== filters.type && !(it.isCustom && filters.type === 'custom')) return false;
       if (filters.city !== 'all' && it.city !== filters.city) return false;
       if (filters.urgent && !it.urgent) return false;
-      const st = S[it.id] || '';
+      const st = S[it.id] || it.def || '';
       if (filters.status === 'sel' && st !== 'sel') return false;
       if (filters.status === 'conf' && st !== 'conf') return false;
       if (filters.status === 'none' && st !== '') return false;
@@ -44,11 +67,15 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
       }
       return true;
     });
-  }, [S, filters]);
+  }, [S, filters, allItems]);
 
   const grouped = useMemo(() => {
     const g = {};
-    filtered.forEach((it) => { if (!g[it.type]) g[it.type] = []; g[it.type].push(it); });
+    filtered.forEach((it) => {
+      const key = it.isCustom ? 'custom' : it.type;
+      if (!g[key]) g[key] = [];
+      g[key].push(it);
+    });
     return g;
   }, [filtered]);
 
@@ -59,6 +86,8 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
     if (onRefresh) await onRefresh();
     setPulling(false);
   }, [onRefresh]);
+
+  const displayOrder = [...TYPE_ORDER, 'custom'];
 
   return (
     <div id="page-select" className={`page ${active ? 'active' : ''}`}>
@@ -89,11 +118,14 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
       {pulling && <div style={{ textAlign: 'center', padding: 8, fontSize: 12, color: 'var(--text-muted)' }}>Refreshing...</div>}
       <button className="pull-refresh-btn" onClick={handlePullRefresh}>↻ Refresh</button>
 
+      {/* Add item button */}
+      <button className="add-item-btn" onClick={() => setShowAddModal(true)}>+ Add item by URL</button>
+
       <div id="items-container">
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 14 }}>No items match your filters.</div>
         )}
-        {TYPE_ORDER.map((type) => {
+        {displayOrder.map((type) => {
           const group = grouped[type];
           if (!group || !group.length) return null;
           return (
@@ -109,7 +141,6 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
         })}
       </div>
 
-      {/* Full-screen detail modal */}
       {selectedItem && (
         <DetailModal
           it={selectedItem}
@@ -117,7 +148,12 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh 
           setStatus={setStatus}
           updatedBy={updatedBy?.[selectedItem.id]}
           onClose={() => setSelectedItem(null)}
+          onDelete={selectedItem.isCustom ? () => { deleteItem(selectedItem.customId); setSelectedItem(null); } : null}
         />
+      )}
+
+      {showAddModal && (
+        <AddItemModal onClose={() => setShowAddModal(false)} onAdd={addItem} userEmail={userEmail} />
       )}
     </div>
   );
