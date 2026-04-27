@@ -249,7 +249,7 @@ function DayDetailView({ day, S, paidPrices, onItemTap, places, visible }) {
       <DriveInfo day={day} />
 
       <div className="today-day-header">
-        <div className="today-day-badge" style={{ background: PHASE_COLOR[day.phase] }}>Day {day.n}</div>
+        <div className="today-day-badge" style={{ background: PHASE_COLOR[day.phase] }}>{day.sleep}</div>
         <div>
           <div className="today-day-date">{day.date}</div>
           <div className="today-day-title">{day.title}</div>
@@ -374,23 +374,12 @@ export default function TodayPage({ active, S, setStatus, paidPrices, setPaidPri
         {isDuringTrip && view !== todayIdx && (
           <button className="today-sel-pill today-pill-accent" onClick={() => setView(todayIdx)}>Today</button>
         )}
-        {phases.map((phase) => {
-          const days = ALL_DAYS.filter(d => d.phase === phase);
-          return (
-            <span key={phase} className="today-sel-group">
-              <span className="today-sel-divider" style={{ background: PHASE_COLOR[phase] }} />
-              {days.map(d => {
-                const shortDate = new Date(d.startDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                return (
-                  <button key={d.n} data-day={d.n - 1} className={`today-sel-pill today-sel-pill-day ${view === d.n - 1 ? 'active' : ''} ${d.n - 1 === todayIdx ? 'is-today' : ''}`} onClick={() => setView(d.n - 1)}>
-                    <span className="pill-day-num">{d.n}</span>
-                    <span className="pill-day-date">{shortDate}</span>
-                  </button>
-                );
-              })}
-            </span>
-          );
-        })}
+        {ALL_DAYS.map((d, i) => (
+          <button key={d.n} data-day={i} className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`} onClick={() => setView(i)} style={{ borderLeftColor: PHASE_COLOR[d.phase] }}>
+            <span className="pill-stop-name">{d.sleep}</span>
+            <span className="pill-stop-date">{d.date}</span>
+          </button>
+        ))}
       </div>
 
       {/* Content */}

@@ -295,15 +295,9 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .m-btn.secondary { background: var(--bg-card-hd); color: var(--text) }
 
 /* ═══ ITINERARY ═══ */
-.itin-selector { display: flex; gap: 4px; overflow-x: auto; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none }
-.itin-selector::-webkit-scrollbar { display: none }
-.itin-opt { flex-shrink: 0; padding: 6px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border); font-size: 12px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); white-space: nowrap; display: flex; align-items: center; gap: 4px; min-height: 36px }
-.itin-opt.active { background: var(--text); color: var(--bg); border-color: var(--text) }
-.itin-opt-phase { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0 }
-.itin-opt.active .itin-opt-phase { background: var(--bg) !important }
-.today-opt { background: var(--accent-light) !important; color: var(--accent) !important; border-color: var(--accent) !important }
-.today-opt.active { background: var(--accent) !important; color: #fff !important }
-.itin-opt.is-today { border-color: var(--accent) }
+/* (old itin-selector removed — replaced by today-selector) */
+.today-pill-accent { background: var(--accent-light) !important; color: var(--accent) !important; border-color: var(--accent) !important }
+.today-pill-accent.active, .today-sel-pill.is-today { border-color: var(--accent) }
 .phase-header { font-size: 13px; font-weight: 700; padding: 10px 14px; margin: 10px 0 6px; border-left: 3px solid; border-radius: 0 var(--radius) var(--radius) 0; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-left-width: 3px }
 .full-trip-day { padding: 10px 14px; border-bottom: 1px solid var(--border-lighter); background: var(--bg-card); margin-bottom: 1px; display: flex; justify-content: space-between; align-items: center; gap: 8px }
 .full-trip-day:last-child { border-bottom: none; margin-bottom: 10px }
@@ -495,11 +489,10 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .today-sel-pill.active { background: var(--text); color: var(--bg); border-color: var(--text) }
 .today-sel-pill.is-today { border-color: var(--accent) }
 .today-pill-accent { background: var(--accent-light) !important; color: var(--accent) !important; border-color: var(--accent) !important }
-.today-sel-group { display: flex; align-items: center; gap: 4px }
-.today-sel-divider { width: 3px; height: 14px; border-radius: 2px; flex-shrink: 0; margin: 0 6px }
-.today-sel-pill-day { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 10px; line-height: 1.2 }
-.pill-day-num { font-size: 13px; font-weight: 700 }
-.pill-day-date { font-size: 9px; font-weight: 500; opacity: .7 }
+/* Stop pills — show city name + date */
+.today-sel-pill-stop { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.2; border-left: 3px solid transparent; text-align: left }
+.pill-stop-name { font-size: 12px; font-weight: 700; white-space: nowrap }
+.pill-stop-date { font-size: 9px; font-weight: 500; opacity: .6; white-space: nowrap }
 
 .today-day-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px }
 .today-day-badge { padding: 4px 10px; border-radius: var(--radius-pill); color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0 }
