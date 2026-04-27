@@ -368,7 +368,7 @@ export default function ItineraryPage({ active, S }) {
   }, [todayDay, active]);
 
   return (
-    <div id="page-itinerary" className="page active">
+    <div id="page-itinerary" className={`page ${active ? "active" : ""}`}>
       <div className="itin-selector" ref={selectorRef}>
         <button className={`itin-opt ${view === 'full' ? 'active' : ''}`} onClick={() => setView('full')}>Full Trip</button>
         {todayDay && (

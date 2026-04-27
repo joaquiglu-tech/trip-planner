@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './lib/useAuth';
 import { useSelections } from './lib/useSelections';
 import { useCustomItems } from './lib/useCustomItems';
@@ -8,12 +8,10 @@ import Login from './components/Login';
 import TopBar from './components/TopBar';
 import BottomTabs from './components/BottomTabs';
 import ItineraryPage from './components/ItineraryPage';
+import SelectPage from './components/SelectPage';
+import BudgetPage from './components/BudgetPage';
+import ProfilePage from './components/ProfilePage';
 import Toast from './components/Toast';
-
-// Lazy-load non-initial tabs
-const SelectPage = lazy(() => import('./components/SelectPage'));
-const BudgetPage = lazy(() => import('./components/BudgetPage'));
-const ProfilePage = lazy(() => import('./components/ProfilePage'));
 
 export default function App() {
   const session = useAuth();
@@ -46,28 +44,22 @@ export default function App() {
     <div className="app-shell">
       <TopBar S={S} session={session} onProfileClick={() => navigateTab('profile')} />
       <div className="page-container">
-        {activeTab === 'itinerary' && <ItineraryPage active S={S} />}
-        <Suspense fallback={<div className="loading-screen">Loading...</div>}>
-          {activeTab === 'planner' && (
-            <SelectPage
-              active
-              S={S} setStatus={setStatus} onRefresh={refresh}
-              customItems={customItems} addItem={addItem} deleteItem={deleteItem}
-              userEmail={email} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
-              notes={notes} setNote={setNote} files={files} setFile={setFile}
-              places={places} getPlaceData={getPlaceData}
-            />
-          )}
-          {activeTab === 'budget' && (
-            <BudgetPage
-              active
-              S={S} paidPrices={paidPrices} files={files}
-              expenses={expenses} addExpense={addExpense} deleteExpense={deleteExpense}
-              userEmail={email}
-            />
-          )}
-          {isProfile && <ProfilePage active session={session} />}
-        </Suspense>
+        <ItineraryPage active={activeTab === 'itinerary'} S={S} />
+        <SelectPage
+          active={activeTab === 'planner'}
+          S={S} setStatus={setStatus} onRefresh={refresh}
+          customItems={customItems} addItem={addItem} deleteItem={deleteItem}
+          userEmail={email} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
+          notes={notes} setNote={setNote} files={files} setFile={setFile}
+          places={places} getPlaceData={getPlaceData}
+        />
+        <BudgetPage
+          active={activeTab === 'budget'}
+          S={S} paidPrices={paidPrices} files={files}
+          expenses={expenses} addExpense={addExpense} deleteExpense={deleteExpense}
+          userEmail={email}
+        />
+        <ProfilePage active={isProfile} session={session} />
       </div>
       <Toast message={toast} />
       {!isProfile && <BottomTabs activeTab={activeTab} setActiveTab={navigateTab} />}

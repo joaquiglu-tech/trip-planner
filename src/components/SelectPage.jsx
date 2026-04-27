@@ -100,7 +100,7 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
   }, [onRefresh]);
 
   return (
-    <div id="page-select" className="page active">
+    <div id="page-select" className={`page ${active ? "active" : ""}`}>
       {/* Summary card */}
       <div className="card summary-card" onClick={() => setSummaryCollapsed(!summaryCollapsed)}>
         <div className="card-bd" style={{ padding: summaryCollapsed ? '8px 12px' : 12 }}>

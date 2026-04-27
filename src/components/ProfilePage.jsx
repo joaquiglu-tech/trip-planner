@@ -29,7 +29,7 @@ export default function ProfilePage({ active, session }) {
   }
 
   return (
-    <div id="page-profile" className="page active">
+    <div id="page-profile" className={`page ${active ? "active" : ""}`}>
       <div className="card">
         <div className="card-hd">Profile</div>
         <div className="card-bd" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 24 }}>

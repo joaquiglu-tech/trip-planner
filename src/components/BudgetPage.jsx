@@ -45,7 +45,7 @@ export default function BudgetPage({ active, S, paidPrices, files, expenses, add
   }
 
   return (
-    <div id="page-budget" className="page active">
+    <div id="page-budget" className={`page ${active ? "active" : ""}`}>
       {/* Summary */}
       <div className="budget-summary">
         <div className="budget-row-main">
