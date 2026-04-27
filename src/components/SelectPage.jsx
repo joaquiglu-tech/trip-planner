@@ -100,7 +100,7 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
   }, [onRefresh]);
 
   return (
-    <div id="page-select" className={`page ${active ? 'active' : ''}`}>
+    <div id="page-select" className="page active">
       {/* Summary card */}
       <div className="card summary-card" onClick={() => setSummaryCollapsed(!summaryCollapsed)}>
         <div className="card-bd" style={{ padding: summaryCollapsed ? '8px 12px' : 12 }}>
@@ -127,12 +127,11 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
         </div>
       </div>
 
-      <Timeline S={S} onCityClick={onCityClick} />
-      <FilterBar filters={filters} setFilters={setFilters} />
-
-      {pulling && <div style={{ textAlign: 'center', padding: 8, fontSize: 12, color: 'var(--text-muted)' }}>Refreshing...</div>}
-      <button className="pull-refresh-btn" onClick={handlePullRefresh}>↻ Refresh</button>
-      <button className="add-item-btn" onClick={() => setShowAddModal(true)}>+ Add item by URL</button>
+      {/* Sticky filter bar — no Timeline, no refresh button */}
+      <div className="planner-sticky-bar">
+        <FilterBar filters={filters} setFilters={setFilters} />
+      </div>
+      <button className="add-item-btn" onClick={() => setShowAddModal(true)}>+ Add something new</button>
 
       <div id="items-container">
         {filtered.length === 0 && (

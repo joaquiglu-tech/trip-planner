@@ -1,93 +1,152 @@
 import { useState, useMemo } from 'react';
 import { ITEMS, TYPE_LABEL, $f, itemCost } from '../data/items';
 
-export default function BudgetPage({ active, S, paidPrices, files }) {
-  const [showType, setShowType] = useState('all');
+const CATEGORIES = [
+  { id: 'food', label: '🍽 Food', color: '#E8734A' },
+  { id: 'transport', label: '🚗 Transport', color: '#2A8F8F' },
+  { id: 'activity', label: '🎟 Activity', color: '#3A9E6E' },
+  { id: 'shopping', label: '🛍 Shopping', color: '#D4847C' },
+  { id: 'other', label: '📌 Other', color: '#78716C' },
+];
 
-  const confirmed = useMemo(() => {
+export default function BudgetPage({ active, S, paidPrices, files, expenses, addExpense, deleteExpense, userEmail }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('food');
+  const [expNote, setExpNote] = useState('');
+
+  const planned = useMemo(() => {
     return ITEMS.filter((it) => {
       const st = S[it.id] || '';
       return st === 'sel' || st === 'conf';
     });
   }, [S]);
 
-  const byType = useMemo(() => {
-    const g = {};
-    confirmed.forEach((it) => {
-      if (!g[it.type]) g[it.type] = [];
-      g[it.type].push(it);
-    });
-    return g;
-  }, [confirmed]);
-
   const totals = useMemo(() => {
-    let estimated = 0, actual = 0, actualCount = 0;
-    confirmed.forEach((it) => {
+    let estimated = 0, actual = 0, quickSpend = 0;
+    planned.forEach((it) => {
       estimated += itemCost(it);
       const paid = paidPrices[it.id];
-      if (paid) { actual += paid; actualCount++; }
+      if (paid) actual += paid;
     });
-    return { estimated, actual, actualCount, count: confirmed.length };
-  }, [confirmed, paidPrices]);
+    (expenses || []).forEach((e) => { quickSpend += Number(e.amount || 0); });
+    return { estimated, actual, quickSpend, total: actual + quickSpend };
+  }, [planned, paidPrices, expenses]);
 
-  const typeOrder = ['stay', 'transport', 'activity', 'special', 'dining'];
+  async function handleAddExpense() {
+    const val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    try {
+      await addExpense({ amount: val, category, note: expNote, created_by: userEmail });
+      setAmount('');
+      setExpNote('');
+      setShowAdd(false);
+    } catch (err) { alert('Error: ' + err.message); }
+  }
 
   return (
-    <div id="page-budget" className={`page ${active ? 'active' : ''}`}>
+    <div id="page-budget" className="page active">
       {/* Summary */}
       <div className="budget-summary">
         <div className="budget-row-main">
           <div>
-            <div className="budget-label">Estimated Total</div>
+            <div className="budget-label">Estimated</div>
             <div className="budget-amount">{$f(totals.estimated)}</div>
           </div>
           <div>
             <div className="budget-label">Actual Spent</div>
-            <div className="budget-amount green">{totals.actual > 0 ? $f(totals.actual) : '—'}</div>
+            <div className="budget-amount green">{totals.total > 0 ? $f(totals.total) : '—'}</div>
           </div>
         </div>
-        <div className="budget-meta">{totals.actualCount} of {totals.count} items have actual cost entered</div>
+        {totals.quickSpend > 0 && (
+          <div className="budget-meta" style={{ marginTop: 8 }}>
+            Bookings: {$f(totals.actual)} · Daily expenses: {$f(totals.quickSpend)}
+          </div>
+        )}
       </div>
 
-      {/* Type filter */}
-      <div className="budget-filters">
-        <button className={`map-chip ${showType === 'all' ? 'active' : ''}`} onClick={() => setShowType('all')}>All</button>
-        {typeOrder.map((t) => byType[t]?.length ? (
-          <button key={t} className={`map-chip ${showType === t ? 'active' : ''}`} onClick={() => setShowType(t)}>
-            {TYPE_LABEL[t]?.split(' ')[0]}
-          </button>
-        ) : null)}
-      </div>
+      {/* Quick expenses */}
+      {expenses && expenses.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div className="sect-title font-display">Daily Expenses</div>
+          <div className="budget-list">
+            {expenses.map((e) => {
+              const cat = CATEGORIES.find((c) => c.id === e.category) || CATEGORIES[4];
+              return (
+                <div key={e.id} className="budget-item">
+                  <div className="bi-left">
+                    <div className="bi-name">{cat.label} {e.note && `— ${e.note}`}</div>
+                    <div className="bi-meta">{new Date(e.created_at).toLocaleDateString()}</div>
+                  </div>
+                  <div className="bi-right">
+                    <div className="bi-paid">{$f(Number(e.amount))}</div>
+                    <button onClick={() => deleteExpense(e.id)} style={{ background: 'none', border: 'none', color: 'var(--text-light)', fontSize: 11, cursor: 'pointer' }}>remove</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      {/* Items */}
+      {/* Planned items */}
+      <div className="sect-title font-display">Planned Items</div>
       <div className="budget-list">
-        {confirmed.filter((it) => showType === 'all' || it.type === showType).map((it) => {
+        {planned.map((it) => {
           const st = S[it.id] || '';
           const est = itemCost(it);
           const paid = paidPrices[it.id];
-          const hasFile = files[it.id];
+          const hasFile = files?.[it.id];
           return (
             <div key={it.id} className="budget-item">
               <div className="bi-left">
                 <div className="bi-name">{it.name}</div>
-                <div className="bi-meta">{TYPE_LABEL[it.type]?.split(' ').slice(1).join(' ')} · {it.city}</div>
+                <div className="bi-meta">{it.city} · {st === 'conf' ? 'Booked' : 'Planned'}</div>
               </div>
               <div className="bi-right">
-                <div className="bi-est">{est > 0 ? $f(est) : '—'}</div>
                 {paid ? (
-                  <div className="bi-paid">{$f(paid)}</div>
+                  <>
+                    <div className="bi-est">{est > 0 ? $f(est) : ''}</div>
+                    <div className="bi-paid">{$f(paid)}</div>
+                  </>
                 ) : (
-                  <div className="bi-no-paid">no cost</div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{est > 0 ? $f(est) : '—'}</div>
                 )}
-                <div className="bi-indicators">
-                  {st === 'conf' && <span className="bi-dot conf" title="Confirmed">✓</span>}
-                  {hasFile && <span className="bi-dot file" title="Has document">📄</span>}
-                </div>
+                {hasFile && <span style={{ fontSize: 10 }}>📄</span>}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Quick add FAB */}
+      {!showAdd && (
+        <button className="fab" onClick={() => setShowAdd(true)} aria-label="Add expense">+</button>
+      )}
+
+      {/* Quick add expense sheet */}
+      {showAdd && (
+        <div className="detail-overlay" onClick={() => setShowAdd(false)}>
+          <div className="detail-sheet" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+            <div className="detail-content">
+              <h2 className="detail-name font-display" style={{ fontSize: 20 }}>Log Expense</h2>
+              <div className="cost-input-row" style={{ marginBottom: 12 }}>
+                <span className="cost-input-prefix">$</span>
+                <input type="number" className="cost-input" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                {CATEGORIES.map((c) => (
+                  <button key={c.id} className={`map-chip ${category === c.id ? 'active' : ''}`} onClick={() => setCategory(c.id)} style={{ padding: '8px 12px' }}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <input className="add-input" placeholder="Note (optional)" value={expNote} onChange={(e) => setExpNote(e.target.value)} style={{ marginBottom: 12 }} />
+              <button className="detail-btn sel" onClick={handleAddExpense}>Add Expense</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

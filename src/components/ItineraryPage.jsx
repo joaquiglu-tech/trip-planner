@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { ALL_DAYS } from '../data/allDays';
 import { ITEMS, TYPE_LABEL, $f, usd } from '../data/items';
 import { ITEM_COORDS } from '../data/coords';
+import { ROUTE_STOPS, ROUTE_LINES } from '../data/routes';
 
 const PHASE_LABEL = { spain: '🇪🇸 Spain', rome: '🇮🇹 Rome', roadtrip: '🚗 Road Trip', venice: '🇮🇹 Venice' };
 const PHASE_COLOR = { spain: '#f97316', rome: '#1d4ed8', roadtrip: '#ea580c', venice: '#1d4ed8' };
@@ -258,10 +259,58 @@ function DayDetail({ day, S, active }) {
   );
 }
 
+function TripCountdown() {
+  const tripStart = new Date('2026-07-12');
+  const now = new Date();
+  const diff = Math.ceil((tripStart - now) / (1000 * 60 * 60 * 24));
+  if (diff <= 0 && diff > -22) return <div className="trip-countdown font-display">Day {Math.abs(diff) + 1} of your adventure!</div>;
+  if (diff <= 0) return null;
+  return <div className="trip-countdown font-display">{diff} days until Spain & Italy</div>;
+}
+
+function FullTripRouteMap() {
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const mapsReady = useGoogleMapsReady();
+
+  useEffect(() => {
+    if (!mapsReady || !mapRef.current || mapInstance.current) return;
+    const m = new window.google.maps.Map(mapRef.current, {
+      center: { lat: 44.0, lng: 11.0 }, zoom: 6,
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
+      styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }],
+    });
+    ROUTE_LINES.forEach((seg) => {
+      new window.google.maps.Polyline({
+        path: seg.path, geodesic: true, strokeColor: seg.color,
+        strokeOpacity: seg.dash ? 0 : 0.7, strokeWeight: seg.w,
+        icons: seg.dash ? [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.8, scale: 3 }, offset: '0', repeat: '14px' }] : [],
+        map: m,
+      });
+    });
+    ROUTE_STOPS.forEach((s) => {
+      const marker = new window.google.maps.Marker({
+        position: { lat: s.lat, lng: s.lng }, map: m, title: s.label,
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: s.big ? 6 : 4, fillColor: s.color, fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 },
+      });
+      const iw = new window.google.maps.InfoWindow({
+        content: `<div style="font-family:system-ui;font-size:12px"><strong>${s.label}</strong><br><span style="color:#78716c">${s.sub}</span></div>`,
+      });
+      marker.addListener('click', () => iw.open(m, marker));
+    });
+    mapInstance.current = m;
+  }, [mapsReady]);
+
+  return <div ref={mapRef} className="map-wrap" style={{ height: 240, borderRadius: 'var(--radius)', marginBottom: 16 }}></div>;
+}
+
 function FullTripView({ S }) {
   const phases = ['spain', 'rome', 'roadtrip', 'venice'];
   return (
     <>
+      <TripCountdown />
+      <FullTripRouteMap />
       {phases.map((phase) => {
         const days = ALL_DAYS.filter((d) => d.phase === phase);
         return (
@@ -319,7 +368,7 @@ export default function ItineraryPage({ active, S }) {
   }, [todayDay, active]);
 
   return (
-    <div id="page-itinerary" className={`page ${active ? 'active' : ''}`}>
+    <div id="page-itinerary" className="page active">
       <div className="itin-selector" ref={selectorRef}>
         <button className={`itin-opt ${view === 'full' ? 'active' : ''}`} onClick={() => setView('full')}>Full Trip</button>
         {todayDay && (
