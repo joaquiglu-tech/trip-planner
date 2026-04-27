@@ -201,19 +201,6 @@ function OverviewView({ S, paidPrices, onItemTap, visible }) {
         </div>
       </div>
 
-      {stats.needsAttention.length > 0 && (
-        <div className="today-section">
-          <div className="today-section-title">Needs attention</div>
-          {stats.needsAttention.map((it) => (
-            <div key={it.id} className="today-attention-item" onClick={() => onItemTap(it)}>
-              <span className="today-attention-badge">Book now</span>
-              <span className="today-attention-name">{it.name}</span>
-              <span className="today-attention-arrow">→</span>
-            </div>
-          ))}
-        </div>
-      )}
-
       <RouteMap visible={visible} />
 
       {phases.map((phase) => {

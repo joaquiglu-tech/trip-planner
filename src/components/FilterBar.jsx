@@ -27,13 +27,8 @@ export default function FilterBar({ filters, setFilters }) {
         <option value="none">Not selected</option>
       </select>
       <button
-        className="fp"
+        className={`fp fp-urgent ${filters.urgent ? 'fp-urgent-active' : ''}`}
         onClick={() => update('urgent', !filters.urgent)}
-        style={{
-          background: filters.urgent ? '#ef4444' : '#fee2e2',
-          borderColor: filters.urgent ? '#ef4444' : '#fca5a5',
-          color: filters.urgent ? '#fff' : '#991b1b',
-        }}
       >
         ⚠️ Must Book
       </button>

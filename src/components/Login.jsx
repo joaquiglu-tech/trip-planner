@@ -44,7 +44,7 @@ export default function Login() {
           <circle cx="61" cy="20" r="1.2" fill="#22C55E"/>
         </svg>
         <p className="login-subtitle">Plan your next adventure</p>
-        {error && <div style={{ background: '#FEF2F2', color: '#DC2626', padding: '8px 12px', borderRadius: 'var(--radius)', fontSize: 12, marginBottom: 12 }}>{error}</div>}
+        {error && <div className="login-error">{error}</div>}
         <input type="email" className="login-input" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input type="password" className="login-input" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
         <button type="submit" disabled={loading} className="login-submit">

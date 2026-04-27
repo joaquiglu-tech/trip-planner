@@ -67,7 +67,7 @@ export default function ProfilePage({ active, session }) {
           </div>
           <hr className="sep" />
           <div className="settings-row">
-            <button onClick={handleSignOut} className="m-btn secondary" style={{ width: '100%', padding: 10, color: '#ef4444', fontWeight: 700 }}>
+            <button onClick={handleSignOut} className="m-btn secondary btn-signout">
               Sign Out
             </button>
           </div>

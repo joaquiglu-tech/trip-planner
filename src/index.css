@@ -215,7 +215,11 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; align-items: center }
 .filter-bar select, .filter-bar input { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg-card); color: var(--text); font-family: var(--font); min-height: 40px }
 .filter-bar select:focus, .filter-bar input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,58,237,.1) }
-.fp { padding: 8px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary); white-space: nowrap; min-height: 40px; display: flex; align-items: center }
+.fp { padding: 8px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary); white-space: nowrap; min-height: 40px; display: flex; align-items: center; font-family: var(--font) }
+.fp-urgent { background: #FEF2F2; border-color: #FECACA; color: #991b1b }
+.fp-urgent-active { background: #DC2626; border-color: #DC2626; color: #fff }
+[data-theme="dark"] .fp-urgent { background: #450a0a; border-color: #7f1d1d; color: #fca5a5 }
+[data-theme="dark"] .fp-urgent-active { background: #DC2626; border-color: #DC2626; color: #fff }
 .planner-sticky-bar { position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 6px 0; margin: -6px -16px 6px; padding-left: 16px; padding-right: 16px }
 
 /* ═══ TIMELINE ═══ */
@@ -256,6 +260,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .settings-row { padding: 10px 0 }
 .settings-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; background: var(--bg); color: var(--text); font-family: var(--font) }
 .settings-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,58,237,.1) }
+.btn-signout { width: 100%; padding: 10px; color: #DC2626; font-weight: 700 }
+[data-theme="dark"] .btn-signout { color: #fca5a5 }
 .toggle-switch { position: relative; width: 40px; height: 22px; display: inline-block }
 .toggle-switch input { opacity: 0; width: 0; height: 0 }
 .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 22px; cursor: pointer; transition: .2s }
@@ -390,6 +396,10 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .home-alert-item:last-child { border-bottom: none }
 .home-alert-name { font-weight: 500 }
 .home-alert-arrow { color: #DC2626 }
+[data-theme="dark"] .home-alerts { background: #450a0a; border-color: #7f1d1d }
+[data-theme="dark"] .home-alerts-title { color: #fca5a5 }
+[data-theme="dark"] .home-alert-item { border-bottom-color: #7f1d1d }
+[data-theme="dark"] .home-alert-arrow { color: #fca5a5 }
 
 .home-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 10px }
 
@@ -404,6 +414,21 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .home-dest-status { font-size: 11px; color: var(--text-muted); font-weight: 500 }
 .home-dest-status.selected { color: var(--accent) }
 .home-dest-status.booked { color: var(--green) }
+.home-dest-status.missing { color: #DC2626; font-weight: 700 }
+
+/* Destination card status borders */
+.home-dest-card.home-dest-ready { border-left: 3px solid var(--green) }
+.home-dest-card.home-dest-critical { border-left: 3px solid #DC2626 }
+.home-dest-card.home-dest-warning { border-left: 3px solid #D97706 }
+
+/* Status flags */
+.home-dest-indicator { flex-shrink: 0 }
+.home-flag { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800 }
+.home-flag.ready { background: var(--green-light); color: var(--green) }
+.home-flag.critical { background: #FEF2F2; color: #DC2626 }
+.home-flag.warning { background: #FFFBEB; color: #D97706 }
+[data-theme="dark"] .home-flag.critical { background: #450a0a; color: #fca5a5 }
+[data-theme="dark"] .home-flag.warning { background: #422006; color: #FBBF24 }
 
 /* ═══ INPUTS ═══ */
 .cost-input-row { display: flex; align-items: center; gap: 4px }
@@ -430,6 +455,8 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .login-submit { width: 100%; padding: 12px; border-radius: var(--radius); border: none; background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; min-height: 44px; font-family: var(--font) }
 .login-submit:disabled { opacity: .5; cursor: not-allowed }
 .login-toggle { background: none; border: none; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 12px; padding: 6px; width: 100%; font-family: var(--font) }
+.login-error { background: #FEF2F2; color: #DC2626; padding: 8px 12px; border-radius: var(--radius); font-size: 12px; margin-bottom: 12px }
+[data-theme="dark"] .login-error { background: #450a0a; color: #fca5a5 }
 
 /* ═══ TODAY PAGE ═══ */
 .today-countdown { text-align: center; padding: 32px 16px 16px }
@@ -462,14 +489,14 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .today-booking-check { color: var(--green); font-size: 14px; flex-shrink: 0 }
 
 /* Day selector strip */
-.today-selector { display: flex; align-items: center; gap: 4px; overflow-x: auto; padding: 4px 0 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none }
+.today-selector { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 4px 0 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none }
 .today-selector::-webkit-scrollbar { display: none }
 .today-sel-pill { flex-shrink: 0; padding: 6px 12px; border-radius: var(--radius-pill); border: 1px solid var(--border); font-size: 12px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); font-family: var(--font); min-height: 32px }
 .today-sel-pill.active { background: var(--text); color: var(--bg); border-color: var(--text) }
 .today-sel-pill.is-today { border-color: var(--accent) }
 .today-pill-accent { background: var(--accent-light) !important; color: var(--accent) !important; border-color: var(--accent) !important }
-.today-sel-group { display: flex; align-items: center; gap: 3px }
-.today-sel-divider { width: 3px; height: 14px; border-radius: 2px; flex-shrink: 0; margin: 0 4px }
+.today-sel-group { display: flex; align-items: center; gap: 4px }
+.today-sel-divider { width: 3px; height: 14px; border-radius: 2px; flex-shrink: 0; margin: 0 6px }
 .today-sel-pill-day { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 10px; line-height: 1.2 }
 .pill-day-num { font-size: 13px; font-weight: 700 }
 .pill-day-date { font-size: 9px; font-weight: 500; opacity: .7 }

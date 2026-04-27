@@ -121,9 +121,9 @@ export default function BudgetPage({ active, S, setStatus, paidPrices, setPaidPr
         })}
       </div>
 
-      {/* Quick add FAB */}
+      {/* Quick add expense button (inline, not FAB — global FAB handles this) */}
       {!showAdd && (
-        <button className="fab" onClick={() => setShowAdd(true)} aria-label="Add expense">+</button>
+        <button className="add-item-btn" onClick={() => setShowAdd(true)}>+ Log expense</button>
       )}
 
       {/* Quick add expense sheet */}
