@@ -73,6 +73,7 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="detail-handle" />
         <button className="detail-close" onClick={onClose}>✕</button>
 
         {/* Hero image — Google Places photo or fallback */}
