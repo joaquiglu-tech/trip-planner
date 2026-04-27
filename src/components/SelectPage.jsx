@@ -11,7 +11,7 @@ const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
 
 const MemoItemCard = memo(ItemCard);
 
-export default function SelectPage({ active, S, setStatus, onRefresh, customItems, addItem, deleteItem, userEmail, paidPrices, setPaidPrice, places, getPlaceData }) {
+export default function SelectPage({ active, S, setStatus, onRefresh, customItems, addItem, deleteItem, userEmail, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
   const [summaryCollapsed, setSummaryCollapsed] = useState(true);
   const [pulling, setPulling] = useState(false);
@@ -161,6 +161,10 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
           setStatus={setStatus}
           paidPrice={paidPrices?.[selectedItem.id]}
           setPaidPrice={setPaidPrice}
+          note={notes?.[selectedItem.id]}
+          setNote={setNote}
+          existingFile={files?.[selectedItem.id]}
+          onFileChange={setFile}
           placeData={places?.[selectedItem.id]}
           getPlaceData={getPlaceData}
           onClose={() => setSelectedItem(null)}

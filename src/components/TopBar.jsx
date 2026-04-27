@@ -21,16 +21,16 @@ export default function TopBar({ S, session, onProfileClick }) {
   const initial = (name || '?')[0].toUpperCase();
 
   return (
-    <header className="topbar">
+    <header className="topbar" role="banner">
       <div className="topbar-info">
-        <h1 className="topbar-title">Spain & Italy 2026</h1>
+        <h1 className="topbar-title font-display">Anisita</h1>
         <div className="topbar-sub">
-          <span className="topbar-dates">Jul 12 – Aug 2</span>
+          <span className="topbar-dates">Spain & Italy · Jul 12 – Aug 2</span>
           <span className="topbar-progress">{booked}/{total} booked</span>
-          <div className="topbar-bar"><div className="topbar-fill" style={{ width: pct + '%' }} /></div>
+          <div className="topbar-bar" role="progressbar" aria-valuenow={pct} aria-valuemin="0" aria-valuemax="100"><div className="topbar-fill" style={{ width: pct + '%' }} /></div>
         </div>
       </div>
-      <button className="topbar-avatar" onClick={onProfileClick}>{initial}</button>
+      <button className="topbar-avatar" onClick={onProfileClick} aria-label="Profile settings">{initial}</button>
     </header>
   );
 }

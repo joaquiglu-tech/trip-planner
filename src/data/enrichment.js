@@ -97,9 +97,9 @@ export const ENRICHMENT = {
   },
   's-vd1': {
     imageUrl: 'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=600&h=300&fit=crop',
-    highlights: ['Working family farm — their own wine, pecorino, olive oil', 'Drive there SOBER in the morning, drink all day', 'Communal farm dinner — book by email: info@poderilcasale.it', 'Slow Food certified'],
+    highlights: ['Working family farm — their own wine, pecorino, olive oil', 'Drive there SOBER in the morning, drink all day', 'Communal farm dinner — book by email: info@podereilcasale.it', 'Slow Food certified'],
     options: [
-      { name: 'Email direct', detail: 'info@poderilcasale.it — small family farm', price: '~€200/n', url: 'https://www.poderilcasale.it/' },
+      { name: 'Email direct', detail: 'info@podereilcasale.it — small family farm', price: '~€200/n', url: 'https://www.poderilcasale.it/' },
     ],
   },
   's-ler1': {
@@ -157,8 +157,9 @@ export const ENRICHMENT = {
   },
   'a-vat': {
     imageUrl: 'https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=600&h=300&fit=crop',
-    reserveNote: 'Sells out 3–4 weeks ahead in summer. Friday/Saturday evenings less crowded.',
-    whatToExpect: ['Sistine Chapel ceiling — Michelangelo painted 1508–1512', '70,000+ works of art', "Gallery of Maps, Raphael Rooms, Laocoön sculpture", "St Peter's dome climb (optional) — best views of Rome"],
+    reserveNote: 'Book when 60-day window opens (May 23 for Jul 22). Sells out 3-4 weeks ahead.',
+    whatToExpect: ['Sistine Chapel ceiling — Michelangelo painted 1508–1512', '70,000+ works of art', "Gallery of Maps, Raphael Rooms, Laocoön sculpture", "St Peter's dome climb (optional) — best views of Rome", 'GOLDEN OPTION: Friday evening visits 7-11pm (mid-Apr through Oct) — magical, less crowded'],
+    proTips: ['Best slot: 8am Tuesday or Thursday — 200 people instead of 2,000', 'Friday evening 7-11pm is the secret weapon — special summer hours', 'Your visit is Jul 22 (Wednesday) — book the 8am slot'],
   },
   'a-uffizi': {
     imageUrl: 'https://images.unsplash.com/photo-1504109586057-7a2ae83d1338?w=600&h=300&fit=crop',
@@ -239,9 +240,9 @@ export const ENRICHMENT = {
   'm-testiere': {
     address: 'Calle del Mondo Novo 5801, Castello, Venice',
     imageUrl: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&h=300&fit=crop',
-    reserveNote: 'Reserve 2+ MONTHS ahead — 22 seats, no printed menu. DO THIS TODAY.',
-    whatToExpect: ['They tell you what was caught that morning', 'Best seafood in Venice — serious food travelers come here', 'Only 22 seats', 'No printed menu'],
-    proTips: ['Email or call to reserve — online booking may not show availability', 'Go for lunch if dinner is full'],
+    reserveNote: 'Reserve via ResDiary (online only). 4 fixed seatings: 12:30, 13:30, 19:15, 21:30. Book 2-3 weeks ahead for July.',
+    whatToExpect: ['They tell you what was caught that morning', 'Best seafood in Venice — serious food travelers come here', '11 tables with 4 fixed seatings per day', 'No printed menu — chef decides based on the catch'],
+    proTips: ['Book online via ResDiary — they no longer take phone/email reliably', 'Lunch seatings (12:30/13:30) are slightly easier to get', 'For peak July, book as soon as the system allows'],
   },
 
   // ═══ DINING ═══
@@ -352,7 +353,7 @@ export const ENRICHMENT = {
   },
   'd-podere': {
     imageUrl: 'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=600&h=300&fit=crop',
-    whatToExpect: ['Communal dinner at the farm table', 'Everything is theirs: wine, cheese, bread, oil', 'Farm pecorino, ribollita, house Orcia DOC wine', 'Email to book: info@poderilcasale.it'],
+    whatToExpect: ['Communal dinner at the farm table', 'Everything is theirs: wine, cheese, bread, oil', 'Farm pecorino, ribollita, house Orcia DOC wine', 'Email to book: info@podereilcasale.it'],
   },
   'd-frantoio': {
     imageUrl: 'https://images.unsplash.com/photo-1537799943037-f5da89a65689?w=600&h=300&fit=crop',

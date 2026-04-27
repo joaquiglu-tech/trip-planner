@@ -296,15 +296,39 @@ function FullTripView({ S }) {
   );
 }
 
+// Detect which day is "today" based on trip dates
+function getTodayDayNumber() {
+  const tripStart = new Date('2026-07-12');
+  const now = new Date();
+  const diff = Math.floor((now - tripStart) / (1000 * 60 * 60 * 24));
+  if (diff >= 0 && diff < ALL_DAYS.length) return ALL_DAYS[diff]?.n || null;
+  return null;
+}
+
 export default function ItineraryPage({ active, S }) {
   const [view, setView] = useState('full');
+  const todayDay = getTodayDayNumber();
+  const selectorRef = useRef(null);
+
+  // Auto-scroll to today button on mount
+  useEffect(() => {
+    if (todayDay && selectorRef.current) {
+      const btn = selectorRef.current.querySelector(`[data-day="${todayDay}"]`);
+      if (btn) btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [todayDay, active]);
 
   return (
     <div id="page-itinerary" className={`page ${active ? 'active' : ''}`}>
-      <div className="itin-selector">
+      <div className="itin-selector" ref={selectorRef}>
         <button className={`itin-opt ${view === 'full' ? 'active' : ''}`} onClick={() => setView('full')}>Full Trip</button>
+        {todayDay && (
+          <button className={`itin-opt today-opt ${view === String(todayDay) ? 'active' : ''}`} onClick={() => setView(String(todayDay))} data-day={todayDay}>
+            Today
+          </button>
+        )}
         {ALL_DAYS.map((d) => (
-          <button key={d.n} className={`itin-opt ${view === String(d.n) ? 'active' : ''}`} onClick={() => setView(String(d.n))}>
+          <button key={d.n} data-day={d.n} className={`itin-opt ${view === String(d.n) ? 'active' : ''} ${d.n === todayDay ? 'is-today' : ''}`} onClick={() => setView(String(d.n))}>
             <span className="itin-opt-phase" style={{ background: PHASE_COLOR[d.phase] }} />
             {d.n}
           </button>

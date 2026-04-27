@@ -17,10 +17,9 @@ export default function App() {
   const session = useAuth();
   const [activeTab, setActiveTab] = useState('itinerary');
   const email = session?.user?.email || '';
-  const { S, setStatus, loaded, paidPrices, setPaidPrice, toast, refresh } = useSelections(email);
+  const { S, setStatus, loaded, paidPrices, setPaidPrice, notes, setNote, files, setFile, toast, refresh } = useSelections(email);
   const { customItems, addItem, deleteItem } = useCustomItems();
   const { places, getPlaceData } = usePlaceData();
-  const [files] = useState({});
 
   const navigateTab = useCallback((tab) => {
     setActiveTab(tab);
@@ -50,6 +49,7 @@ export default function App() {
           S={S} setStatus={setStatus} onRefresh={refresh}
           customItems={customItems} addItem={addItem} deleteItem={deleteItem}
           userEmail={email} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
+          notes={notes} setNote={setNote} files={files} setFile={setFile}
           places={places} getPlaceData={getPlaceData}
         />
         <MapPage active={activeTab === 'map'} S={S} />

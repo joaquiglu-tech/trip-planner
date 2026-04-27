@@ -77,9 +77,9 @@ export default function ProfilePage({ active, session }) {
       <div className="card">
         <div className="card-hd">About</div>
         <div className="card-bd" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          Spain & Italy 2026 Trip Planner<br />
-          Built with React + Supabase<br />
-          Real-time sync between 2 users
+          <span className="font-display" style={{ fontSize: 16 }}>Anisita</span><br />
+          Our Spain & Italy 2026 adventure planner<br />
+          Real-time sync · Joaquin & Ania
         </div>
       </div>
     </div>

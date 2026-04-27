@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { $f, usd, TYPE_LABEL, SUBCAT_BADGE } from '../data/items';
 import { uploadFile, deleteFile } from '../lib/storage';
 
-export default function DetailModal({ it, status, setStatus, onClose, onDelete, paidPrice, setPaidPrice, placeData, getPlaceData }) {
+export default function DetailModal({ it, status, setStatus, onClose, onDelete, paidPrice, setPaidPrice, placeData, getPlaceData, note, setNote, existingFile, onFileChange }) {
   const st = status || '';
-  const [file, setFile] = useState(null);
+  const [file, setFileLocal] = useState(existingFile || null);
   const [uploading, setUploading] = useState(false);
   const [costInput, setCostInput] = useState(paidPrice ? String(paidPrice) : '');
+  const [noteText, setNoteText] = useState(note || '');
   const [place, setPlace] = useState(placeData || null);
   const [loadingPlace, setLoadingPlace] = useState(false);
 
@@ -18,7 +19,7 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
     return () => window.removeEventListener('popstate', handlePop);
   }, [onClose]);
 
-  // Fetch place data from Google on open (if not cached)
+  // Fetch place data from Google on open
   useEffect(() => {
     if (!it || it.type === 'transport' || place?.photo_url) return;
     if (!getPlaceData) return;
@@ -31,17 +32,20 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
 
   if (!it) return null;
 
-  // Use Google photo if available, fallback to our enrichment imageUrl
   const heroImage = place?.photo_url || it.imageUrl || null;
   const googleRating = place?.rating || null;
   const googleAddress = place?.address || it.address || null;
   const googlePhone = place?.phone || null;
   const googleHours = place?.hours?.length ? place.hours : null;
+  const faviconUrl = it.link ? `https://www.google.com/s2/favicons?domain=${new URL(it.link).hostname}&sz=64` : null;
 
-  function cycleStatus() {
+  function handleSelect() {
     if (navigator.vibrate) navigator.vibrate(15);
-    const next = st === '' ? 'sel' : st === 'sel' ? 'conf' : '';
-    setStatus(it.id, next);
+    setStatus(it.id, st ? '' : 'sel');
+  }
+  function handleConfirm() {
+    if (navigator.vibrate) navigator.vibrate(15);
+    setStatus(it.id, st === 'conf' ? 'sel' : 'conf');
   }
 
   async function handleUpload(e) {
@@ -51,19 +55,20 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
     setUploading(true);
     try {
       const result = await uploadFile(it.id, f);
-      setFile(result);
+      setFileLocal(result);
+      if (onFileChange) onFileChange(it.id, result);
       if (st !== 'conf') setStatus(it.id, 'conf');
     } catch (err) { alert('Upload failed: ' + err.message); }
     setUploading(false);
   }
 
   async function handleRemoveFile() {
-    if (file) { try { await deleteFile(file.path); } catch {} setFile(null); }
+    if (file) {
+      try { await deleteFile(file.path); } catch {}
+      setFileLocal(null);
+      if (onFileChange) onFileChange(it.id, null);
+    }
   }
-
-  const statusBtn = st === 'conf' ? '✓ Confirmed' : st === 'sel' ? '● Selected' : 'Select';
-  const statusClass = st === 'conf' ? 'detail-btn conf' : st === 'sel' ? 'detail-btn sel' : 'detail-btn';
-  const faviconUrl = it.link ? `https://www.google.com/s2/favicons?domain=${new URL(it.link).hostname}&sz=64` : null;
 
   return (
     <div className="detail-overlay" onClick={onClose}>
@@ -271,6 +276,21 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
             </div>
           )}
 
+          {/* Notes */}
+          {(st === 'sel' || st === 'conf') && setNote && (
+            <div className="detail-section" style={{ marginTop: 8 }}>
+              <div className="detail-section-title">Notes</div>
+              <textarea
+                className="note-input"
+                placeholder="Add a note... (e.g. 'Ask for terrace table', 'Ania's pick')"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                onBlur={() => setNote(it.id, noteText)}
+                rows={2}
+              />
+            </div>
+          )}
+
           {/* Actual cost input */}
           {(st === 'sel' || st === 'conf') && setPaidPrice && (
             <div className="detail-section" style={{ marginTop: 8 }}>
@@ -294,11 +314,20 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
           )}
         </div>
 
-        {/* Sticky action bar */}
+        {/* Sticky action bar — separate Select + Confirm */}
         <div className="detail-action-bar">
-          <button className={statusClass} onClick={cycleStatus}>{statusBtn}</button>
+          <div className="detail-action-row">
+            <button className={`detail-btn ${st ? 'sel' : ''}`} onClick={handleSelect}>
+              {st ? 'Remove from trip' : 'Add to our trip'}
+            </button>
+            {st && (
+              <button className={`detail-btn ${st === 'conf' ? 'conf' : ''}`} onClick={handleConfirm}>
+                {st === 'conf' ? 'Booked!' : 'Mark as booked'}
+              </button>
+            )}
+          </div>
           {onDelete && (
-            <button className="detail-btn-delete" onClick={() => { if (confirm('Delete this item?')) onDelete(); }}>Delete</button>
+            <button className="detail-btn-delete" onClick={() => { if (confirm('Remove this item?')) onDelete(); }}>Remove</button>
           )}
         </div>
       </div>

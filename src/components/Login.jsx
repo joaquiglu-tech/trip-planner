@@ -20,10 +20,10 @@ export default function Login() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f2f0ec' }}>
-      <form onSubmit={handleSubmit} className="modal" style={{ display: 'block', maxWidth: 360, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,.15)' }}>
-        <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>🇪🇸🇮🇹 Spain & Italy 2026</h3>
-        <p style={{ fontSize: 13, color: '#57534e', marginBottom: 16 }}>Sign in to sync your trip planner</p>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8f7f4' }}>
+      <form onSubmit={handleSubmit} className="modal" style={{ display: 'block', maxWidth: 360, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,.12)' }}>
+        <h3 className="font-display" style={{ fontSize: 24, fontWeight: 400, marginBottom: 4, color: '#1C1917' }}>Anisita</h3>
+        <p style={{ fontSize: 13, color: '#78716C', marginBottom: 16 }}>🇪🇸🇮🇹 Our Spain & Italy adventure planner</p>
         {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '8px 12px', borderRadius: 6, fontSize: 12, marginBottom: 12 }}>{error}</div>}
         <input
           type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required

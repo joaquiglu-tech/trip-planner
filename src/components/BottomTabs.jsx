@@ -30,14 +30,16 @@ export default function BottomTabs({ activeTab, setActiveTab }) {
   };
 
   return (
-    <nav className="btabs">
+    <nav className="btabs" role="tablist" aria-label="Main navigation">
       {tabs.map((t) => (
         <button
           key={t.id}
+          role="tab"
+          aria-selected={activeTab === t.id}
           className={`btab ${activeTab === t.id ? 'active' : ''}`}
           onClick={() => setActiveTab(t.id)}
         >
-          <span className="btab-icon">{icons[t.icon]}</span>
+          <span className="btab-icon" aria-hidden="true">{icons[t.icon]}</span>
           <span className="btab-label">{t.label}</span>
         </button>
       ))}
