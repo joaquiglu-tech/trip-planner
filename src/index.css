@@ -427,12 +427,15 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .today-booking-city { font-size: 11px; color: var(--text-muted) }
 .today-booking-check { color: var(--green); font-size: 14px; flex-shrink: 0 }
 
-/* During-trip */
-.today-day-selector { display: flex; align-items: center; gap: 6px; margin-bottom: 12px }
-.today-day-pill { padding: 6px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border); font-size: 12px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); font-family: var(--font) }
-.today-day-pill.active { background: var(--text); color: var(--bg); border-color: var(--text) }
-.today-day-nav { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--text-muted); font-family: var(--font) }
-.today-day-label { font-size: 12px; font-weight: 600; color: var(--text-muted) }
+/* Day selector strip */
+.today-selector { display: flex; align-items: center; gap: 4px; overflow-x: auto; padding: 4px 0 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none }
+.today-selector::-webkit-scrollbar { display: none }
+.today-sel-pill { flex-shrink: 0; padding: 6px 12px; border-radius: var(--radius-pill); border: 1px solid var(--border); font-size: 12px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); font-family: var(--font); min-height: 32px }
+.today-sel-pill.active { background: var(--text); color: var(--bg); border-color: var(--text) }
+.today-sel-pill.is-today { border-color: var(--accent) }
+.today-pill-accent { background: var(--accent-light) !important; color: var(--accent) !important; border-color: var(--accent) !important }
+.today-sel-group { display: flex; align-items: center; gap: 3px }
+.today-sel-divider { width: 3px; height: 14px; border-radius: 2px; flex-shrink: 0; margin: 0 4px }
 
 .today-day-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px }
 .today-day-badge { padding: 4px 10px; border-radius: var(--radius-pill); color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0 }
