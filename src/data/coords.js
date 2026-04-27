@@ -1,0 +1,81 @@
+// Known coordinates for items/places — used for map markers in day view
+export const ITEM_COORDS = {
+  // Rome
+  'a-colo': { lat: 41.8902, lng: 12.4922, label: 'Colosseum' },
+  'a-vat': { lat: 41.9065, lng: 12.4536, label: 'Vatican' },
+  'a-pan': { lat: 41.8986, lng: 12.4769, label: 'Pantheon' },
+  'a-borg': { lat: 41.9142, lng: 12.4921, label: 'Galleria Borghese' },
+  'd-roscioli': { lat: 41.8954, lng: 12.4725, label: 'Roscioli' },
+  'd-sparita': { lat: 41.8874, lng: 12.4750, label: 'Roma Sparita' },
+  'd-pizzarium': { lat: 41.9073, lng: 12.4425, label: 'Pizzarium' },
+  'd-enzo': { lat: 41.8873, lng: 12.4740, label: 'Da Enzo' },
+  'd-freni': { lat: 41.8875, lng: 12.4681, label: 'Freni e Frizioni' },
+  'd-calisto': { lat: 41.8870, lng: 12.4720, label: 'Bar San Calisto' },
+  'd-gracchi': { lat: 41.9090, lng: 12.4548, label: 'Gracchi Gelato' },
+  'd-armando': { lat: 41.8991, lng: 12.4760, label: 'Armando' },
+  'm-pergola': { lat: 41.9197, lng: 12.4451, label: 'La Pergola ⭐⭐⭐' },
+  's-rome1': { lat: 41.8958, lng: 12.4728, label: 'Hotel Smeraldo' },
+  's-rome2': { lat: 41.8952, lng: 12.4680, label: 'Hotel Indigo' },
+  's-rome3': { lat: 41.8880, lng: 12.4700, label: 'Trastevere Apt' },
+  's-rome4': { lat: 41.9100, lng: 12.4790, label: 'Hotel de Russie' },
+  // Florence
+  'a-uffizi': { lat: 43.7678, lng: 11.2556, label: 'Uffizi' },
+  'a-david': { lat: 43.7768, lng: 11.2588, label: 'Accademia / David' },
+  'd-mario': { lat: 43.7764, lng: 11.2534, label: 'Trattoria Mario' },
+  'd-sostanza': { lat: 43.7725, lng: 11.2472, label: 'Sostanza' },
+  'd-antico': { lat: 43.7686, lng: 11.2610, label: "All'Antico Vinaio" },
+  'd-rastel': { lat: 43.7668, lng: 11.2470, label: 'Rastel' },
+  'm-sesto': { lat: 43.7710, lng: 11.2490, label: 'SE-STO ⭐' },
+  's-flo1': { lat: 43.7710, lng: 11.2530, label: 'Hotel Davanzati' },
+  // Montepulciano
+  'a-contucci': { lat: 43.0963, lng: 11.7832, label: 'Contucci' },
+  'd-acqua': { lat: 43.0955, lng: 11.7815, label: "Acquacheta" },
+  'd-poliziano': { lat: 43.0950, lng: 11.7840, label: 'Caffè Poliziano' },
+  's-mon1': { lat: 43.0948, lng: 11.7808, label: 'Locanda San Francesco' },
+  // Val d'Orcia
+  's-vd1': { lat: 43.0333, lng: 11.6167, label: 'Podere Il Casale' },
+  'd-podere': { lat: 43.0333, lng: 11.6167, label: 'Farm dinner' },
+  // Tuscany stops
+  'a-siena': { lat: 43.3182, lng: 11.3307, label: 'Siena' },
+  'a-sg': { lat: 43.4674, lng: 11.043, label: 'San Gimignano' },
+  // Lerici
+  's-ler1': { lat: 44.0718, lng: 9.9121, label: 'Hotel Shelley' },
+  'd-frantoio': { lat: 44.0720, lng: 9.9125, label: 'Il Frantoio' },
+  // Bergamo Alta
+  'a-bergwalls': { lat: 45.7040, lng: 9.6620, label: 'Venetian Walls' },
+  'd-mimmo': { lat: 45.7040, lng: 9.6645, label: 'Da Mimmo' },
+  'd-tasso': { lat: 45.7038, lng: 9.6625, label: 'Caffè del Tasso' },
+  's-bg1': { lat: 45.7042, lng: 9.6630, label: 'Hotel Piazza Vecchia' },
+  // Bellagio
+  'a-ferry': { lat: 45.9867, lng: 9.2582, label: 'Ferry triangle' },
+  'd-punta': { lat: 45.9900, lng: 9.2560, label: 'La Punta' },
+  'd-rossi': { lat: 45.9870, lng: 9.2585, label: 'Caffè Rossi' },
+  's-bel1': { lat: 45.9865, lng: 9.2580, label: 'Hotel Florence' },
+  // Sirmione
+  'a-catullo': { lat: 45.5040, lng: 10.6100, label: 'Grotte di Catullo' },
+  'a-scaliger': { lat: 45.4930, lng: 10.6065, label: 'Scaliger Castle' },
+  'd-pescatore': { lat: 45.4925, lng: 10.6060, label: 'Al Pescatore' },
+  'd-grifone': { lat: 45.4928, lng: 10.6068, label: 'Bar Grifone' },
+  'm-rucola': { lat: 45.4940, lng: 10.6070, label: 'La Rucola ⭐' },
+  's-sir1': { lat: 45.4909, lng: 10.6056, label: 'Hotel Olivi' },
+  // Verona
+  'a-arena': { lat: 45.4390, lng: 10.9944, label: 'Arena' },
+  'a-ccastle': { lat: 45.4410, lng: 10.9860, label: 'Castelvecchio' },
+  'd-bottega': { lat: 45.4420, lng: 10.9950, label: 'Bottega del Vino' },
+  'd-duca': { lat: 45.4430, lng: 10.9960, label: 'Osteria al Duca' },
+  'd-mazzanti': { lat: 45.4432, lng: 10.9975, label: 'Casa Mazzanti' },
+  's-ver1': { lat: 45.4435, lng: 10.9970, label: 'Hotel Aurora' },
+  // Venice
+  'a-doges': { lat: 45.4336, lng: 12.3403, label: "Doge's Palace" },
+  'a-burano': { lat: 45.4853, lng: 12.4168, label: 'Burano' },
+  'a-bacaro': { lat: 45.4387, lng: 12.3355, label: 'Bacaro crawl' },
+  'd-allarco': { lat: 45.4390, lng: 12.3345, label: "All'Arco" },
+  'd-domori': { lat: 45.4385, lng: 12.3350, label: 'Do Mori' },
+  'd-carampane': { lat: 45.4380, lng: 12.3330, label: 'Carampane' },
+  'd-vedova': { lat: 45.4440, lng: 12.3330, label: 'Alla Vedova' },
+  'm-testiere': { lat: 45.4370, lng: 12.3430, label: 'Testiere' },
+  's-ven1': { lat: 45.4380, lng: 12.3390, label: 'Hotel Ai Reali' },
+  // Bologna (lunch stop)
+  'd-annamaria': { lat: 44.4980, lng: 11.3520, label: 'Anna Maria' },
+  'd-tamburini': { lat: 44.4939, lng: 11.3455, label: 'Tamburini' },
+};

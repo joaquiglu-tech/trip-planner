@@ -1,106 +1,190 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ALL_DAYS } from '../data/allDays';
-import { ITEMS, TYPE_LABEL } from '../data/items';
+import { ITEMS, TYPE_LABEL, $f, usd } from '../data/items';
+import { ITEM_COORDS } from '../data/coords';
 
 const PHASE_LABEL = { spain: '🇪🇸 Spain', rome: '🇮🇹 Rome', roadtrip: '🚗 Road Trip', venice: '🇮🇹 Venice' };
 const PHASE_COLOR = { spain: '#f97316', rome: '#1d4ed8', roadtrip: '#ea580c', venice: '#1d4ed8' };
+const TYPE_ICON = { stay: '🏨', activity: '🎟️', special: '⭐', dining: '🍝' };
 
-function DayMap({ day, active }) {
+function getSelectedForCity(city, S) {
+  return ITEMS.filter((it) => {
+    if (it.type === 'transport') return false;
+    const st = S[it.id] || '';
+    if (st !== 'sel' && st !== 'conf') return false;
+    if (it.city === city) return true;
+    if (city === 'Montepulciano' && it.city === 'Tuscany') return true;
+    if (city === "Val d'Orcia" && it.city === "Val d'Orcia") return true;
+    if (city === 'Florence' && it.city === 'Florence') return true;
+    return false;
+  });
+}
+
+function DayMap({ day, selections, active }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
-  const prevDay = useRef(null);
+  const markersRef = useRef([]);
+  const prevKey = useRef(null);
+
+  const key = `${day.n}-${selections.map(s => s.id).join(',')}`;
 
   useEffect(() => {
     if (!active || !window.google || !mapRef.current || !day.lat) return;
-    if (prevDay.current !== day.n) { mapInstance.current = null; prevDay.current = day.n; }
+    if (prevKey.current !== key) { mapInstance.current = null; prevKey.current = key; }
     if (mapInstance.current) { window.google.maps.event.trigger(mapInstance.current, 'resize'); return; }
+
+    // Clear old markers
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+
     const m = new window.google.maps.Map(mapRef.current, {
-      center: { lat: day.lat, lng: day.lng }, zoom: day.zoom || 13,
-      mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: true,
+      center: { lat: day.lat, lng: day.lng }, zoom: day.zoom || 14,
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
     });
-    new window.google.maps.Marker({
+
+    // City center marker
+    const centerMarker = new window.google.maps.Marker({
       position: { lat: day.lat, lng: day.lng }, map: m, title: day.sleep,
-      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#ea580c', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: PHASE_COLOR[day.phase], fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
     });
+    markersRef.current.push(centerMarker);
+
+    const bounds = new window.google.maps.LatLngBounds();
+    bounds.extend({ lat: day.lat, lng: day.lng });
+
+    // Plot selected items
+    selections.forEach((it) => {
+      const coord = ITEM_COORDS[it.id];
+      if (!coord) return;
+      const st = S => S; // just for color
+      const color = it.type === 'stay' ? '#6366f1' : it.type === 'dining' || it.type === 'special' ? '#ea580c' : '#16a34a';
+      const marker = new window.google.maps.Marker({
+        position: { lat: coord.lat, lng: coord.lng }, map: m, title: coord.label,
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+      });
+      const iw = new window.google.maps.InfoWindow({
+        content: `<div style="font-family:system-ui;font-size:12px;padding:2px 0"><strong>${coord.label}</strong><br><span style="color:#78716c;font-size:11px">${TYPE_LABEL[it.type] || ''}</span></div>`,
+      });
+      marker.addListener('click', () => iw.open(m, marker));
+      markersRef.current.push(marker);
+      bounds.extend({ lat: coord.lat, lng: coord.lng });
+    });
+
+    // Fit bounds if we have multiple markers
+    if (selections.filter(it => ITEM_COORDS[it.id]).length > 0) {
+      m.fitBounds(bounds, 40);
+      // Don't zoom in too much
+      const listener = window.google.maps.event.addListener(m, 'idle', () => {
+        if (m.getZoom() > 16) m.setZoom(16);
+        window.google.maps.event.removeListener(listener);
+      });
+    }
+
     mapInstance.current = m;
-  }, [active, day.n]);
+  }, [active, key]);
 
   if (!day.lat) return null;
-  return <div ref={mapRef} className="map-wrap" style={{ height: 220 }}></div>;
+  return <div ref={mapRef} className="map-wrap" style={{ height: 280, borderRadius: 10 }}></div>;
 }
 
-function SelectedItems({ city, S }) {
-  const items = useMemo(() => {
-    return ITEMS.filter((it) => {
-      if (it.type === 'transport') return false;
-      const st = S[it.id] || '';
-      if (st !== 'sel' && st !== 'conf') return false;
-      // Match city loosely
-      if (it.city === city) return true;
-      if (city === 'Montepulciano' && it.city === 'Tuscany') return true;
-      if (city === "Val d'Orcia" && it.city === "Val d'Orcia") return true;
-      return false;
-    });
-  }, [city, S]);
-
-  if (!items.length) return null;
+function SelectionCard({ it, S }) {
+  const st = S[it.id] || '';
+  let price = '';
+  if (it.type === 'stay') price = $f(usd(it.pn || 0)) + '/n';
+  else if (it.type === 'dining') price = $f(usd(it.eur || 0)) + '/pp';
+  else if (it.type === 'special') price = $f(usd(it.ppEur || 0)) + '/pp';
+  else if (it.type === 'activity') price = it.eur === 0 ? 'Free' : $f(usd(it.eur)) + '/pp';
 
   return (
-    <div className="day-selections">
-      <div className="day-sel-title">Your Selections</div>
-      {items.map((it) => {
-        const st = S[it.id];
-        return (
-          <div key={it.id} className={`day-sel-item ${st === 'conf' ? 'conf' : 'sel'}`}>
-            <span className={`day-sel-dot ${st === 'conf' ? 'dot-conf' : 'dot-sel'}`} />
-            <div className="day-sel-info">
-              <span className="day-sel-name">{it.name}</span>
-              <span className="day-sel-type">{TYPE_LABEL[it.type]}</span>
-            </div>
-            <span className="day-sel-status">{st === 'conf' ? '✓' : '●'}</span>
-          </div>
-        );
-      })}
+    <div className={`day-item-card ${st === 'conf' ? 'conf' : 'sel'}`}>
+      <div className="dic-icon">{TYPE_ICON[it.type] || '📌'}</div>
+      <div className="dic-info">
+        <div className="dic-name">{it.name}</div>
+        {it.dish && <div className="dic-sub">{it.dish}</div>}
+        {it.address && <div className="dic-sub">📍 {it.address}</div>}
+        {!it.dish && !it.address && it.desc && <div className="dic-sub">{it.desc.slice(0, 80)}{it.desc.length > 80 ? '...' : ''}</div>}
+      </div>
+      <div className="dic-right">
+        <div className="dic-price">{price}</div>
+        <div className={`dic-status ${st}`}>{st === 'conf' ? '✓' : '●'}</div>
+      </div>
     </div>
   );
 }
 
 function DayDetail({ day, S, active }) {
+  const selections = useMemo(() => getSelectedForCity(day.city, S), [day.city, S]);
+  const stays = selections.filter(it => it.type === 'stay');
+  const activities = selections.filter(it => it.type === 'activity');
+  const dining = selections.filter(it => it.type === 'dining' || it.type === 'special');
+
   return (
-    <div className="card oc">
-      <div className="card-hd">
+    <div className="day-detail">
+      {/* Map with selections pinned */}
+      <DayMap day={day} selections={selections} active={active} />
+
+      {/* Day header */}
+      <div className="day-detail-header">
         <span className="day-phase-dot" style={{ background: PHASE_COLOR[day.phase] }} />
-        Day {day.n} · {day.date} · {day.title}
-      </div>
-      <div className="g2" style={{ alignItems: 'start' }}>
-        <div className="card-bd">
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 4 }}>
-            Sleep: {day.sleep}
-          </div>
-          {day.plan.map((p, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, fontSize: 13 }}>
-              <span style={{ color: '#f97316', flexShrink: 0 }}>→</span><span>{p}</span>
-            </div>
-          ))}
-          <hr className="sep" />
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 4 }}>
-            Eat & Drink
-          </div>
-          {day.eat.map((e, i) => <div key={i} className="eat-line">{e}</div>)}
-
-          <SelectedItems city={day.city} S={S} />
-
-          {day.lat && (
-            <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <a href={`https://www.google.com/maps/@${day.lat},${day.lng},${day.zoom || 13}z`} target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1 }}>📍 Maps</a>
-              <a href={`https://www.google.com/maps/dir/?api=1&destination=${day.lat},${day.lng}`} target="_blank" rel="noopener" className="gmaps-btn dark" style={{ flex: 1 }}>🧭 Directions</a>
-            </div>
-          )}
+        <div>
+          <div className="day-detail-date">{day.date}</div>
+          <div className="day-detail-title">{day.title}</div>
+          <div className="day-detail-sleep">Sleep: {day.sleep}</div>
         </div>
-        {day.lat && (
-          <div><DayMap day={day} active={active} /></div>
-        )}
       </div>
+
+      {/* Plan */}
+      <div className="day-section">
+        <div className="day-section-title">Plan</div>
+        {day.plan.map((p, i) => (
+          <div key={i} className="day-plan-step">
+            <span className="day-step-num">{i + 1}</span>
+            <span>{p}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Eat & Drink */}
+      <div className="day-section">
+        <div className="day-section-title">Eat & Drink</div>
+        {day.eat.map((e, i) => <div key={i} className="eat-line">{e}</div>)}
+      </div>
+
+      {/* Selected stay */}
+      {stays.length > 0 && (
+        <div className="day-section">
+          <div className="day-section-title">Your Stay</div>
+          {stays.map(it => <SelectionCard key={it.id} it={it} S={S} />)}
+        </div>
+      )}
+
+      {/* Selected activities */}
+      {activities.length > 0 && (
+        <div className="day-section">
+          <div className="day-section-title">Your Activities</div>
+          {activities.map(it => <SelectionCard key={it.id} it={it} S={S} />)}
+        </div>
+      )}
+
+      {/* Selected dining */}
+      {dining.length > 0 && (
+        <div className="day-section">
+          <div className="day-section-title">Your Restaurants</div>
+          {dining.map(it => <SelectionCard key={it.id} it={it} S={S} />)}
+        </div>
+      )}
+
+      {selections.length === 0 && (
+        <div className="day-no-sel">No selections yet for {day.city}. Go to Select & Price to choose stays, activities, and restaurants.</div>
+      )}
+
+      {/* Maps links */}
+      {day.lat && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <a href={`https://www.google.com/maps/@${day.lat},${day.lng},${day.zoom || 14}z`} target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1 }}>📍 Open in Maps</a>
+          <a href={`https://www.google.com/maps/dir/?api=1&destination=${day.lat},${day.lng}`} target="_blank" rel="noopener" className="gmaps-btn dark" style={{ flex: 1 }}>🧭 Directions</a>
+        </div>
+      )}
     </div>
   );
 }
@@ -116,14 +200,28 @@ function FullTripView({ S }) {
             <div className="phase-header" style={{ borderLeftColor: PHASE_COLOR[phase] }}>
               {PHASE_LABEL[phase]} · {days.length} days
             </div>
-            {days.map((day) => (
-              <div key={day.n} className="full-trip-day">
-                <div className="ftd-date">{day.date}</div>
-                <div className="ftd-title">{day.title}</div>
-                <div className="ftd-sleep">Sleep: {day.sleep}</div>
-                <SelectedItems city={day.city} S={S} />
-              </div>
-            ))}
+            {days.map((day) => {
+              const sels = getSelectedForCity(day.city, S);
+              return (
+                <div key={day.n} className="full-trip-day">
+                  <div className="ftd-left">
+                    <div className="ftd-date">{day.date}</div>
+                    <div className="ftd-title">{day.title}</div>
+                    <div className="ftd-sleep">Sleep: {day.sleep}</div>
+                  </div>
+                  {sels.length > 0 && (
+                    <div className="ftd-badges">
+                      {sels.slice(0, 4).map(it => (
+                        <span key={it.id} className={`ftd-badge ${S[it.id] === 'conf' ? 'conf' : 'sel'}`} title={it.name}>
+                          {TYPE_ICON[it.type]} {it.name.length > 12 ? it.name.slice(0, 12) + '...' : it.name}
+                        </span>
+                      ))}
+                      {sels.length > 4 && <span className="ftd-badge">+{sels.length - 4}</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         );
       })}
@@ -136,7 +234,6 @@ export default function ItineraryPage({ active, S }) {
 
   return (
     <div id="page-itinerary" className={`page ${active ? 'active' : ''}`}>
-      {/* View selector */}
       <div className="itin-selector">
         <button className={`itin-opt ${view === 'full' ? 'active' : ''}`} onClick={() => setView('full')}>
           Full Trip
@@ -149,7 +246,6 @@ export default function ItineraryPage({ active, S }) {
         ))}
       </div>
 
-      {/* Content */}
       {view === 'full' ? (
         <FullTripView S={S} />
       ) : (

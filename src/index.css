@@ -350,20 +350,46 @@ a.ext { color: var(--orange); font-size: 12px; text-decoration: none; font-weigh
 
 .day-phase-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle }
 
-/* Day selections */
-.day-selections { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-lighter) }
-.day-sel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); margin-bottom: 6px }
-.day-sel-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-lighter); font-size: 12px }
-.day-sel-item:last-child { border-bottom: none }
-.day-sel-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0 }
-.day-sel-dot.dot-sel { background: var(--orange-bright) }
-.day-sel-dot.dot-conf { background: var(--green-bright) }
-.day-sel-info { flex: 1; min-width: 0 }
-.day-sel-name { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.day-sel-type { font-size: 10px; color: var(--text-muted) }
-.day-sel-status { font-size: 12px; flex-shrink: 0; color: var(--text-muted) }
-.day-sel-item.conf .day-sel-status { color: var(--green) }
-.day-sel-item.sel .day-sel-status { color: var(--orange) }
+/* Day detail view */
+.day-detail { display: flex; flex-direction: column; gap: 12px }
+.day-detail-header { display: flex; align-items: flex-start; gap: 10px; padding: 4px 0 }
+.day-detail-date { font-size: 11px; font-weight: 700; color: var(--text-muted) }
+.day-detail-title { font-size: 16px; font-weight: 800; line-height: 1.3 }
+.day-detail-sleep { font-size: 12px; color: var(--text-light) }
+
+.day-section { background: var(--bg-card); border-radius: 10px; padding: 12px; border: 1px solid var(--border) }
+.day-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); margin-bottom: 8px }
+
+.day-plan-step { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.45 }
+.day-plan-step:last-child { margin-bottom: 0 }
+.day-step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--orange); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px }
+
+/* Selection cards in day view */
+.day-item-card { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; margin-bottom: 6px; background: var(--bg-card) }
+.day-item-card.sel { border-color: var(--orange); background: var(--orange-light) }
+.day-item-card.conf { border-color: var(--green); background: var(--green-light) }
+.day-item-card:last-child { margin-bottom: 0 }
+
+.dic-icon { font-size: 20px; flex-shrink: 0 }
+.dic-info { flex: 1; min-width: 0 }
+.dic-name { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.dic-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.dic-right { text-align: right; flex-shrink: 0 }
+.dic-price { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums }
+.dic-status { font-size: 14px }
+.dic-status.conf { color: var(--green) }
+.dic-status.sel { color: var(--orange) }
+
+.day-no-sel { text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border) }
+
+/* Full trip day badges */
+.full-trip-day { padding: 10px 14px; border-bottom: 1px solid var(--border-lighter); background: var(--bg-card); margin-bottom: 1px; display: flex; justify-content: space-between; align-items: center; gap: 8px }
+.full-trip-day:last-child { border-bottom: none; margin-bottom: 10px }
+.ftd-left { min-width: 0 }
+.ftd-badges { display: flex; flex-wrap: wrap; gap: 3px; flex-shrink: 0; max-width: 50% }
+.ftd-badge { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: var(--bg-card-hd); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px }
+.ftd-badge.sel { background: var(--orange-light); color: var(--orange) }
+.ftd-badge.conf { background: var(--green-light); color: var(--green) }
 hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 }
 .prog-bar { width: 100%; background: var(--border-light); border-radius: 4px; height: 5px; margin-top: 4px }
 .prog-fill { height: 5px; border-radius: 4px; background: var(--green); transition: width .4s }
