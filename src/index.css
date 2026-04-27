@@ -369,7 +369,41 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .bi-no-paid { font-size: 10px; color: var(--text-light) }
 
 /* ═══ FAB ═══ */
-.fab { position: fixed; bottom: 72px; right: 16px; width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 24px; font-weight: 300; cursor: pointer; box-shadow: var(--shadow-md); z-index: 200; display: flex; align-items: center; justify-content: center }
+.fab { position: fixed; bottom: 72px; right: 16px; width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 24px; font-weight: 300; cursor: pointer; box-shadow: var(--shadow-md); z-index: 500; display: flex; align-items: center; justify-content: center }
+.fab-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 490 }
+.fab-menu { position: fixed; bottom: 128px; right: 16px; display: flex; flex-direction: column; gap: 6px }
+.fab-option { padding: 10px 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; white-space: nowrap; box-shadow: var(--shadow-md); font-family: var(--font) }
+
+/* ═══ HOME PAGE ═══ */
+.home-header { text-align: center; padding: 20px 0 12px }
+.home-trip-name { font-size: 20px; font-weight: 700; letter-spacing: -.02em }
+.home-countdown { font-size: 13px; color: var(--accent); font-weight: 600; margin-top: 2px }
+
+.home-stats { display: flex; justify-content: space-around; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 14px; text-align: center }
+.home-stat-num { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums }
+.home-stat-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px }
+
+.home-alerts { background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 14px }
+.home-alerts-title { font-size: 12px; font-weight: 700; color: #DC2626; display: flex; align-items: center; gap: 6px; margin-bottom: 8px }
+.home-alerts-badge { background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center }
+.home-alert-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #FECACA; font-size: 13px; cursor: pointer }
+.home-alert-item:last-child { border-bottom: none }
+.home-alert-name { font-weight: 500 }
+.home-alert-arrow { color: #DC2626 }
+
+.home-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 10px }
+
+.home-destinations { display: flex; flex-direction: column; gap: 8px }
+.home-dest-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; cursor: pointer; transition: background var(--duration) }
+.home-dest-card:hover { background: var(--surface-hover) }
+.home-dest-top { display: flex; justify-content: space-between; align-items: flex-start }
+.home-dest-name { font-size: 15px; font-weight: 700; letter-spacing: -.01em }
+.home-dest-dates { font-size: 11px; color: var(--text-muted); margin-top: 1px }
+.home-dest-phase { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px }
+.home-dest-statuses { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap }
+.home-dest-status { font-size: 11px; color: var(--text-muted); font-weight: 500 }
+.home-dest-status.selected { color: var(--accent) }
+.home-dest-status.booked { color: var(--green) }
 
 /* ═══ INPUTS ═══ */
 .cost-input-row { display: flex; align-items: center; gap: 4px }
