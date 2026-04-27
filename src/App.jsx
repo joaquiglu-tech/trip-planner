@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './lib/useAuth';
 import { useSelections } from './lib/useSelections';
 import { useCustomItems } from './lib/useCustomItems';
+import { usePlaceData } from './lib/usePlaceData';
 import Login from './components/Login';
 import TopBar from './components/TopBar';
 import BottomTabs from './components/BottomTabs';
@@ -18,9 +19,9 @@ export default function App() {
   const email = session?.user?.email || '';
   const { S, setStatus, loaded, paidPrices, setPaidPrice, toast, refresh } = useSelections(email);
   const { customItems, addItem, deleteItem } = useCustomItems();
+  const { places, getPlaceData } = usePlaceData();
   const [files] = useState({});
 
-  // Browser back button
   const navigateTab = useCallback((tab) => {
     setActiveTab(tab);
     window.history.pushState({ tab }, '', '');
@@ -49,6 +50,7 @@ export default function App() {
           S={S} setStatus={setStatus} onRefresh={refresh}
           customItems={customItems} addItem={addItem} deleteItem={deleteItem}
           userEmail={email} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
+          places={places} getPlaceData={getPlaceData}
         />
         <MapPage active={activeTab === 'map'} S={S} />
         <BudgetPage active={activeTab === 'budget'} S={S} paidPrices={paidPrices} files={files} />

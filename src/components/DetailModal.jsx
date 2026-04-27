@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { $f, usd, TYPE_LABEL, SUBCAT_BADGE } from '../data/items';
 import { uploadFile, deleteFile } from '../lib/storage';
 
-export default function DetailModal({ it, status, setStatus, onClose, onDelete, paidPrice, setPaidPrice }) {
+export default function DetailModal({ it, status, setStatus, onClose, onDelete, paidPrice, setPaidPrice, placeData, getPlaceData }) {
   const st = status || '';
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [costInput, setCostInput] = useState(paidPrice ? String(paidPrice) : '');
+  const [place, setPlace] = useState(placeData || null);
+  const [loadingPlace, setLoadingPlace] = useState(false);
 
   // Back button closes modal
   useEffect(() => {
@@ -16,7 +18,25 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
     return () => window.removeEventListener('popstate', handlePop);
   }, [onClose]);
 
+  // Fetch place data from Google on open (if not cached)
+  useEffect(() => {
+    if (!it || it.type === 'transport' || place?.photo_url) return;
+    if (!getPlaceData) return;
+    setLoadingPlace(true);
+    getPlaceData(it.id, it.name, it.city).then((result) => {
+      if (result) setPlace(result);
+      setLoadingPlace(false);
+    });
+  }, [it?.id]);
+
   if (!it) return null;
+
+  // Use Google photo if available, fallback to our enrichment imageUrl
+  const heroImage = place?.photo_url || it.imageUrl || null;
+  const googleRating = place?.rating || null;
+  const googleAddress = place?.address || it.address || null;
+  const googlePhone = place?.phone || null;
+  const googleHours = place?.hours?.length ? place.hours : null;
 
   function cycleStatus() {
     if (navigator.vibrate) navigator.vibrate(15);
@@ -50,26 +70,39 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
       <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
         <button className="detail-close" onClick={onClose}>✕</button>
 
-        {/* Hero image — only in modal */}
-        {it.imageUrl && (
+        {/* Hero image — Google Places photo or fallback */}
+        {heroImage && (
           <div className="detail-hero">
-            <img src={it.imageUrl} alt={it.name} onError={(e) => { e.target.parentElement.style.display = 'none'; }} />
+            <img src={heroImage} alt={it.name} onError={(e) => { e.target.parentElement.style.display = 'none'; }} />
             <div className="detail-hero-gradient" />
           </div>
         )}
+        {loadingPlace && !heroImage && (
+          <div className="detail-hero-loading">Loading photo...</div>
+        )}
 
         <div className="detail-content">
-          {/* Badges */}
+          {/* Badges + rating */}
           <div className="detail-badges">
             <span className={`badge b-${it.type}`}>{TYPE_LABEL[it.type]}</span>
             <span className="badge b-city">{it.city}</span>
+            {googleRating && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>⭐ {googleRating}</span>}
             {it.urgent && <span className="badge b-urgent">⚠️ Book Now</span>}
             {it.subcat && SUBCAT_BADGE[it.subcat] && <span className={`badge ${SUBCAT_BADGE[it.subcat].cls}`}>{SUBCAT_BADGE[it.subcat].label}</span>}
             {it.tier && <span className="badge b-bar">{it.tier}</span>}
           </div>
 
           <h2 className="detail-name">{it.name}</h2>
-          {it.address && <div className="detail-address">📍 {it.address}</div>}
+          {googleAddress && <div className="detail-address">📍 {googleAddress}</div>}
+          {googlePhone && <div className="detail-address">📞 {googlePhone}</div>}
+
+          {/* Opening hours */}
+          {googleHours && (
+            <details className="detail-hours">
+              <summary>🕐 Opening hours</summary>
+              <ul>{googleHours.map((h, i) => <li key={i}>{h}</li>)}</ul>
+            </details>
+          )}
 
           {/* ═══ TRANSPORT — comparison view ═══ */}
           {it.type === 'transport' && (

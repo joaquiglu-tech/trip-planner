@@ -164,6 +164,26 @@ function SelectionCard({ it, S }) {
   );
 }
 
+function DriveInfo({ day }) {
+  const [info, setInfo] = useState(null);
+  useEffect(() => {
+    if (!day.driveFrom) return;
+    import('../lib/googlePlaces').then(({ fetchDriveTime }) => {
+      fetchDriveTime(day.driveFrom.lat, day.driveFrom.lng, day.lat, day.lng).then((result) => {
+        if (result) setInfo(result);
+      });
+    });
+  }, [day.n]);
+  if (!day.driveFrom || !info) return null;
+  return (
+    <div className="drive-info-bar">
+      <span>🚗</span>
+      <span>{info.durationText} drive</span>
+      <span className="drive-info-dist">{info.distanceKm} km</span>
+    </div>
+  );
+}
+
 function DayDetail({ day, S, active }) {
   const selections = useMemo(() => getSelectedForCity(day.city, S), [day.city, S]);
   const stays = selections.filter(it => it.type === 'stay');
@@ -173,6 +193,9 @@ function DayDetail({ day, S, active }) {
   return (
     <div className="day-detail">
       <DayMap day={day} selections={selections} active={active} />
+
+      {/* Drive time from previous city */}
+      <DriveInfo day={day} />
 
       <div className="day-detail-header">
         <span className="day-phase-dot" style={{ background: PHASE_COLOR[day.phase] }} />

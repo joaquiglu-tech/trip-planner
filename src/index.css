@@ -142,6 +142,12 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .detail-hero { aspect-ratio: 16/9; overflow: hidden; background: var(--bg-card-hd); position: relative }
 .detail-hero img { width: 100%; height: 100%; object-fit: cover; display: block }
 .detail-hero-gradient { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(transparent, rgba(0,0,0,.3)) }
+.detail-hero-loading { height: 120px; display: flex; align-items: center; justify-content: center; background: var(--bg-card-hd); color: var(--text-muted); font-size: 12px }
+
+.detail-hours { margin-bottom: 12px; font-size: 12px }
+.detail-hours summary { cursor: pointer; color: var(--text-muted); font-weight: 600; padding: 6px 0 }
+.detail-hours ul { list-style: none; padding: 4px 0 4px 20px }
+.detail-hours li { padding: 2px 0; color: var(--text-secondary); font-size: 11px }
 
 .detail-content { padding: 16px }
 
@@ -367,6 +373,9 @@ a.ext { color: var(--orange); font-size: 12px; text-decoration: none; font-weigh
 .dic-status.sel { color: var(--orange) }
 
 .day-no-sel { text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px; background: var(--bg-card); border-radius: 10px; border: 1px dashed var(--border) }
+
+.drive-info-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--orange) }
+.drive-info-dist { color: var(--text-muted); font-weight: 400 }
 
 /* Full trip day badges */
 .full-trip-day { padding: 10px 14px; border-bottom: 1px solid var(--border-lighter); background: var(--bg-card); margin-bottom: 1px; display: flex; justify-content: space-between; align-items: center; gap: 8px }
