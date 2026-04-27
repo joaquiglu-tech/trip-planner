@@ -146,7 +146,7 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
             <div className="sect-title">{groupByCity ? `📍 ${label} (${items.length})` : label}</div>
             <div className="items-grid">
               {items.map((it) => (
-                <MemoItemCard key={it.id} it={it} status={S[it.id] || ''} onTap={setSelectedItem} />
+                <MemoItemCard key={it.id} it={it} status={S[it.id] || ''} onTap={setSelectedItem} photoUrl={places?.[it.id]?.photo_url} />
               ))}
             </div>
           </div>

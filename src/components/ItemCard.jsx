@@ -3,7 +3,7 @@ import { $f, usd, SUBCAT_BADGE } from '../data/items';
 
 const TYPE_EMOJI = { stay: '🏨', activity: '🎟️', special: '⭐', dining: '🍝', transport: '🚗' };
 
-function ItemCard({ it, status, onTap }) {
+function ItemCard({ it, status, onTap, photoUrl: googlePhoto }) {
   const st = status || '';
 
   let price = '';
@@ -14,8 +14,7 @@ function ItemCard({ it, status, onTap }) {
   else if (it.type === 'dining') { price = !it.eur ? '' : $f(usd(it.eur * 2)); unit = it.eur ? '2p' : ''; }
   else if (it.priceLabel) { price = it.priceLabel; }
 
-  // Use Google Places photo if cached, or enrichment image
-  const photoUrl = it.imageUrl || null;
+  const photoUrl = googlePhoto || it.imageUrl || null;
 
   return (
     <div className={`item-card ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onTap(it)}>

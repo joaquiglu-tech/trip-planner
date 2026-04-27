@@ -65,8 +65,8 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: v
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important } }
 
 /* ═══ APP SHELL ═══ */
-.app-shell { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh }
-.page-container { flex: 1; padding-bottom: 72px }
+.app-shell { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden }
+.page-container { flex: 1; position: relative; overflow: hidden; padding-bottom: 60px }
 .loading-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); font-size: 15px; color: var(--text-muted) }
 
 /* ═══ TOP BAR — light, minimal ═══ */
@@ -89,9 +89,9 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: v
 .btab-icon { height: 24px; display: flex; align-items: center }
 .btab-label { font-size: 10px; font-weight: 600; letter-spacing: .02em }
 
-/* ═══ PAGES ═══ */
-.page { display: none; padding: 16px; max-width: 960px; margin: 0 auto }
-.page.active { display: block; animation: page-in .3s var(--ease) }
+/* ═══ PAGES — each tab scrolls independently ═══ */
+.page { display: none; padding: 16px; padding-bottom: 24px; max-width: 960px; margin: 0 auto; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
+.page.active { display: block; animation: page-in .25s var(--ease) }
 
 /* ═══ CARDS ═══ */
 .card { background: var(--bg-card); border: none; border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 16px; box-shadow: var(--shadow-sm) }
@@ -246,7 +246,7 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: v
 .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center }
 .filter-bar select, .filter-bar input { padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-pill); font-size: 13px; background: var(--bg-card); color: var(--text); font-family: inherit; box-shadow: var(--shadow-sm); min-height: 44px }
 .fp { padding: 10px 16px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary); white-space: nowrap; box-shadow: var(--shadow-sm); min-height: 44px; display: flex; align-items: center }
-.planner-sticky-bar { position: sticky; top: 60px; z-index: 100; background: var(--bg); padding: 8px 0; margin: -8px -16px 8px; padding-left: 16px; padding-right: 16px }
+.planner-sticky-bar { position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 8px 0; margin: -8px -16px 8px; padding-left: 16px; padding-right: 16px }
 
 /* ═══ TIMELINE ═══ */
 #timeline { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 0 8px; margin-bottom: 16px }
