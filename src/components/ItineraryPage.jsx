@@ -1,95 +1,160 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { ALL_DAYS } from '../data/allDays';
+import { ITEMS, TYPE_LABEL } from '../data/items';
 
-function CityMap({ id, lat, lng, zoom, label, active }) {
+const PHASE_LABEL = { spain: '🇪🇸 Spain', rome: '🇮🇹 Rome', roadtrip: '🚗 Road Trip', venice: '🇮🇹 Venice' };
+const PHASE_COLOR = { spain: '#f97316', rome: '#1d4ed8', roadtrip: '#ea580c', venice: '#1d4ed8' };
+
+function DayMap({ day, active }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const prevDay = useRef(null);
 
   useEffect(() => {
-    if (!active || !window.google || mapInstance.current) return;
+    if (!active || !window.google || !mapRef.current || !day.lat) return;
+    if (prevDay.current !== day.n) { mapInstance.current = null; prevDay.current = day.n; }
+    if (mapInstance.current) { window.google.maps.event.trigger(mapInstance.current, 'resize'); return; }
     const m = new window.google.maps.Map(mapRef.current, {
-      center: { lat, lng }, zoom,
-      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-      streetViewControl: false, mapTypeControl: true,
+      center: { lat: day.lat, lng: day.lng }, zoom: day.zoom || 13,
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: true,
     });
     new window.google.maps.Marker({
-      position: { lat, lng }, map: m, title: label,
-      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#1d4ed8', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+      position: { lat: day.lat, lng: day.lng }, map: m, title: day.sleep,
+      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#ea580c', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
     });
     mapInstance.current = m;
-  }, [active]);
+  }, [active, day.n]);
 
-  useEffect(() => {
-    if (active && mapInstance.current) window.google?.maps?.event?.trigger(mapInstance.current, 'resize');
-  }, [active]);
-
-  return <div ref={mapRef} className="map-wrap" style={{ height: id === 'rome' ? 270 : 250 }}></div>;
+  if (!day.lat) return null;
+  return <div ref={mapRef} className="map-wrap" style={{ height: 220 }}></div>;
 }
 
-export default function ItineraryPage({ active, setActiveTab }) {
+function SelectedItems({ city, S }) {
+  const items = useMemo(() => {
+    return ITEMS.filter((it) => {
+      if (it.type === 'transport') return false;
+      const st = S[it.id] || '';
+      if (st !== 'sel' && st !== 'conf') return false;
+      // Match city loosely
+      if (it.city === city) return true;
+      if (city === 'Montepulciano' && it.city === 'Tuscany') return true;
+      if (city === "Val d'Orcia" && it.city === "Val d'Orcia") return true;
+      return false;
+    });
+  }, [city, S]);
+
+  if (!items.length) return null;
+
+  return (
+    <div className="day-selections">
+      <div className="day-sel-title">Your Selections</div>
+      {items.map((it) => {
+        const st = S[it.id];
+        return (
+          <div key={it.id} className={`day-sel-item ${st === 'conf' ? 'conf' : 'sel'}`}>
+            <span className={`day-sel-dot ${st === 'conf' ? 'dot-conf' : 'dot-sel'}`} />
+            <div className="day-sel-info">
+              <span className="day-sel-name">{it.name}</span>
+              <span className="day-sel-type">{TYPE_LABEL[it.type]}</span>
+            </div>
+            <span className="day-sel-status">{st === 'conf' ? '✓' : '●'}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DayDetail({ day, S, active }) {
+  return (
+    <div className="card oc">
+      <div className="card-hd">
+        <span className="day-phase-dot" style={{ background: PHASE_COLOR[day.phase] }} />
+        Day {day.n} · {day.date} · {day.title}
+      </div>
+      <div className="g2" style={{ alignItems: 'start' }}>
+        <div className="card-bd">
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 4 }}>
+            Sleep: {day.sleep}
+          </div>
+          {day.plan.map((p, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, fontSize: 13 }}>
+              <span style={{ color: '#f97316', flexShrink: 0 }}>→</span><span>{p}</span>
+            </div>
+          ))}
+          <hr className="sep" />
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 4 }}>
+            Eat & Drink
+          </div>
+          {day.eat.map((e, i) => <div key={i} className="eat-line">{e}</div>)}
+
+          <SelectedItems city={day.city} S={S} />
+
+          {day.lat && (
+            <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <a href={`https://www.google.com/maps/@${day.lat},${day.lng},${day.zoom || 13}z`} target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1 }}>📍 Maps</a>
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${day.lat},${day.lng}`} target="_blank" rel="noopener" className="gmaps-btn dark" style={{ flex: 1 }}>🧭 Directions</a>
+            </div>
+          )}
+        </div>
+        {day.lat && (
+          <div><DayMap day={day} active={active} /></div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FullTripView({ S }) {
+  const phases = ['spain', 'rome', 'roadtrip', 'venice'];
+  return (
+    <>
+      {phases.map((phase) => {
+        const days = ALL_DAYS.filter((d) => d.phase === phase);
+        return (
+          <div key={phase}>
+            <div className="phase-header" style={{ borderLeftColor: PHASE_COLOR[phase] }}>
+              {PHASE_LABEL[phase]} · {days.length} days
+            </div>
+            {days.map((day) => (
+              <div key={day.n} className="full-trip-day">
+                <div className="ftd-date">{day.date}</div>
+                <div className="ftd-title">{day.title}</div>
+                <div className="ftd-sleep">Sleep: {day.sleep}</div>
+                <SelectedItems city={day.city} S={S} />
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+export default function ItineraryPage({ active, S }) {
+  const [view, setView] = useState('full');
+
   return (
     <div id="page-itinerary" className={`page ${active ? 'active' : ''}`}>
-      <div className="card">
-        <div className="card-hd">🇪🇸 Spain — Jul 12–20</div>
-        <div className="card-bd">
-          <div className="info-row"><div className="info-date">Jul 12–14 · 2n</div><div><strong>Madrid</strong> — Family stay. Fly in Lima→Madrid 13:05. Prado, La Latina tapas crawl, reggaeton night.</div></div>
-          <div className="info-row"><div className="info-date">Jul 14–18 · 4n</div><div><strong>Menorca</strong> — Family stay. Cala Macarella, caldereta de langosta in Fornells, Cova d'en Xoroi sunset.</div></div>
-          <div className="info-row"><div className="info-date">Jul 18–20 · 2n</div><div><strong>Malaga</strong> — Hotel. Padel P1 semis Jul 18, finals Jul 19. El Tintero sardines. Alcazaba. <a href="https://www.premierpadel.com" target="_blank" rel="noopener" className="ext">Tickets ↗</a></div></div>
-        </div>
+      {/* View selector */}
+      <div className="itin-selector">
+        <button className={`itin-opt ${view === 'full' ? 'active' : ''}`} onClick={() => setView('full')}>
+          Full Trip
+        </button>
+        {ALL_DAYS.map((d) => (
+          <button key={d.n} className={`itin-opt ${view === String(d.n) ? 'active' : ''}`} onClick={() => setView(String(d.n))}>
+            <span className="itin-opt-phase" style={{ background: PHASE_COLOR[d.phase] }} />
+            {d.n}
+          </button>
+        ))}
       </div>
-      <div className="card bc">
-        <div className="card-hd">✈️ 🇮🇹 Rome · 4 nights · Jul 20–24</div>
-        <div className="g2" style={{ alignItems: 'start' }}>
-          <div className="card-bd">
-            <div className="info-row"><div className="info-date">Jul 20 pm</div><div>Land FCO. Trastevere walk. Roscioli dinner (pre-booked).</div></div>
-            <div className="info-row"><div className="info-date">Jul 21</div><div>Colosseum + Forum + Palatine (8:30am). Trevi/Navona after 8pm.</div></div>
-            <div className="info-row"><div className="info-date">Jul 22</div><div>{"Vatican + Sistine + St Peter's (9am). Galleria Borghese afternoon."}</div></div>
-            <div className="info-row"><div className="info-date">Jul 23</div><div>Libre. Testaccio market, Jewish Ghetto, Pizzarium. Fancy dinner (La Pergola or Il Pagliaccio).</div></div>
-            <div className="info-row"><div className="info-date">Jul 24 9am</div><div>Frecciarossa → Florence (1h30). Pick up car. Road trip begins.</div></div>
-            <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <a href="https://ticketing.colosseo.it/en/" target="_blank" rel="noopener" className="ext">Colosseum ↗</a>
-              <a href="https://m.museivaticani.va/content/museivaticani-mobile/en.html" target="_blank" rel="noopener" className="ext">Vatican ↗</a>
-              <a href="https://romecavalieri.com/lapergola.php" target="_blank" rel="noopener" className="ext">La Pergola ⭐⭐⭐ ↗</a>
-            </div>
-          </div>
-          <div>
-            <CityMap id="rome" lat={41.9028} lng={12.4964} zoom={13} label="Rome" active={active} />
-            <div style={{ padding: 8, display: 'flex', gap: 6 }}>
-              <a href="https://www.google.com/maps/@41.9028,12.4964,14z" target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1 }}>📍 Maps</a>
-              <a href="https://www.google.com/maps/dir/?api=1&destination=41.9028,12.4964" target="_blank" rel="noopener" className="gmaps-btn dark" style={{ flex: 1 }}>🧭 Dir</a>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="card oc" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('roadtrip')}>
-        <div className="card-hd">🚗 Road Trip — Florence Loop · Jul 24–Aug 1 · 8 nights</div>
-        <div className="card-bd" style={{ fontSize: 13 }}>
-          Florence → Tuscany → Lerici → Bergamo → Como → Garda → Verona → Bologna → Florence → Venice
-          <br /><br />
-          <span style={{ background: '#ea580c', color: '#fff', fontSize: 12, padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>Full detail →</span>
-        </div>
-      </div>
-      <div className="card bc">
-        <div className="card-hd">🚂 🇮🇹 Venice · Aug 1–2</div>
-        <div className="g2" style={{ alignItems: 'start' }}>
-          <div className="card-bd">
-            <div className="info-row"><div className="info-date">Aug 1 ~5pm</div><div>{"Train from Florence after car drop. Rialto market. Bacaro crawl: All'Arco → Do Mori → Schiavi."}</div></div>
-            <div className="info-row"><div className="info-date">Aug 2</div><div>{"7am Rialto fish market (Bourdain). Doge's Palace + St Mark's. Burano + Torcello. Dinner: Osteria alle Testiere."}</div></div>
-            <div className="info-row"><div className="info-date">Aug 2 ~3pm</div><div>Fly VCE→MAD. Arrive ~7pm. Sleep. Fly Lima Aug 3, 11am.</div></div>
-            <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <a href="https://palazzoducale.visitmuve.it/en/home/" target="_blank" rel="noopener" className="ext">{"Doge's Palace ↗"}</a>
-              <a href="https://www.osterialletestiere.it/" target="_blank" rel="noopener" className="ext">Testiere — Book NOW ↗</a>
-              <a href="https://www.vueling.com" target="_blank" rel="noopener" className="ext">Vueling VCE→MAD ↗</a>
-            </div>
-          </div>
-          <div>
-            <CityMap id="venice" lat={45.4408} lng={12.3155} zoom={13} label="Venice" active={active} />
-            <div style={{ padding: 8, display: 'flex', gap: 6 }}>
-              <a href="https://www.google.com/maps/@45.4408,12.3155,14z" target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1 }}>📍 Maps</a>
-              <a href="https://www.google.com/maps/dir/?api=1&destination=45.4408,12.3155" target="_blank" rel="noopener" className="gmaps-btn dark" style={{ flex: 1 }}>🧭 Dir</a>
-            </div>
-          </div>
-        </div>
-      </div>
+
+      {/* Content */}
+      {view === 'full' ? (
+        <FullTripView S={S} />
+      ) : (
+        <DayDetail day={ALL_DAYS[parseInt(view) - 1]} S={S} active={active} />
+      )}
     </div>
   );
 }

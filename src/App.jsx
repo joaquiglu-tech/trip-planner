@@ -7,7 +7,6 @@ import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar';
 import OverviewPage from './components/OverviewPage';
 import ItineraryPage from './components/ItineraryPage';
-import RoadTripPage from './components/RoadTripPage';
 import SelectPage from './components/SelectPage';
 import ProfilePage from './components/ProfilePage';
 import Toast from './components/Toast';
@@ -30,8 +29,7 @@ export default function App() {
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="page-container">
         <OverviewPage active={activeTab === 'overview'} />
-        <ItineraryPage active={activeTab === 'itinerary'} setActiveTab={setActiveTab} />
-        <RoadTripPage active={activeTab === 'roadtrip'} />
+        <ItineraryPage active={activeTab === 'itinerary'} S={S} />
         <SelectPage
           active={activeTab === 'select'}
           S={S} setStatus={setStatus} updatedBy={updatedBy} onRefresh={refresh}

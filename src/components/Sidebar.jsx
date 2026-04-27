@@ -1,7 +1,6 @@
 const TABS = [
   { id: 'overview', icon: '🗺', label: 'Overview' },
   { id: 'itinerary', icon: '📅', label: 'Itinerary' },
-  { id: 'roadtrip', icon: '🚗', label: 'Road Trip' },
   { id: 'select', icon: '☑️', label: 'Select & Price' },
 ];
 

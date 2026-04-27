@@ -331,6 +331,39 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .dt { flex-shrink: 0; padding: 5px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--bg-card-hd); color: var(--text-secondary); white-space: nowrap }
 .dt.active { background: var(--orange); color: #fff }
 a.ext { color: var(--orange); font-size: 12px; text-decoration: none; font-weight: 600 }
+
+/* ═══ ITINERARY PAGE ═══ */
+.itin-selector { display: flex; gap: 4px; overflow-x: auto; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none }
+.itin-selector::-webkit-scrollbar { display: none }
+.itin-opt { flex-shrink: 0; padding: 6px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--bg-card-hd); color: var(--text-secondary); white-space: nowrap; display: flex; align-items: center; gap: 5px }
+.itin-opt.active { background: var(--orange); color: #fff }
+.itin-opt-phase { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0 }
+.itin-opt.active .itin-opt-phase { background: #fff !important }
+
+.phase-header { font-size: 14px; font-weight: 800; padding: 10px 14px; margin: 8px 0 6px; border-left: 4px solid; border-radius: 0 8px 8px 0; background: var(--bg-card); color: var(--text) }
+
+.full-trip-day { padding: 10px 14px; border-bottom: 1px solid var(--border-lighter); background: var(--bg-card); margin-bottom: 1px }
+.full-trip-day:last-child { border-bottom: none; margin-bottom: 10px }
+.ftd-date { font-size: 10px; font-weight: 700; color: var(--text-muted) }
+.ftd-title { font-size: 13px; font-weight: 700; margin: 2px 0 }
+.ftd-sleep { font-size: 11px; color: var(--text-light) }
+
+.day-phase-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle }
+
+/* Day selections */
+.day-selections { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-lighter) }
+.day-sel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); margin-bottom: 6px }
+.day-sel-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-lighter); font-size: 12px }
+.day-sel-item:last-child { border-bottom: none }
+.day-sel-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0 }
+.day-sel-dot.dot-sel { background: var(--orange-bright) }
+.day-sel-dot.dot-conf { background: var(--green-bright) }
+.day-sel-info { flex: 1; min-width: 0 }
+.day-sel-name { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.day-sel-type { font-size: 10px; color: var(--text-muted) }
+.day-sel-status { font-size: 12px; flex-shrink: 0; color: var(--text-muted) }
+.day-sel-item.conf .day-sel-status { color: var(--green) }
+.day-sel-item.sel .day-sel-status { color: var(--orange) }
 hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 }
 .prog-bar { width: 100%; background: var(--border-light); border-radius: 4px; height: 5px; margin-top: 4px }
 .prog-fill { height: 5px; border-radius: 4px; background: var(--green); transition: width .4s }
