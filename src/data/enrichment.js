@@ -333,4 +333,191 @@ export const ENRICHMENT = {
     imageUrl: 'https://images.unsplash.com/photo-1551892374-ecf8754cf8b0?w=600&h=300&fit=crop',
     whatToExpect: ['Historic deli since 1932', 'Mortadella on gnocco fritto at the standing bar', 'The mortadella will ruin all other mortadella forever', 'This is the original — made in Bologna'],
   },
+
+  // ═══ PREVIOUSLY MISSING — ACTIVITIES ═══
+  'a-pan': {
+    imageUrl: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=600&h=300&fit=crop',
+    whatToExpect: ['Pantheon — best-preserved Roman building in the world (2,000 years old)', 'Concrete dome still the largest unreinforced concrete dome ever built', 'Trevi Fountain — throw a coin, iconic', 'Piazza Navona — Bernini\'s Fountain of the Four Rivers', 'Do this walk after 8pm when day-trippers leave — Rome transforms'],
+  },
+  'a-borg': {
+    imageUrl: 'https://images.unsplash.com/photo-1596796694498-62ebaeec77fc?w=600&h=300&fit=crop',
+    reserveNote: 'Timed entry only, 2-hour slots, max 360 people per slot. Book 1+ month ahead in summer.',
+    whatToExpect: ["Bernini's Apollo & Daphne — the moment of transformation, carved from marble", "Bernini's Persephone — you can see his fingers pressing into her thigh in stone", 'Caravaggio paintings in a small palace', 'Intimate experience — feels like a private collection', 'Each visit limited to 2 hours, photos allowed (no flash)'],
+  },
+  'a-redi': {
+    imageUrl: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=600&h=300&fit=crop',
+    whatToExpect: ['Under Palazzo Ricci in Montepulciano', 'Medieval cellars carved into volcanic tufa rock', 'More dramatic atmosphere than Contucci', 'Vino Nobile tastings'],
+  },
+  'a-balbianello': {
+    imageUrl: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&h=300&fit=crop',
+    reserveNote: 'Must pre-book online. Take the taxi boat from Lenno (~€10 round trip, 5 min).',
+    whatToExpect: ['Casino Royale (2006) — Bond recovers with Vesper under the loggia', 'Star Wars Episode II — Padme and Anakin\'s lakeside scenes', '18th-century loggia with panoramic lake views at the summit', 'Terraced gardens above the water', 'Collection of Chinese, African and pre-Colombian art inside', 'One of the most photographed spots on Lake Como'],
+  },
+  'a-scaliger': {
+    imageUrl: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=600&h=300&fit=crop',
+    whatToExpect: ['Medieval moated castle built 1259–1387 by the Scaliger dynasty', 'Enter Sirmione old town via the castle drawbridge', 'Climb the towers for panoramic Lake Garda views', 'The castle sits right on the water — dramatic silhouette'],
+  },
+
+  // ═══ PREVIOUSLY MISSING — STAYS ═══
+  's-rome3': {
+    imageUrl: 'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=600&h=300&fit=crop',
+    highlights: ['Stay in Trastevere — the food neighborhood', 'Kitchen for breakfasts', 'Walk to everything', 'Medieval streets, ivy-covered buildings'],
+  },
+  's-flo2': {
+    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&h=300&fit=crop',
+    highlights: ['Medieval tower hotel', "Florence's most elegant shopping street", '360° Duomo views from rooftop terrace', "Condé Nast Traveler readers' choice 2024"],
+  },
+  's-flo3': {
+    imageUrl: 'https://images.unsplash.com/photo-1541370976299-4d24ebbc9077?w=600&h=300&fit=crop',
+    highlights: ['Oltrarno — artisan neighborhood south of the Arno', 'Kitchen, local feel', 'Walk to Santo Spirito — best piazza for aperitivo'],
+  },
+  's-mon2': {
+    imageUrl: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=600&h=300&fit=crop',
+    highlights: ['Central Montepulciano location', 'Easy walk to all wine cellars'],
+  },
+  's-vd2': {
+    imageUrl: 'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=600&h=300&fit=crop',
+    highlights: ["Famous La Foce estate — Val d'Orcia's most photographed villa", 'Beautiful gardens and valley views', "Condé Nast Traveler featured"],
+  },
+  's-ler2': {
+    imageUrl: 'https://images.unsplash.com/photo-1537799943037-f5da89a65689?w=600&h=300&fit=crop',
+    highlights: ['La Spezia city centre', 'Practical, easy parking', 'Good base for Lerici and coast'],
+  },
+  's-bg2': {
+    imageUrl: 'https://images.unsplash.com/photo-1568084680786-a84f91d1153c?w=600&h=300&fit=crop',
+    highlights: ['Design boutique in a restored medieval tower', 'Dramatic interiors', 'Design Hotels member', "Condé Nast Italy featured"],
+  },
+  's-bel2': {
+    imageUrl: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&h=300&fit=crop',
+    highlights: ["Lake Como's legendary 5-star since 1873", 'Private gardens and pool', 'Forbes 5-Star', 'Leading Hotels of the World'],
+  },
+  's-sir2': {
+    imageUrl: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=600&h=300&fit=crop',
+    highlights: ["Inside Sirmione's medieval walls", 'Thermal spa and Lake Garda views', 'Terme di Sirmione group'],
+  },
+  's-ver2': {
+    imageUrl: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=600&h=300&fit=crop',
+    highlights: ['Frescoed ceilings, since 1882', 'Historic luxury in Verona', 'Leading Hotels of the World', "Condé Nast Traveler featured"],
+  },
+  's-ven2': {
+    imageUrl: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=600&h=300&fit=crop',
+    highlights: ['Family-run since 1964', "Secret garden 3 minutes from St Mark's", 'San Marco district', "Condé Nast Traveler 2024"],
+  },
+  's-ven3': {
+    imageUrl: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=600&h=300&fit=crop',
+    highlights: ['Cannaregio — most local district in Venice', 'Kitchen for cooking', 'Walk to all the best bacari', 'Where Venetians actually live'],
+  },
+
+  // ═══ PREVIOUSLY MISSING — DINING ═══
+  'd-armando': {
+    address: "Salita de' Crescenzi 31, near Pantheon",
+    imageUrl: 'https://images.unsplash.com/photo-1498579150354-977475b7ea0b?w=600&h=300&fit=crop',
+    reserveNote: 'Reserve 2+ weeks ahead — tiny and always full.',
+    whatToExpect: ['Family-run since 1961, 40m from the Pantheon', "Gricia — cacio e pepe's ancestor (pecorino + guanciale, no egg)", 'Saltimbocca alla Romana', 'Carciofi alla Romana (Roman-style artichokes)', 'Too small for tourist crowds — locals fill it'],
+    proTips: ['Order the gricia — it\'s rarer than carbonara or cacio e pepe', 'Lunch is easier to book than dinner'],
+  },
+  'd-enzo': {
+    address: 'Via dei Vascellari 29, Trastevere',
+    imageUrl: 'https://images.unsplash.com/photo-1516100882582-96c3a05fe590?w=600&h=300&fit=crop',
+    reserveNote: 'No reservations — queue before 7pm or after 9pm.',
+    whatToExpect: ['Classic Trastevere trattoria', 'Their carciofo alla giudea (Jewish-fried artichoke) is one of the best single dishes in Rome', 'Carbonara, amatriciana, coda alla vaccinara'],
+    proTips: ['The fried artichoke is mandatory — crispy leaves, tender heart', 'Go before 7pm to minimize the wait', 'Cash helpful but cards accepted'],
+  },
+  'd-trapizzino': {
+    address: 'Via Giovanni Branca 88, Testaccio (original) + Trastevere',
+    imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=300&fit=crop',
+    whatToExpect: ['Triangular pizza-dough pocket stuffed with Roman stews', "Invented 2008 by Stefano Callegari — Rome's best modern street food", 'Try coda alla vaccinara (oxtail stew) filling', 'Also pollo alla cacciatora (hunter\'s chicken)'],
+    proTips: ['~€4–5 each — get 2 or 3 with different fillings', 'The oxtail is the signature'],
+  },
+  'd-gracchi': {
+    address: 'Via dei Gracchi 272, Prati + Via della Lungaretta 2, Trastevere',
+    imageUrl: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=600&h=300&fit=crop',
+    whatToExpect: ["Locals' consistent #1 gelato in Rome", 'Real Sicilian pistachios — almost savory', 'Nocciola (hazelnut) equally excellent', 'No artificial coloring — natural colors only'],
+    proTips: ['The pistacchio is the star — if you get one flavor, get this', 'Prati location near Vatican, Trastevere location near nightlife'],
+  },
+  'd-antico': {
+    address: 'Via dei Neri 65r, Santa Croce, Florence',
+    imageUrl: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=600&h=300&fit=crop',
+    whatToExpect: ['Best schiacciata in Florence — flat focaccia bread', 'Fillings: finocchiona, truffle cream, prosciutto', 'Queue looks insane but moves in 5 minutes', '~€9 per sandwich'],
+    proTips: ['La Favolosa (the famous one) has truffle cream + schiacciata', 'Go at off-peak times (2–4pm) for shorter lines'],
+  },
+  'd-rastel': {
+    address: "Via Sant'Agostino 6, Oltrarno, Florence",
+    imageUrl: 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=600&h=300&fit=crop',
+    whatToExpect: ['Best aperitivo in Oltrarno', 'Natural wines, small bites', 'Where young Florentines actually go', 'Santo Spirito piazza at sunset is the setting'],
+  },
+  'd-neri': {
+    address: 'Via dei Neri 9/11r, Santa Croce, Florence',
+    imageUrl: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=600&h=300&fit=crop',
+    whatToExpect: ["Locals' #1 gelato pick in Florence", 'Fondente (dark chocolate) is intense and rich', 'Riso (rice) flavor is unique to here', 'Small batches, real ingredients'],
+  },
+  'd-poliziano': {
+    address: 'Via di Voltaia nel Corso 27, Montepulciano',
+    imageUrl: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=600&h=300&fit=crop',
+    whatToExpect: ["Historic café since 1868", 'Henry James and Pirandello drank here', "Best terrace in town with Val d'Orcia views", 'Long wine lunches with Vino Nobile'],
+  },
+  'd-grotta': {
+    address: 'Localita San Biagio, Montepulciano',
+    imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=300&fit=crop',
+    whatToExpect: ['10-min walk outside the walls', 'Beside the beautiful Renaissance San Biagio church', 'Bistecca alla fiorentina, tagliata', 'Garden terrace dining'],
+  },
+  'd-marzocco': {
+    address: 'Corso di Montepulciano (main street)',
+    imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&h=300&fit=crop',
+    whatToExpect: ['The local bar on the main street', 'Morning espresso ritual', 'Evening aperitivo with locals', 'Simple, authentic, no tourists'],
+  },
+  'd-farinata': {
+    imageUrl: 'https://images.unsplash.com/photo-1537799943037-f5da89a65689?w=600&h=300&fit=crop',
+    whatToExpect: ['Chickpea flatbread — the oldest street food of the Ligurian Riviera', 'Baked in wood-fired copper pans', '~€2–3 at any bakery in La Spezia', 'Thin, crispy, slightly savory — nothing like it elsewhere'],
+  },
+  'd-tasso': {
+    address: 'Piazza Vecchia 3, Bergamo Alta',
+    imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&h=300&fit=crop',
+    whatToExpect: ['Has been serving coffee since 1476', 'On the most beautiful piazza in Bergamo Alta', 'The building itself is the experience', 'Perfect for an espresso or evening spritz'],
+  },
+  'd-bilacus': {
+    address: 'Salita Serbelloni 32, Bellagio',
+    imageUrl: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&h=300&fit=crop',
+    whatToExpect: ['Up a stone alley from the harbor', 'Locals-heavy, not on the tourist drag', 'Lake-fish ravioli, pizzoccheri (buckwheat pasta)', 'Best value in Bellagio'],
+  },
+  'd-rossi': {
+    address: 'Bellagio waterfront promenade',
+    imageUrl: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&h=300&fit=crop',
+    whatToExpect: ['THE aperitivo spot in Bellagio', 'Lake views while watching ferries arrive', 'Spritz + lake breeze at sunset'],
+  },
+  'd-grifone': {
+    address: 'Near Scaliger Castle, Sirmione',
+    imageUrl: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=600&h=300&fit=crop',
+    whatToExpect: ['Right next to the castle walls', 'Best sunset aperitivo spot in Sirmione', 'Castle and lake views from your table'],
+  },
+  'd-mazzanti': {
+    address: 'Piazza delle Erbe, Verona',
+    imageUrl: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=600&h=300&fit=crop',
+    whatToExpect: ['On the most beautiful square in Verona', 'THE aperitivo stop at sunset', 'Spritz and people-watching', 'Medieval frescoed building facade'],
+  },
+  'd-sottoriva': {
+    address: 'Via Sottoriva, Verona (under medieval porticos)',
+    imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=300&fit=crop',
+    whatToExpect: ['Under medieval porticos along the Adige river', 'Bigoli in salsa (anchovy-onion pasta)', '€3 ombre wine — cheapest good wine in Verona', 'Perfect local lunch stop'],
+  },
+  'd-lele': {
+    address: 'Campo dei Tolentini 183, Santa Croce, Venice',
+    imageUrl: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=600&h=300&fit=crop',
+    whatToExpect: ['Student favorite — cheapest in Venice', 'Mini panini €1.75, wine €1.20', 'Sit on the church steps', 'No frills, maximum Venice'],
+  },
+
+  // ═══ PREVIOUSLY MISSING — SPECIAL MEALS ═══
+  'm-pagliaccio': {
+    address: "Via dei Banchi Vecchi 129, near Campo de' Fiori",
+    imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=300&fit=crop',
+    reserveNote: 'Reserve 1+ month ahead.',
+    whatToExpect: ['2 Michelin stars', 'Creative Italian tasting menu by Anthony Genovese', 'More cutting-edge and contemporary than La Pergola', 'Slightly more accessible booking-wise'],
+    proTips: ['Pick either this OR La Pergola — both in one trip is overkill', 'This is the more modern, experimental choice'],
+  },
+  'm-fiore': {
+    address: 'Calle del Scaleter 2202, San Polo, Venice',
+    imageUrl: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&h=300&fit=crop',
+    reserveNote: 'Reserve weeks ahead.',
+    whatToExpect: ["Venice's most consistent Michelin star", 'Seafood only, near San Polo', 'Intimate atmosphere', 'The serious alternative to Testiere'],
+  },
 };
