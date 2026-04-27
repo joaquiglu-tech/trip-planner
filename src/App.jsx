@@ -44,7 +44,12 @@ export default function App() {
     <div className="app-shell">
       <TopBar S={S} session={session} onProfileClick={() => navigateTab('profile')} />
       <div className="page-container">
-        <ItineraryPage active={activeTab === 'itinerary'} S={S} />
+        <ItineraryPage
+          active={activeTab === 'itinerary'} S={S} setStatus={setStatus}
+          paidPrices={paidPrices} setPaidPrice={setPaidPrice}
+          notes={notes} setNote={setNote} files={files} setFile={setFile}
+          places={places} getPlaceData={getPlaceData}
+        />
         <SelectPage
           active={activeTab === 'planner'}
           S={S} setStatus={setStatus} onRefresh={refresh}
@@ -55,7 +60,9 @@ export default function App() {
         />
         <BudgetPage
           active={activeTab === 'budget'}
-          S={S} paidPrices={paidPrices} files={files}
+          S={S} setStatus={setStatus} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
+          notes={notes} setNote={setNote} files={files} setFile={setFile}
+          places={places} getPlaceData={getPlaceData}
           expenses={expenses} addExpense={addExpense} deleteExpense={deleteExpense}
           userEmail={email}
         />

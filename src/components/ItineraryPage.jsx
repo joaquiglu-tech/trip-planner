@@ -3,6 +3,7 @@ import { ALL_DAYS } from '../data/allDays';
 import { ITEMS, TYPE_LABEL, $f, usd } from '../data/items';
 import { ITEM_COORDS } from '../data/coords';
 import { ROUTE_STOPS, ROUTE_LINES } from '../data/routes';
+import DetailModal from './DetailModal';
 
 const PHASE_LABEL = { spain: '🇪🇸 Spain', rome: '🇮🇹 Rome', roadtrip: '🚗 Road Trip', venice: '🇮🇹 Venice' };
 const PHASE_COLOR = { spain: '#f97316', rome: '#1d4ed8', roadtrip: '#ea580c', venice: '#1d4ed8' };
@@ -140,7 +141,7 @@ function DayMap({ day, selections, active }) {
   return <div ref={mapRef} className="map-wrap" style={{ height: 280, borderRadius: 10 }}></div>;
 }
 
-function SelectionCard({ it, S }) {
+function SelectionCard({ it, S, onTap }) {
   const st = S[it.id] || '';
   let price = '';
   if (it.type === 'stay') price = $f(usd((it.pn || 0) * (it.nights || 1)));
@@ -149,7 +150,7 @@ function SelectionCard({ it, S }) {
   else if (it.type === 'activity') price = it.eur === 0 ? 'Free' : $f(usd(it.eur * 2));
 
   return (
-    <div className={`day-item-card ${st === 'conf' ? 'conf' : 'sel'}`}>
+    <div className={`day-item-card ${st === 'conf' ? 'conf' : 'sel'}`} onClick={() => onTap && onTap(it)} style={{ cursor: onTap ? 'pointer' : 'default' }}>
       <div className="dic-icon">{TYPE_ICON[it.type] || '📌'}</div>
       <div className="dic-info">
         <div className="dic-name">{it.name}</div>
@@ -185,7 +186,7 @@ function DriveInfo({ day }) {
   );
 }
 
-function DayDetail({ day, S, active }) {
+function DayDetail({ day, S, active, onItemTap }) {
   const selections = useMemo(() => getSelectedForCity(day.city, S), [day.city, S]);
   const stays = selections.filter(it => it.type === 'stay');
   const activities = selections.filter(it => it.type === 'activity');
@@ -194,8 +195,6 @@ function DayDetail({ day, S, active }) {
   return (
     <div className="day-detail">
       <DayMap day={day} selections={selections} active={active} />
-
-      {/* Drive time from previous city */}
       <DriveInfo day={day} />
 
       <div className="day-detail-header">
@@ -225,19 +224,19 @@ function DayDetail({ day, S, active }) {
       {stays.length > 0 && (
         <div className="day-section">
           <div className="day-section-title">Your Stay</div>
-          {stays.map(it => <SelectionCard key={it.id} it={it} S={S} />)}
+          {stays.map(it => <SelectionCard key={it.id} it={it} S={S} onTap={onItemTap} />)}
         </div>
       )}
       {activities.length > 0 && (
         <div className="day-section">
           <div className="day-section-title">Your Activities</div>
-          {activities.map(it => <SelectionCard key={it.id} it={it} S={S} />)}
+          {activities.map(it => <SelectionCard key={it.id} it={it} S={S} onTap={onItemTap} />)}
         </div>
       )}
       {dining.length > 0 && (
         <div className="day-section">
           <div className="day-section-title">Your Restaurants</div>
-          {dining.map(it => <SelectionCard key={it.id} it={it} S={S} />)}
+          {dining.map(it => <SelectionCard key={it.id} it={it} S={S} onTap={onItemTap} />)}
         </div>
       )}
 
@@ -354,12 +353,12 @@ function getTodayDayNumber() {
   return null;
 }
 
-export default function ItineraryPage({ active, S }) {
+export default function ItineraryPage({ active, S, setStatus, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData }) {
   const [view, setView] = useState('full');
+  const [selectedItem, setSelectedItem] = useState(null);
   const todayDay = getTodayDayNumber();
   const selectorRef = useRef(null);
 
-  // Auto-scroll to today button on mount
   useEffect(() => {
     if (todayDay && selectorRef.current) {
       const btn = selectorRef.current.querySelector(`[data-day="${todayDay}"]`);
@@ -383,7 +382,24 @@ export default function ItineraryPage({ active, S }) {
           </button>
         ))}
       </div>
-      {view === 'full' ? <FullTripView S={S} /> : <DayDetail day={ALL_DAYS[parseInt(view) - 1]} S={S} active={active} />}
+      {view === 'full' ? <FullTripView S={S} /> : <DayDetail day={ALL_DAYS[parseInt(view) - 1]} S={S} active={active} onItemTap={setSelectedItem} />}
+
+      {selectedItem && (
+        <DetailModal
+          it={selectedItem}
+          status={S[selectedItem.id] || ''}
+          setStatus={setStatus}
+          paidPrice={paidPrices?.[selectedItem.id]}
+          setPaidPrice={setPaidPrice}
+          note={notes?.[selectedItem.id]}
+          setNote={setNote}
+          existingFile={files?.[selectedItem.id]}
+          onFileChange={setFile}
+          placeData={places?.[selectedItem.id]}
+          getPlaceData={getPlaceData}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </div>
   );
 }

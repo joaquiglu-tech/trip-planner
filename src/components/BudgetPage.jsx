@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ITEMS, TYPE_LABEL, $f, itemCost } from '../data/items';
+import DetailModal from './DetailModal';
 
 const CATEGORIES = [
   { id: 'food', label: '🍽 Food', color: '#E8734A' },
@@ -9,8 +10,9 @@ const CATEGORIES = [
   { id: 'other', label: '📌 Other', color: '#78716C' },
 ];
 
-export default function BudgetPage({ active, S, paidPrices, files, expenses, addExpense, deleteExpense, userEmail }) {
+export default function BudgetPage({ active, S, setStatus, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData, expenses, addExpense, deleteExpense, userEmail }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('food');
   const [expNote, setExpNote] = useState('');
@@ -98,7 +100,7 @@ export default function BudgetPage({ active, S, paidPrices, files, expenses, add
           const paid = paidPrices[it.id];
           const hasFile = files?.[it.id];
           return (
-            <div key={it.id} className="budget-item">
+            <div key={it.id} className="budget-item" onClick={() => setSelectedItem(it)} style={{ cursor: 'pointer' }}>
               <div className="bi-left">
                 <div className="bi-name">{it.name}</div>
                 <div className="bi-meta">{it.city} · {st === 'conf' ? 'Booked' : 'Planned'}</div>
@@ -146,6 +148,23 @@ export default function BudgetPage({ active, S, paidPrices, files, expenses, add
             </div>
           </div>
         </div>
+      )}
+
+      {selectedItem && (
+        <DetailModal
+          it={selectedItem}
+          status={S[selectedItem.id] || ''}
+          setStatus={setStatus}
+          paidPrice={paidPrices?.[selectedItem.id]}
+          setPaidPrice={setPaidPrice}
+          note={notes?.[selectedItem.id]}
+          setNote={setNote}
+          existingFile={files?.[selectedItem.id]}
+          onFileChange={setFile}
+          placeData={places?.[selectedItem.id]}
+          getPlaceData={getPlaceData}
+          onClose={() => setSelectedItem(null)}
+        />
       )}
     </div>
   );
