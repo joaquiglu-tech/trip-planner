@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { $f, usd, TYPE_LABEL, SUBCAT_BADGE } from '../data/items';
 import { uploadFile, deleteFile } from '../lib/storage';
 
@@ -6,6 +6,14 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete }
   const st = status || '';
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // Back button closes modal
+  useEffect(() => {
+    window.history.pushState({ modal: true }, '', '');
+    function handlePop() { onClose(); }
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [onClose]);
 
   if (!it) return null;
 

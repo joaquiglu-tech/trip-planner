@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { ALL_DAYS } from '../data/allDays';
 import { ITEMS, TYPE_LABEL, $f, usd } from '../data/items';
 import { ITEM_COORDS } from '../data/coords';
@@ -14,10 +14,20 @@ function getSelectedForCity(city, S) {
     if (st !== 'sel' && st !== 'conf') return false;
     if (it.city === city) return true;
     if (city === 'Montepulciano' && it.city === 'Tuscany') return true;
-    if (city === "Val d'Orcia" && it.city === "Val d'Orcia") return true;
-    if (city === 'Florence' && it.city === 'Florence') return true;
     return false;
   });
+}
+
+function useGoogleMapsReady() {
+  const [ready, setReady] = useState(!!window.google?.maps);
+  useEffect(() => {
+    if (ready) return;
+    const interval = setInterval(() => {
+      if (window.google?.maps) { setReady(true); clearInterval(interval); }
+    }, 300);
+    return () => clearInterval(interval);
+  }, [ready]);
+  return ready;
 }
 
 function DayMap({ day, selections, active }) {
@@ -25,21 +35,28 @@ function DayMap({ day, selections, active }) {
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
   const prevKey = useRef(null);
+  const mapsReady = useGoogleMapsReady();
 
   const key = `${day.n}-${selections.map(s => s.id).join(',')}`;
 
   useEffect(() => {
-    if (!active || !window.google || !mapRef.current || !day.lat) return;
-    if (prevKey.current !== key) { mapInstance.current = null; prevKey.current = key; }
-    if (mapInstance.current) { window.google.maps.event.trigger(mapInstance.current, 'resize'); return; }
-
-    // Clear old markers
-    markersRef.current.forEach(m => m.setMap(null));
-    markersRef.current = [];
+    if (!active || !mapsReady || !mapRef.current || !day.lat) return;
+    if (prevKey.current !== key) {
+      // Destroy old map
+      markersRef.current.forEach(m => m.setMap(null));
+      markersRef.current = [];
+      mapInstance.current = null;
+      prevKey.current = key;
+    }
+    if (mapInstance.current) {
+      window.google.maps.event.trigger(mapInstance.current, 'resize');
+      return;
+    }
 
     const m = new window.google.maps.Map(mapRef.current, {
       center: { lat: day.lat, lng: day.lng }, zoom: day.zoom || 14,
-      mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
     });
 
     // City center marker
@@ -51,12 +68,11 @@ function DayMap({ day, selections, active }) {
 
     const bounds = new window.google.maps.LatLngBounds();
     bounds.extend({ lat: day.lat, lng: day.lng });
+    let hasExtra = false;
 
-    // Plot selected items
     selections.forEach((it) => {
       const coord = ITEM_COORDS[it.id];
       if (!coord) return;
-      const st = S => S; // just for color
       const color = it.type === 'stay' ? '#6366f1' : it.type === 'dining' || it.type === 'special' ? '#ea580c' : '#16a34a';
       const marker = new window.google.maps.Marker({
         position: { lat: coord.lat, lng: coord.lng }, map: m, title: coord.label,
@@ -68,12 +84,11 @@ function DayMap({ day, selections, active }) {
       marker.addListener('click', () => iw.open(m, marker));
       markersRef.current.push(marker);
       bounds.extend({ lat: coord.lat, lng: coord.lng });
+      hasExtra = true;
     });
 
-    // Fit bounds if we have multiple markers
-    if (selections.filter(it => ITEM_COORDS[it.id]).length > 0) {
+    if (hasExtra) {
       m.fitBounds(bounds, 40);
-      // Don't zoom in too much
       const listener = window.google.maps.event.addListener(m, 'idle', () => {
         if (m.getZoom() > 16) m.setZoom(16);
         window.google.maps.event.removeListener(listener);
@@ -81,7 +96,7 @@ function DayMap({ day, selections, active }) {
     }
 
     mapInstance.current = m;
-  }, [active, key]);
+  }, [active, key, mapsReady]);
 
   if (!day.lat) return null;
   return <div ref={mapRef} className="map-wrap" style={{ height: 280, borderRadius: 10 }}></div>;
@@ -90,10 +105,10 @@ function DayMap({ day, selections, active }) {
 function SelectionCard({ it, S }) {
   const st = S[it.id] || '';
   let price = '';
-  if (it.type === 'stay') price = $f(usd(it.pn || 0)) + '/n';
-  else if (it.type === 'dining') price = $f(usd(it.eur || 0)) + '/pp';
-  else if (it.type === 'special') price = $f(usd(it.ppEur || 0)) + '/pp';
-  else if (it.type === 'activity') price = it.eur === 0 ? 'Free' : $f(usd(it.eur)) + '/pp';
+  if (it.type === 'stay') price = $f(usd((it.pn || 0) * (it.nights || 1)));
+  else if (it.type === 'dining') price = $f(usd((it.eur || 0) * 2));
+  else if (it.type === 'special') price = $f(usd((it.ppEur || 0) * 2));
+  else if (it.type === 'activity') price = it.eur === 0 ? 'Free' : $f(usd(it.eur * 2));
 
   return (
     <div className={`day-item-card ${st === 'conf' ? 'conf' : 'sel'}`}>
@@ -120,10 +135,8 @@ function DayDetail({ day, S, active }) {
 
   return (
     <div className="day-detail">
-      {/* Map with selections pinned */}
       <DayMap day={day} selections={selections} active={active} />
 
-      {/* Day header */}
       <div className="day-detail-header">
         <span className="day-phase-dot" style={{ background: PHASE_COLOR[day.phase] }} />
         <div>
@@ -133,7 +146,6 @@ function DayDetail({ day, S, active }) {
         </div>
       </div>
 
-      {/* Plan */}
       <div className="day-section">
         <div className="day-section-title">Plan</div>
         {day.plan.map((p, i) => (
@@ -144,29 +156,23 @@ function DayDetail({ day, S, active }) {
         ))}
       </div>
 
-      {/* Eat & Drink */}
       <div className="day-section">
         <div className="day-section-title">Eat & Drink</div>
         {day.eat.map((e, i) => <div key={i} className="eat-line">{e}</div>)}
       </div>
 
-      {/* Selected stay */}
       {stays.length > 0 && (
         <div className="day-section">
           <div className="day-section-title">Your Stay</div>
           {stays.map(it => <SelectionCard key={it.id} it={it} S={S} />)}
         </div>
       )}
-
-      {/* Selected activities */}
       {activities.length > 0 && (
         <div className="day-section">
           <div className="day-section-title">Your Activities</div>
           {activities.map(it => <SelectionCard key={it.id} it={it} S={S} />)}
         </div>
       )}
-
-      {/* Selected dining */}
       {dining.length > 0 && (
         <div className="day-section">
           <div className="day-section-title">Your Restaurants</div>
@@ -178,10 +184,9 @@ function DayDetail({ day, S, active }) {
         <div className="day-no-sel">No selections yet for {day.city}. Go to Select & Price to choose stays, activities, and restaurants.</div>
       )}
 
-      {/* Maps links */}
       {day.lat && (
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <a href={`https://www.google.com/maps/@${day.lat},${day.lng},${day.zoom || 14}z`} target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1 }}>📍 Open in Maps</a>
+          <a href={`https://www.google.com/maps/@${day.lat},${day.lng},${day.zoom || 14}z`} target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1 }}>📍 Maps</a>
           <a href={`https://www.google.com/maps/dir/?api=1&destination=${day.lat},${day.lng}`} target="_blank" rel="noopener" className="gmaps-btn dark" style={{ flex: 1 }}>🧭 Directions</a>
         </div>
       )}
@@ -197,9 +202,7 @@ function FullTripView({ S }) {
         const days = ALL_DAYS.filter((d) => d.phase === phase);
         return (
           <div key={phase}>
-            <div className="phase-header" style={{ borderLeftColor: PHASE_COLOR[phase] }}>
-              {PHASE_LABEL[phase]} · {days.length} days
-            </div>
+            <div className="phase-header" style={{ borderLeftColor: PHASE_COLOR[phase] }}>{PHASE_LABEL[phase]} · {days.length} days</div>
             {days.map((day) => {
               const sels = getSelectedForCity(day.city, S);
               return (
@@ -235,9 +238,7 @@ export default function ItineraryPage({ active, S }) {
   return (
     <div id="page-itinerary" className={`page ${active ? 'active' : ''}`}>
       <div className="itin-selector">
-        <button className={`itin-opt ${view === 'full' ? 'active' : ''}`} onClick={() => setView('full')}>
-          Full Trip
-        </button>
+        <button className={`itin-opt ${view === 'full' ? 'active' : ''}`} onClick={() => setView('full')}>Full Trip</button>
         {ALL_DAYS.map((d) => (
           <button key={d.n} className={`itin-opt ${view === String(d.n) ? 'active' : ''}`} onClick={() => setView(String(d.n))}>
             <span className="itin-opt-phase" style={{ background: PHASE_COLOR[d.phase] }} />
@@ -245,12 +246,7 @@ export default function ItineraryPage({ active, S }) {
           </button>
         ))}
       </div>
-
-      {view === 'full' ? (
-        <FullTripView S={S} />
-      ) : (
-        <DayDetail day={ALL_DAYS[parseInt(view) - 1]} S={S} active={active} />
-      )}
+      {view === 'full' ? <FullTripView S={S} /> : <DayDetail day={ALL_DAYS[parseInt(view) - 1]} S={S} active={active} />}
     </div>
   );
 }

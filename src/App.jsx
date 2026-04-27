@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './lib/useAuth';
 import { useSelections } from './lib/useSelections';
 import { useCustomItems } from './lib/useCustomItems';
@@ -19,14 +19,35 @@ export default function App() {
   const { S, setStatus, loaded, updatedBy, toast, refresh } = useSelections(email);
   const { customItems, addItem, deleteItem } = useCustomItems();
 
+  // Browser back button support — push history state on tab change
+  const navigateTab = useCallback((tab) => {
+    setActiveTab(tab);
+    window.history.pushState({ tab }, '', '');
+  }, []);
+
+  useEffect(() => {
+    // Set initial state
+    window.history.replaceState({ tab: 'overview' }, '', '');
+
+    function handlePopState(e) {
+      if (e.state?.tab) {
+        setActiveTab(e.state.tab);
+      }
+      // Close sidebar on back
+      setSidebarOpen(false);
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   if (session === undefined) return <div className="loading-screen">Loading...</div>;
   if (!session) return <Login />;
   if (!loaded) return <div className="loading-screen">Loading trip data...</div>;
 
   return (
     <div className="app-shell">
-      <TopBar S={S} session={session} onMenuClick={() => setSidebarOpen(true)} onProfileClick={() => setActiveTab('profile')} />
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <TopBar S={S} session={session} onMenuClick={() => setSidebarOpen(true)} onProfileClick={() => navigateTab('profile')} />
+      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={navigateTab} />
       <div className="page-container">
         <OverviewPage active={activeTab === 'overview'} />
         <ItineraryPage active={activeTab === 'itinerary'} S={S} />

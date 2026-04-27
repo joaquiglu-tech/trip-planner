@@ -111,6 +111,11 @@ body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg);
 .summary-val.orange { color: #fb923c }
 .summary-val.green { color: #4ade80 }
 
+.breakdown-grid { margin-top: 8px; background: rgba(255,255,255,.05); border-radius: 8px; overflow: hidden }
+.bd-row { display: flex; justify-content: space-between; padding: 6px 10px; font-size: 11px; color: #a8a29e; border-bottom: 1px solid rgba(255,255,255,.05) }
+.bd-row:last-child { border-bottom: none }
+.bd-row.bd-total { font-weight: 800; color: #fb923c; font-size: 12px; padding-top: 8px }
+
 /* ═══ GRIDS ═══ */
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
 @media(max-width:620px) { .g2 { grid-template-columns: 1fr } }
