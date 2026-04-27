@@ -1,37 +1,25 @@
-import { useRef, useEffect } from 'react';
 import { ITEMS } from '../data/items';
 import { TL_STOPS } from '../data/routes';
 
-function getStopStatus(stop, S) {
-  // Check stay
-  const stayOpts = ITEMS.filter((i) => i.type === 'stay' && i.stayCity === stop.stayCity);
-  const stayConf = stayOpts.some((i) => S[i.id] === 'conf');
-  const staySel = stayOpts.some((i) => S[i.id] === 'sel');
-  // Check transport
-  const trSt = S[stop.transport.trId] || '';
-  const trConf = trSt === 'conf';
-  const trSel = trSt === 'sel';
-  // Both confirmed = green, any selected = orange, else gray
-  if (stayConf && trConf) return 'conf';
-  if (staySel || stayConf || trSel || trConf) return 'partial';
-  return 'none';
-}
-
-function countReady(S) {
-  let ready = 0;
+function countBooked(S) {
+  let booked = 0, total = 0;
   TL_STOPS.forEach((stop) => {
-    if (getStopStatus(stop, S) === 'conf') ready++;
+    total++;
+    const stayOpts = ITEMS.filter((i) => i.type === 'stay' && i.stayCity === stop.stayCity);
+    const stayConf = stayOpts.some((i) => S[i.id] === 'conf');
+    const trConf = (S[stop.transport.trId] || '') === 'conf';
+    if (stayConf && trConf) booked++;
   });
-  return ready;
+  return { booked, total };
 }
 
 export default function TopBar({ S, session, onMenuClick, onProfileClick }) {
-  const scrollRef = useRef(null);
+  const { booked, total } = countBooked(S);
+  const pct = total ? Math.round((booked / total) * 100) : 0;
+
   const email = session?.user?.email || '';
   const name = session?.user?.user_metadata?.display_name || email;
   const initial = (name || '?')[0].toUpperCase();
-  const ready = countReady(S);
-  const total = TL_STOPS.length;
 
   return (
     <div id="topbar">
@@ -40,21 +28,12 @@ export default function TopBar({ S, session, onMenuClick, onProfileClick }) {
           <span /><span /><span />
         </button>
         <div className="topbar-center">
-          <div className="topbar-progress-label">
-            <span>{ready}/{total} ready</span>
-          </div>
-          <div className="topbar-stepper" ref={scrollRef}>
-            {TL_STOPS.map((stop, i) => {
-              const status = getStopStatus(stop, S);
-              return (
-                <div key={stop.key} className="stepper-item">
-                  {i > 0 && <div className={`stepper-line stepper-line-${status}`} />}
-                  <div className={`stepper-dot stepper-dot-${status}`} title={stop.label} />
-                  <span className="stepper-label">{stop.label}</span>
-                </div>
-              );
-            })}
-          </div>
+          <div className="topbar-title">Spain & Italy 2026</div>
+          <div className="topbar-dates">Jul 12 – Aug 2</div>
+        </div>
+        <div className="topbar-pill">
+          <div className="pill-bar"><div className="pill-fill" style={{ width: pct + '%' }} /></div>
+          <span className="pill-text">{booked}/{total}</span>
         </div>
         <button className="topbar-avatar" onClick={onProfileClick}>{initial}</button>
       </div>
