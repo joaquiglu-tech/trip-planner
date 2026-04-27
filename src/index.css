@@ -396,3 +396,67 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .login-submit { width: 100%; padding: 12px; border-radius: var(--radius); border: none; background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; min-height: 44px; font-family: var(--font) }
 .login-submit:disabled { opacity: .5; cursor: not-allowed }
 .login-toggle { background: none; border: none; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 12px; padding: 6px; width: 100%; font-family: var(--font) }
+
+/* ═══ TODAY PAGE ═══ */
+.today-countdown { text-align: center; padding: 32px 16px 16px }
+.today-countdown-num { font-size: 48px; font-weight: 800; letter-spacing: -.04em; color: var(--accent); line-height: 1 }
+.today-countdown-label { font-size: 14px; color: var(--text-muted); margin-top: 4px }
+
+.today-progress-card { display: flex; align-items: center; gap: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 16px }
+.today-progress-ring { width: 48px; height: 48px; position: relative; flex-shrink: 0 }
+.today-ring-svg { width: 100%; height: 100%; transform: rotate(-90deg) }
+.today-ring-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700 }
+.today-progress-info { flex: 1; min-width: 0 }
+.today-progress-title { font-size: 14px; font-weight: 700 }
+.today-progress-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px }
+
+.today-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px }
+.today-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 8px }
+
+.today-attention-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border-lighter); cursor: pointer; font-size: 13px }
+.today-attention-item:last-child { border-bottom: none }
+.today-attention-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill); background: #FEF2F2; color: #DC2626; flex-shrink: 0 }
+.today-attention-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500 }
+.today-attention-arrow { color: var(--text-muted); flex-shrink: 0 }
+
+.today-booking-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-lighter); cursor: pointer }
+.today-booking-item:last-child { border-bottom: none }
+.today-booking-icon { font-size: 18px; flex-shrink: 0 }
+.today-booking-info { flex: 1; min-width: 0 }
+.today-booking-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.today-booking-city { font-size: 11px; color: var(--text-muted) }
+.today-booking-check { color: var(--green); font-size: 14px; flex-shrink: 0 }
+
+/* During-trip */
+.today-day-selector { display: flex; align-items: center; gap: 6px; margin-bottom: 12px }
+.today-day-pill { padding: 6px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border); font-size: 12px; font-weight: 600; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); font-family: var(--font) }
+.today-day-pill.active { background: var(--text); color: var(--bg); border-color: var(--text) }
+.today-day-nav { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--text-muted); font-family: var(--font) }
+.today-day-label { font-size: 12px; font-weight: 600; color: var(--text-muted) }
+
+.today-day-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px }
+.today-day-badge { padding: 4px 10px; border-radius: var(--radius-pill); color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0 }
+.today-day-date { font-size: 11px; color: var(--text-muted); font-weight: 600 }
+.today-day-title { font-size: 16px; font-weight: 700; letter-spacing: -.01em }
+
+.today-stay-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px; cursor: pointer }
+.today-stay-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 4px }
+.today-stay-name { font-size: 16px; font-weight: 700; letter-spacing: -.01em }
+.today-stay-address { font-size: 12px; color: var(--text-muted); margin-top: 2px }
+.today-stay-actions { display: flex; gap: 6px; margin-top: 8px }
+.today-action-btn { padding: 6px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center }
+.today-stay-status { font-size: 11px; font-weight: 700; margin-top: 8px; color: var(--text-muted) }
+.today-stay-status.booked { color: var(--green) }
+
+.today-plan-step { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.5 }
+.today-plan-step:last-child { margin-bottom: 0 }
+.today-step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px }
+
+.today-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-lighter); cursor: pointer }
+.today-item:last-child { border-bottom: none }
+.today-item-icon { font-size: 18px; flex-shrink: 0 }
+.today-item-info { flex: 1; min-width: 0 }
+.today-item-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.today-item-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.today-item-actions { display: flex; gap: 4px; flex-shrink: 0 }
+.today-action-btn-sm { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-card-hd); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 14px }

@@ -21,8 +21,9 @@ export default function FilterBar({ filters, setFilters }) {
       </select>
       <select id="f-status" value={filters.status} onChange={(e) => update('status', e.target.value)}>
         <option value="all">All statuses</option>
+        <option value="unbooked">Unbooked</option>
         <option value="sel">Selected only</option>
-        <option value="conf">Confirmed only</option>
+        <option value="conf">Booked only</option>
         <option value="none">Not selected</option>
       </select>
       <button

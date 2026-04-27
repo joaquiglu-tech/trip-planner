@@ -52,6 +52,7 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
       if (filters.city !== 'all' && it.city !== filters.city) return false;
       if (filters.urgent && !it.urgent) return false;
       const st = S[it.id] || it.def || '';
+      if (filters.status === 'unbooked' && st !== 'sel') return false;
       if (filters.status === 'sel' && st !== 'sel') return false;
       if (filters.status === 'conf' && st !== 'conf') return false;
       if (filters.status === 'none' && st !== '') return false;

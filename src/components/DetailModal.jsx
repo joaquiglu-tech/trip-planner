@@ -335,7 +335,21 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
                 <span>✓ Booked</span>
                 <button className="status-change-btn" onClick={() => { setStatus(it.id, 'sel'); }}>Change status</button>
               </div>
-              {!file && (
+              {/* Booking details prompt — price + file together */}
+              {(!costInput && !file) && setPaidPrice && (
+                <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 14, marginBottom: 8 }}>
+                  <div className="detail-section-title" style={{ marginBottom: 8 }}>Booking details</div>
+                  <div className="cost-input-row" style={{ marginBottom: 10 }}>
+                    <span className="cost-input-prefix">$</span>
+                    <input type="number" className="cost-input" placeholder="How much did you pay?" value={costInput} onChange={(e) => setCostInput(e.target.value)} onBlur={() => { const val = parseFloat(costInput); if (!isNaN(val) && val > 0) setPaidPrice(it.id, val); }} />
+                  </div>
+                  <label className="upload-cta" style={{ marginBottom: 0 }}>
+                    📎 Attach confirmation
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
+                  </label>
+                </div>
+              )}
+              {!file && costInput && (
                 <label className="detail-btn upload-cta">
                   📎 Attach ticket or confirmation
                   <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />

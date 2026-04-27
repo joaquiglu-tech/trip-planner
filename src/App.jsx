@@ -7,7 +7,7 @@ import { useExpenses } from './lib/useExpenses';
 import Login from './components/Login';
 import TopBar from './components/TopBar';
 import BottomTabs from './components/BottomTabs';
-import ItineraryPage from './components/ItineraryPage';
+import TodayPage from './components/TodayPage';
 import SelectPage from './components/SelectPage';
 import BudgetPage from './components/BudgetPage';
 import ProfilePage from './components/ProfilePage';
@@ -15,7 +15,7 @@ import Toast from './components/Toast';
 
 export default function App() {
   const session = useAuth();
-  const [activeTab, setActiveTab] = useState('itinerary');
+  const [activeTab, setActiveTab] = useState('today');
   const email = session?.user?.email || '';
   const { S, setStatus, loaded, paidPrices, setPaidPrice, notes, setNote, files, setFile, toast, refresh } = useSelections(email);
   const { customItems, addItem, deleteItem } = useCustomItems();
@@ -28,7 +28,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    window.history.replaceState({ tab: 'itinerary' }, '', '');
+    window.history.replaceState({ tab: 'today' }, '', '');
     function handlePopState(e) { if (e.state?.tab) setActiveTab(e.state.tab); }
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -44,14 +44,14 @@ export default function App() {
     <div className="app-shell">
       <TopBar S={S} session={session} onProfileClick={() => navigateTab('profile')} />
       <div className="page-container">
-        <ItineraryPage
-          active={activeTab === 'itinerary'} S={S} setStatus={setStatus}
+        <TodayPage
+          active={activeTab === 'today'} S={S} setStatus={setStatus}
           paidPrices={paidPrices} setPaidPrice={setPaidPrice}
           notes={notes} setNote={setNote} files={files} setFile={setFile}
           places={places} getPlaceData={getPlaceData}
         />
         <SelectPage
-          active={activeTab === 'planner'}
+          active={activeTab === 'plan'}
           S={S} setStatus={setStatus} onRefresh={refresh}
           customItems={customItems} addItem={addItem} deleteItem={deleteItem}
           userEmail={email} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
