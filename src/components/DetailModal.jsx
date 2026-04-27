@@ -314,18 +314,34 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
           )}
         </div>
 
-        {/* Sticky action bar — separate Select + Confirm */}
+        {/* Sticky action bar — clear status + actions */}
         <div className="detail-action-bar">
-          <div className="detail-action-row">
-            <button className={`detail-btn ${st ? 'sel' : ''}`} onClick={handleSelect}>
-              {st ? 'Remove from trip' : 'Add to our trip'}
-            </button>
-            {st && (
-              <button className={`detail-btn ${st === 'conf' ? 'conf' : ''}`} onClick={handleConfirm}>
-                {st === 'conf' ? 'Booked!' : 'Mark as booked'}
-              </button>
-            )}
-          </div>
+          {!st && (
+            <button className="detail-btn sel" onClick={handleSelect}>Add to our trip</button>
+          )}
+          {st === 'sel' && (
+            <>
+              <div className="status-banner sel-banner">
+                <span>✓ Added to trip</span>
+                <button className="status-change-btn" onClick={handleSelect}>Remove</button>
+              </div>
+              <button className="detail-btn conf" onClick={handleConfirm}>Mark as booked</button>
+            </>
+          )}
+          {st === 'conf' && (
+            <>
+              <div className="status-banner conf-banner">
+                <span>✓ Booked</span>
+                <button className="status-change-btn" onClick={() => { setStatus(it.id, 'sel'); }}>Change status</button>
+              </div>
+              {!file && (
+                <label className="detail-btn upload-cta">
+                  📎 Attach ticket or confirmation
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
+                </label>
+              )}
+            </>
+          )}
           {onDelete && (
             <button className="detail-btn-delete" onClick={() => { if (confirm('Remove this item?')) onDelete(); }}>Remove</button>
           )}

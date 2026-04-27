@@ -478,9 +478,12 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .note-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; background: var(--bg); color: var(--text); font-family: inherit; resize: vertical; line-height: 1.5 }
 .note-input::placeholder { color: var(--text-light) }
 
-/* Separate action buttons row */
-.detail-action-row { display: flex; gap: 8px }
-.detail-action-row .detail-btn { flex: 1; padding: 14px 8px; font-size: 14px; min-height: 48px }
+/* Status banners */
+.status-banner { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: var(--radius); margin-bottom: 8px; font-size: 14px; font-weight: 700 }
+.sel-banner { background: var(--orange-light); color: var(--orange) }
+.conf-banner { background: var(--green-light); color: var(--green) }
+.status-change-btn { background: none; border: none; color: inherit; font-size: 12px; font-weight: 600; cursor: pointer; opacity: .7; text-decoration: underline }
+.upload-cta { display: block; width: 100%; padding: 14px; border-radius: var(--radius); border: 2px dashed var(--green); background: var(--green-light); color: var(--green); font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; min-height: 48px }
 
 /* ═══ ACCESSIBILITY ═══ */
 @media (prefers-reduced-motion: reduce) {
