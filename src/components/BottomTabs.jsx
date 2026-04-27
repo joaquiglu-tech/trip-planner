@@ -1,6 +1,6 @@
 export default function BottomTabs({ activeTab, setActiveTab }) {
   const tabs = [
-    { id: 'today', icon: 'calendar', label: 'Today' },
+    { id: 'today', icon: 'calendar', label: 'Itinerary' },
     { id: 'plan', icon: 'check', label: 'Plan' },
     { id: 'budget', icon: 'wallet', label: 'Budget' },
   ];

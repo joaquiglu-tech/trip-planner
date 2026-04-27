@@ -274,6 +274,12 @@ function DayDetailView({ day, S, paidPrices, onItemTap, places, visible }) {
           <div className="today-stay-label">Where you're sleeping</div>
           <div className="today-stay-name">{stay.name}</div>
           {stay.address && <div className="today-stay-address">{stay.address}</div>}
+          {(stay.checkIn || stay.checkOut) && (
+            <div className="today-stay-times">
+              {stay.checkIn && <span>Check-in: {stay.checkIn}</span>}
+              {stay.checkOut && <span>Check-out: {stay.checkOut}</span>}
+            </div>
+          )}
           <div className="today-stay-actions">
             {ITEM_COORDS[stay.id] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${ITEM_COORDS[stay.id].lat},${ITEM_COORDS[stay.id].lng}`} target="_blank" rel="noopener" className="today-action-btn" onClick={(e) => e.stopPropagation()}>Directions</a>}
             {places?.[stay.id]?.phone && <a href={`tel:${places[stay.id].phone}`} className="today-action-btn" onClick={(e) => e.stopPropagation()}>Call</a>}
@@ -386,11 +392,15 @@ export default function TodayPage({ active, S, setStatus, paidPrices, setPaidPri
           return (
             <span key={phase} className="today-sel-group">
               <span className="today-sel-divider" style={{ background: PHASE_COLOR[phase] }} />
-              {days.map(d => (
-                <button key={d.n} data-day={d.n - 1} className={`today-sel-pill ${view === d.n - 1 ? 'active' : ''} ${d.n - 1 === todayIdx ? 'is-today' : ''}`} onClick={() => setView(d.n - 1)}>
-                  {d.n}
-                </button>
-              ))}
+              {days.map(d => {
+                const shortDate = new Date(d.startDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return (
+                  <button key={d.n} data-day={d.n - 1} className={`today-sel-pill today-sel-pill-day ${view === d.n - 1 ? 'active' : ''} ${d.n - 1 === todayIdx ? 'is-today' : ''}`} onClick={() => setView(d.n - 1)}>
+                    <span className="pill-day-num">{d.n}</span>
+                    <span className="pill-day-date">{shortDate}</span>
+                  </button>
+                );
+              })}
             </span>
           );
         })}

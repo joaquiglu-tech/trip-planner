@@ -40,9 +40,9 @@ function ItemCard({ it, status, onTap, photoUrl: googlePhoto }) {
         </div>
 
         {it.dish && <p className="ic-subtitle">{it.dish}</p>}
-        {!it.dish && it.type === 'stay' && <p className="ic-subtitle">{it.tier} · {it.city}</p>}
+        {!it.dish && it.type === 'stay' && <p className="ic-subtitle">{it.tier} · {it.city}{it.checkIn ? ` · In ${it.checkIn}` : ''}</p>}
         {!it.dish && it.type === 'activity' && <p className="ic-subtitle">{it.city}{it.hrs ? ` · ${it.hrs}h` : ''}</p>}
-        {!it.dish && it.type === 'transport' && <p className="ic-subtitle">{it.city}</p>}
+        {!it.dish && it.type === 'transport' && <p className="ic-subtitle">{it.route || it.city}{it.departTime && it.departTime !== 'TBD' ? ` · ${it.departTime}` : ''}</p>}
 
         <div className="ic-tags">
           {it.urgent && <span className="ic-tag urgent">Book now</span>}

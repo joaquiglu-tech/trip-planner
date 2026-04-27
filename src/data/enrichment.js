@@ -1,7 +1,8 @@
 // Enrichment data merged into ITEMS — addresses, images, quotes, tips, comparison options
 export const ENRICHMENT = {
-  // ═══ TRANSPORT — comparison options ═══
+  // ═══ TRANSPORT — comparison options + times ═══
   'tr1': {
+    departTime: 'TBD', arriveTime: 'TBD', route: 'MAD → MAH',
     options: [
       { name: 'Iberia', detail: 'Direct MAD→MAH, ~1h30', price: '~$140/pp', url: 'https://www.iberia.com' },
       { name: 'Ryanair', detail: 'Direct, budget carrier', price: '~$80/pp', url: 'https://www.ryanair.com' },
@@ -10,12 +11,14 @@ export const ENRICHMENT = {
     tips: ['July is peak Menorca — book NOW', 'Ryanair has strictest baggage rules (cabin bag only free)', 'Iberia includes checked bag on most fares'],
   },
   'tr2': {
+    departTime: 'TBD', arriveTime: 'TBD', route: 'MAH → AGP',
     options: [
       { name: 'Ryanair', detail: 'Direct MAH→AGP, ~1h45', price: '~$95/pp', url: 'https://www.ryanair.com' },
     ],
     tips: ['Only Ryanair flies this route direct', 'Book 60+ days out for best price'],
   },
   'tr3': {
+    departTime: 'TBD', arriveTime: 'TBD', route: 'AGP → FCO',
     options: [
       { name: 'Ryanair', detail: 'Direct AGP→FCO, ~2h35', price: '~$80–130/pp', url: 'https://www.ryanair.com' },
       { name: 'Vueling', detail: 'Direct, more legroom', price: '~$100–150/pp', url: 'https://www.vueling.com' },
@@ -25,6 +28,7 @@ export const ENRICHMENT = {
     tips: ['Peak summer — book 2+ months ahead', 'Fiumicino (FCO) has train to Trastevere station (€8, 30min)', 'Ciampino (CIA) is farther — avoid if possible'],
   },
   'tr4': {
+    departTime: '9:00 AM', arriveTime: '10:30 AM', route: 'Roma Termini → Firenze SMN',
     options: [
       { name: 'Italo', detail: 'Frecciarossa, 1h30, modern', price: '~$25–55/pp', url: 'https://www.italotreno.it' },
       { name: 'Trenitalia', detail: 'Frecciarossa, 1h30', price: '~$25–55/pp', url: 'https://www.trenitalia.com' },
@@ -32,6 +36,7 @@ export const ENRICHMENT = {
     tips: ['Book 60+ days ahead for €19 "Super Economy" fare', 'Roma Termini → Firenze SMN direct', 'Italo often cheaper than Trenitalia for same route'],
   },
   'tr5': {
+    departTime: 'Jul 24 pickup', arriveTime: 'Aug 1 dropoff', route: 'Florence SMN',
     options: [
       { name: 'DiscoverCars', detail: 'Compact, full coverage included', price: '~$570/8 days', url: 'https://www.discovercars.com/italy/florence' },
       { name: 'AutoEurope', detail: 'Compare multiple suppliers', price: '~$500–650/8 days', url: 'https://www.autoeurope.com' },
@@ -47,6 +52,7 @@ export const ENRICHMENT = {
     ],
   },
   'tr6': {
+    departTime: '~3:00 PM', arriveTime: '~5:30 PM', route: 'VCE → MAD',
     options: [
       { name: 'Vueling', detail: 'VY6540, direct VCE→MAD, ~2h30', price: '~$100–160/pp', url: 'https://www.vueling.com' },
       { name: 'Iberia', detail: 'IB3199, direct, checked bag included', price: '~$130–180/pp', url: 'https://www.iberia.com' },
@@ -57,6 +63,7 @@ export const ENRICHMENT = {
 
   // ═══ STAYS ═══
   's-rome1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1529290130-4ca3753253ae?w=600&h=300&fit=crop',
     highlights: ['Family-run since 1923', "Near Campo de' Fiori — Rome's liveliest piazza", 'Walk to Pantheon, Navona, Trastevere in 10 min', 'Breakfast included'],
     options: [
@@ -65,6 +72,7 @@ export const ENRICHMENT = {
     ],
   },
   's-rome2': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&h=300&fit=crop',
     highlights: ["Via Giulia — one of Rome's most elegant streets", 'Rooftop terrace with Palazzo Farnese views', 'Design hotel, IHG flagship'],
     options: [
@@ -73,6 +81,7 @@ export const ENRICHMENT = {
     ],
   },
   's-rome4': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&h=300&fit=crop',
     highlights: ['Secret garden between Spanish Steps and Piazza del Popolo', 'Rocco Forte group', 'Forbes 5-Star'],
     options: [
@@ -81,6 +90,7 @@ export const ENRICHMENT = {
     ],
   },
   's-flo1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1541370976299-4d24ebbc9077?w=600&h=300&fit=crop',
     highlights: ['Booking.com 9.2 Wonderful', 'Walk to Duomo and Uffizi', 'Family-run, breakfast included', 'Most consistent mid-range pick in Florence'],
     options: [
@@ -89,6 +99,7 @@ export const ENRICHMENT = {
     ],
   },
   's-mon1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=600&h=300&fit=crop',
     highlights: ["Inside medieval walls on Piazza San Francesco", "Panoramic Val d'Orcia valley views"],
     options: [
@@ -96,6 +107,7 @@ export const ENRICHMENT = {
     ],
   },
   's-vd1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=600&h=300&fit=crop',
     highlights: ['Working family farm — their own wine, pecorino, olive oil', 'Drive there SOBER in the morning, drink all day', 'Communal farm dinner — book by email: info@podereilcasale.it', 'Slow Food certified'],
     options: [
@@ -103,6 +115,7 @@ export const ENRICHMENT = {
     ],
   },
   's-ler1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1537799943037-f5da89a65689?w=600&h=300&fit=crop',
     highlights: ['On the Lerici bay waterfront', 'Medieval fishing village', 'Walk to seafood restaurants and castle'],
     options: [
@@ -110,6 +123,7 @@ export const ENRICHMENT = {
     ],
   },
   's-bg1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1568084680786-a84f91d1153c?w=600&h=300&fit=crop',
     highlights: ['Inside UNESCO Venetian walls', 'Directly on Piazza Vecchia — the most beautiful piazza in Bergamo'],
     options: [
@@ -117,6 +131,7 @@ export const ENRICHMENT = {
     ],
   },
   's-bel1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&h=300&fit=crop',
     highlights: ['Right on Bellagio harbor', 'Family-run since 1850', 'Walk to the ferry'],
     options: [
@@ -125,6 +140,7 @@ export const ENRICHMENT = {
     ],
   },
   's-sir1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=600&h=300&fit=crop',
     highlights: ['4-star with thermal pool', '5-min walk to walled medieval town', 'Lake Garda views'],
     options: [
@@ -133,6 +149,7 @@ export const ENRICHMENT = {
     ],
   },
   's-ver1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=600&h=300&fit=crop',
     highlights: ['ON Piazza delle Erbe — the main square', 'Balconies overlooking evening aperitivo crowd', 'Booking.com 9.0'],
     options: [
@@ -141,6 +158,7 @@ export const ENRICHMENT = {
     ],
   },
   's-ven1': {
+    checkIn: '3:00 PM', checkOut: '11:00 AM',
     imageUrl: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=600&h=300&fit=crop',
     highlights: ['Castello district near Rialto', 'Courtyard wellness area', 'Walk to all the best bacari'],
     options: [
