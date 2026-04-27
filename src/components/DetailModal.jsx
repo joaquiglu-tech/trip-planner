@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { $f, usd, TYPE_LABEL, SUBCAT_BADGE } from '../data/items';
 import { uploadFile, deleteFile } from '../lib/storage';
 
-export default function DetailModal({ it, status, setStatus, onClose, onDelete }) {
+export default function DetailModal({ it, status, setStatus, onClose, onDelete, paidPrice, setPaidPrice }) {
   const st = status || '';
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [costInput, setCostInput] = useState(paidPrice ? String(paidPrice) : '');
 
   // Back button closes modal
   useEffect(() => {
@@ -234,6 +235,28 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete }
               <span className="file-chip-name">{file.name}</span>
               <a href={file.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: '#1967d2' }}>↓</a>
               <button onClick={handleRemoveFile} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0 }}>×</button>
+            </div>
+          )}
+
+          {/* Actual cost input */}
+          {(st === 'sel' || st === 'conf') && setPaidPrice && (
+            <div className="detail-section" style={{ marginTop: 8 }}>
+              <div className="detail-section-title">Actual Cost Paid (USD)</div>
+              <div className="cost-input-row">
+                <span className="cost-input-prefix">$</span>
+                <input
+                  type="number"
+                  className="cost-input"
+                  placeholder="0"
+                  value={costInput}
+                  onChange={(e) => setCostInput(e.target.value)}
+                  onBlur={() => {
+                    const val = parseFloat(costInput);
+                    if (!isNaN(val) && val > 0) setPaidPrice(it.id, val);
+                    else if (costInput === '' || costInput === '0') setPaidPrice(it.id, 0);
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>

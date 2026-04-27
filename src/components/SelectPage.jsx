@@ -11,7 +11,7 @@ const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
 
 const MemoItemCard = memo(ItemCard);
 
-export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh, customItems, addItem, deleteItem, userEmail }) {
+export default function SelectPage({ active, S, setStatus, onRefresh, customItems, addItem, deleteItem, userEmail, paidPrices, setPaidPrice }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
   const [summaryCollapsed, setSummaryCollapsed] = useState(true);
   const [pulling, setPulling] = useState(false);
@@ -155,6 +155,8 @@ export default function SelectPage({ active, S, setStatus, updatedBy, onRefresh,
           it={selectedItem}
           status={S[selectedItem.id] || ''}
           setStatus={setStatus}
+          paidPrice={paidPrices?.[selectedItem.id]}
+          setPaidPrice={setPaidPrice}
           onClose={() => setSelectedItem(null)}
           onDelete={selectedItem.isCustom ? () => { deleteItem(selectedItem.customId); setSelectedItem(null); } : null}
         />

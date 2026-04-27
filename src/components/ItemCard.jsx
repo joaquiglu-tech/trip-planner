@@ -1,53 +1,48 @@
+import { memo } from 'react';
 import { $f, usd, SUBCAT_BADGE } from '../data/items';
 
-export default function ItemCard({ it, status, onTap }) {
+function ItemCard({ it, status, onTap }) {
   const st = status || '';
-  const stClass = st === 'conf' ? 'conf' : st === 'sel' ? 'sel' : '';
 
-  // Total cost for couple / full stay
   let price = '';
-  let priceNote = '';
-  if (it.type === 'stay') {
-    price = $f(usd((it.pn || 0) * (it.nights || 1)));
-    priceNote = `${it.nights}n total`;
-  } else if (it.type === 'activity') {
-    if (it.eur === 0) { price = 'Free'; }
-    else { price = $f(usd(it.eur * 2)); priceNote = '2 ppl'; }
-  } else if (it.type === 'special') {
-    price = $f(usd((it.ppEur || 0) * 2));
-    priceNote = '2 ppl';
-  } else if (it.type === 'dining') {
-    if (!it.eur || it.eur === 0) { price = 'Free'; }
-    else { price = $f(usd(it.eur * 2)); priceNote = '2 ppl'; }
-  } else if (it.priceLabel) {
-    price = it.priceLabel;
-  }
+  let unit = '';
+  if (it.type === 'stay') { price = $f(usd((it.pn || 0) * (it.nights || 1))); unit = `${it.nights}n`; }
+  else if (it.type === 'activity') { price = it.eur === 0 ? 'Free' : $f(usd(it.eur * 2)); unit = it.eur ? '2p' : ''; }
+  else if (it.type === 'special') { price = $f(usd((it.ppEur || 0) * 2)); unit = '2p'; }
+  else if (it.type === 'dining') { price = !it.eur ? '' : $f(usd(it.eur * 2)); unit = it.eur ? '2p' : ''; }
+  else if (it.priceLabel) { price = it.priceLabel; }
 
   return (
-    <div className={`sq-card ${stClass}`} onClick={() => onTap(it)}>
-      <div className="sq-body">
-        <div className="sq-header">
-          <div className="sq-badges">
-            {it.urgent && <span className="badge b-urgent" style={{ fontSize: 8, padding: '1px 5px' }}>⚠️</span>}
-            {it.subcat && SUBCAT_BADGE[it.subcat] && (
-              <span className={`badge ${SUBCAT_BADGE[it.subcat].cls}`} style={{ fontSize: 8, padding: '1px 5px' }}>{SUBCAT_BADGE[it.subcat].label}</span>
-            )}
-            {it.tier && <span className="badge b-bar" style={{ fontSize: 8, padding: '1px 5px' }}>{it.tier}</span>}
-          </div>
-          <span className={`sq-status-dot ${st === 'conf' ? 'dot-conf' : st === 'sel' ? 'dot-sel' : ''}`} />
+    <div className={`item-card ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onTap(it)}>
+      {/* Status accent */}
+      {st && <div className={`ic-accent ${st}`} />}
+
+      <div className="ic-content">
+        {/* Top row: name + price */}
+        <div className="ic-top-row">
+          <h3 className="ic-title">{it.name}</h3>
+          {price && (
+            <div className="ic-price-block">
+              <span className="ic-price-val">{price}</span>
+              {unit && <span className="ic-price-unit">{unit}</span>}
+            </div>
+          )}
         </div>
-        <div className="sq-name">{it.name}</div>
-        {it.dish && <div className="sq-dish">{it.dish}</div>}
-        {!it.dish && it.type === 'stay' && <div className="sq-dish">{it.city} · {it.nights}n</div>}
-        {!it.dish && it.type === 'activity' && <div className="sq-dish">{it.city}{it.hrs ? ` · ${it.hrs}h` : ''}</div>}
-        {!it.dish && it.type === 'transport' && <div className="sq-dish">{it.city}</div>}
-        <div className="sq-bottom">
-          <div className="sq-price-group">
-            <span className="sq-price-main">{price}</span>
-            {priceNote && <span className="sq-price-note">{priceNote}</span>}
-          </div>
+
+        {/* Subtitle */}
+        {it.dish && <p className="ic-subtitle">{it.dish}</p>}
+        {!it.dish && it.type === 'stay' && <p className="ic-subtitle">{it.tier} · {it.city}</p>}
+        {!it.dish && it.type === 'activity' && <p className="ic-subtitle">{it.city}{it.hrs ? ` · ${it.hrs}h` : ''}</p>}
+
+        {/* Bottom: badges */}
+        <div className="ic-tags">
+          {it.urgent && <span className="ic-tag urgent">Book now</span>}
+          {it.subcat && SUBCAT_BADGE[it.subcat] && <span className="ic-tag">{SUBCAT_BADGE[it.subcat].label}</span>}
+          {!it.subcat && !it.tier && it.city && <span className="ic-tag">{it.city}</span>}
         </div>
       </div>
     </div>
   );
 }
+
+export default memo(ItemCard);

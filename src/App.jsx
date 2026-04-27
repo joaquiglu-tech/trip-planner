@@ -4,38 +4,31 @@ import { useSelections } from './lib/useSelections';
 import { useCustomItems } from './lib/useCustomItems';
 import Login from './components/Login';
 import TopBar from './components/TopBar';
-import Sidebar from './components/Sidebar';
-import OverviewPage from './components/OverviewPage';
+import BottomTabs from './components/BottomTabs';
 import ItineraryPage from './components/ItineraryPage';
 import SelectPage from './components/SelectPage';
+import MapPage from './components/MapPage';
+import BudgetPage from './components/BudgetPage';
 import ProfilePage from './components/ProfilePage';
 import Toast from './components/Toast';
 
 export default function App() {
   const session = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('itinerary');
   const email = session?.user?.email || '';
-  const { S, setStatus, loaded, updatedBy, toast, refresh } = useSelections(email);
+  const { S, setStatus, loaded, paidPrices, setPaidPrice, toast, refresh } = useSelections(email);
   const { customItems, addItem, deleteItem } = useCustomItems();
+  const [files] = useState({});
 
-  // Browser back button support — push history state on tab change
+  // Browser back button
   const navigateTab = useCallback((tab) => {
     setActiveTab(tab);
     window.history.pushState({ tab }, '', '');
   }, []);
 
   useEffect(() => {
-    // Set initial state
-    window.history.replaceState({ tab: 'overview' }, '', '');
-
-    function handlePopState(e) {
-      if (e.state?.tab) {
-        setActiveTab(e.state.tab);
-      }
-      // Close sidebar on back
-      setSidebarOpen(false);
-    }
+    window.history.replaceState({ tab: 'itinerary' }, '', '');
+    function handlePopState(e) { if (e.state?.tab) setActiveTab(e.state.tab); }
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -44,22 +37,25 @@ export default function App() {
   if (!session) return <Login />;
   if (!loaded) return <div className="loading-screen">Loading trip data...</div>;
 
+  const isProfile = activeTab === 'profile';
+
   return (
     <div className="app-shell">
-      <TopBar S={S} session={session} onMenuClick={() => setSidebarOpen(true)} onProfileClick={() => navigateTab('profile')} />
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={navigateTab} />
+      <TopBar S={S} session={session} onProfileClick={() => navigateTab('profile')} />
       <div className="page-container">
-        <OverviewPage active={activeTab === 'overview'} />
         <ItineraryPage active={activeTab === 'itinerary'} S={S} />
         <SelectPage
-          active={activeTab === 'select'}
-          S={S} setStatus={setStatus} updatedBy={updatedBy} onRefresh={refresh}
+          active={activeTab === 'planner'}
+          S={S} setStatus={setStatus} onRefresh={refresh}
           customItems={customItems} addItem={addItem} deleteItem={deleteItem}
-          userEmail={email}
+          userEmail={email} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
         />
-        <ProfilePage active={activeTab === 'profile'} session={session} />
+        <MapPage active={activeTab === 'map'} S={S} />
+        <BudgetPage active={activeTab === 'budget'} S={S} paidPrices={paidPrices} files={files} />
+        <ProfilePage active={isProfile} session={session} />
       </div>
       <Toast message={toast} />
+      {!isProfile && <BottomTabs activeTab={activeTab} setActiveTab={navigateTab} />}
     </div>
   );
 }
