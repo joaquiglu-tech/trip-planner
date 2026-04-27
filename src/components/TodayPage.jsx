@@ -241,85 +241,110 @@ function DayDetailView({ day, S, paidPrices, onItemTap, places, visible }) {
   const stay = selections.find((it) => it.type === 'stay');
   const activities = selections.filter((it) => it.type === 'activity');
   const dining = selections.filter((it) => it.type === 'dining' || it.type === 'special');
+  const allSelected = [...activities, ...dining].sort((a, b) => (a.name > b.name ? 1 : -1));
   const tips = DAY_TIPS[day.city] || null;
+
+  // Calculate nights for this stop
+  const nights = day.startDate && day.endDate ? Math.round((new Date(day.endDate) - new Date(day.startDate)) / 86400000) : 1;
+
+  // Build multi-stop Google Maps directions URL
+  const coords = allSelected.map(it => ITEM_COORDS[it.id]).filter(Boolean);
+  const mapsRouteUrl = coords.length > 1
+    ? `https://www.google.com/maps/dir/${coords.map(c => `${c.lat},${c.lng}`).join('/')}`
+    : coords.length === 1 ? `https://www.google.com/maps/dir/?api=1&destination=${coords[0].lat},${coords[0].lng}` : null;
 
   return (
     <>
       <DayMap day={day} selections={selections} visible={visible} />
       <DriveInfo day={day} />
 
+      {/* Header */}
       <div className="today-day-header">
         <div className="today-day-badge" style={{ background: PHASE_COLOR[day.phase] }}>{day.sleep}</div>
         <div>
-          <div className="today-day-date">{day.date}</div>
+          <div className="today-day-date">{day.date}{nights > 1 ? ` · ${nights} nights` : ''}</div>
           <div className="today-day-title">{day.title}</div>
         </div>
       </div>
 
+      {/* Stay */}
       {stay && (
         <div className="today-stay-card" onClick={() => onItemTap(stay)}>
-          <div className="today-stay-label">Where you're sleeping</div>
-          <div className="today-stay-name">{stay.name}</div>
-          {stay.address && <div className="today-stay-address">{stay.address}</div>}
+          <div className="today-stay-top">
+            <div>
+              <div className="today-stay-label">Stay</div>
+              <div className="today-stay-name">{stay.name}</div>
+              {stay.address && <div className="today-stay-address">{stay.address}</div>}
+            </div>
+            <div className={`today-stay-badge ${S[stay.id] === 'conf' ? 'booked' : ''}`}>{S[stay.id] === 'conf' ? '✓' : '—'}</div>
+          </div>
           {(stay.checkIn || stay.checkOut) && (
             <div className="today-stay-times">
-              {stay.checkIn && <span>Check-in: {stay.checkIn}</span>}
-              {stay.checkOut && <span>Check-out: {stay.checkOut}</span>}
+              {stay.checkIn && <span>In {stay.checkIn}</span>}
+              {stay.checkOut && <span>Out {stay.checkOut}</span>}
             </div>
           )}
           <div className="today-stay-actions">
             {ITEM_COORDS[stay.id] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${ITEM_COORDS[stay.id].lat},${ITEM_COORDS[stay.id].lng}`} target="_blank" rel="noopener" className="today-action-btn" onClick={(e) => e.stopPropagation()}>Directions</a>}
             {places?.[stay.id]?.phone && <a href={`tel:${places[stay.id].phone}`} className="today-action-btn" onClick={(e) => e.stopPropagation()}>Call</a>}
           </div>
-          <div className={`today-stay-status ${S[stay.id] === 'conf' ? 'booked' : ''}`}>{S[stay.id] === 'conf' ? '✓ Booked' : 'Not booked yet'}</div>
         </div>
       )}
 
+      {/* Plan timeline */}
       <div className="today-section">
-        <div className="today-section-title">Plan</div>
-        {day.plan.map((p, i) => (
-          <div key={i} className="today-plan-step"><span className="today-step-num">{i + 1}</span><span>{p}</span></div>
-        ))}
+        <div className="today-section-title">Schedule</div>
+        <div className="today-timeline">
+          {day.plan.map((p, i) => (
+            <div key={i} className="tl-step">
+              <div className="tl-step-dot" />
+              {i < day.plan.length - 1 && <div className="tl-step-line" />}
+              <div className="tl-step-text">{p}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {activities.length > 0 && (
+      {/* Your selections — combined activities + dining */}
+      {allSelected.length > 0 && (
         <div className="today-section">
-          <div className="today-section-title">Activities</div>
-          {activities.map((it) => (
-            <div key={it.id} className="today-item" onClick={() => onItemTap(it)}>
-              <span className="today-item-icon">{TYPE_ICON[it.type]}</span>
-              <div className="today-item-info"><div className="today-item-name">{it.name}</div>{it.hrs && <div className="today-item-sub">{it.hrs}h</div>}</div>
-              <div className="today-item-actions">
-                {ITEM_COORDS[it.id] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${ITEM_COORDS[it.id].lat},${ITEM_COORDS[it.id].lng}`} target="_blank" rel="noopener" className="today-action-btn-sm" onClick={(e) => e.stopPropagation()}>🧭</a>}
+          <div className="today-section-title">Your selections ({allSelected.length})</div>
+          {allSelected.map((it) => {
+            const st = S[it.id] || '';
+            return (
+              <div key={it.id} className="today-item" onClick={() => onItemTap(it)}>
+                <span className="today-item-icon">{TYPE_ICON[it.type]}</span>
+                <div className="today-item-info">
+                  <div className="today-item-name">{it.name}</div>
+                  <div className="today-item-sub">{it.dish || (it.hrs ? `${it.hrs}h` : it.city)}</div>
+                </div>
+                <div className="today-item-right">
+                  <span className={`today-item-status ${st === 'conf' ? 'booked' : ''}`}>{st === 'conf' ? '✓' : '●'}</span>
+                  {ITEM_COORDS[it.id] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${ITEM_COORDS[it.id].lat},${ITEM_COORDS[it.id].lng}`} target="_blank" rel="noopener" className="today-action-btn-sm" onClick={(e) => e.stopPropagation()}>🧭</a>}
+                  {places?.[it.id]?.phone && <a href={`tel:${places[it.id].phone}`} className="today-action-btn-sm" onClick={(e) => e.stopPropagation()}>📞</a>}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {dining.length > 0 && (
-        <div className="today-section">
-          <div className="today-section-title">Eat & Drink</div>
-          {dining.map((it) => (
-            <div key={it.id} className="today-item" onClick={() => onItemTap(it)}>
-              <span className="today-item-icon">{TYPE_ICON[it.type]}</span>
-              <div className="today-item-info"><div className="today-item-name">{it.name}</div>{it.dish && <div className="today-item-sub">{it.dish}</div>}</div>
-              <div className="today-item-actions">
-                {places?.[it.id]?.phone && <a href={`tel:${places[it.id].phone}`} className="today-action-btn-sm" onClick={(e) => e.stopPropagation()}>📞</a>}
-                {ITEM_COORDS[it.id] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${ITEM_COORDS[it.id].lat},${ITEM_COORDS[it.id].lng}`} target="_blank" rel="noopener" className="today-action-btn-sm" onClick={(e) => e.stopPropagation()}>🧭</a>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
+      {/* Recommendations from the curated data */}
       {day.eat.length > 0 && (
         <div className="today-section">
-          <div className="today-section-title">Also recommended</div>
+          <div className="today-section-title">Recommended</div>
           {day.eat.map((e, i) => <div key={i} className="eat-line">{e}</div>)}
         </div>
       )}
 
+      {/* Multi-stop directions */}
+      {mapsRouteUrl && allSelected.length > 1 && (
+        <a href={mapsRouteUrl} target="_blank" rel="noopener" className="gmaps-btn" style={{ marginTop: 8, width: '100%' }}>
+          Navigate all {allSelected.length} stops →
+        </a>
+      )}
+
+      {/* Travel tips */}
       {tips && (
         <details className="today-section" style={{ cursor: 'pointer' }}>
           <summary className="today-section-title" style={{ listStyle: 'none' }}>💡 Travel tips</summary>
@@ -332,13 +357,6 @@ function DayDetailView({ day, S, paidPrices, onItemTap, places, visible }) {
           <div className="empty-state-icon">📋</div>
           <div className="empty-state-title">Nothing planned yet</div>
           <div className="empty-state-text">Go to the Plan tab to pick stays, restaurants, and activities for {day.city}.</div>
-        </div>
-      )}
-
-      {day.lat && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <a href={`https://www.google.com/maps/@${day.lat},${day.lng},${day.zoom || 14}z`} target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1 }}>Open in Maps</a>
-          <a href={`https://www.google.com/maps/dir/?api=1&destination=${day.lat},${day.lng}`} target="_blank" rel="noopener" className="gmaps-btn" style={{ flex: 1, background: 'var(--accent)' }}>Directions</a>
         </div>
       )}
     </>
