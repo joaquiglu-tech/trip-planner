@@ -24,7 +24,14 @@ export default function TopBar({ S, session, onProfileClick }) {
   return (
     <header className="topbar" role="banner">
       <div className="topbar-info">
-        <h1 className="topbar-title">Anisita</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="10" cy="9" r="4.5" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M14.5 5 L14.5 15 Q14.5 18 12.5 19.5 L10 21.5" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="10" cy="21.5" r="1" fill="#22C55E"/>
+          </svg>
+          <h1 className="topbar-title">Anisita</h1>
+        </div>
         <div className="topbar-sub">
           <span className="topbar-dates">{TRIP.name}</span>
           <span className="topbar-progress">{booked}/{total}</span>

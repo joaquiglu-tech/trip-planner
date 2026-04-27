@@ -36,10 +36,13 @@ function getSelectedForCity(city, S) {
 }
 
 function getTodayDayIndex() {
-  const start = new Date(TRIP.startDate);
   const now = new Date();
-  const diff = Math.floor((now - start) / 86400000);
-  if (diff >= 0 && diff < ALL_DAYS.length) return diff;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  for (let i = 0; i < ALL_DAYS.length; i++) {
+    const start = new Date(ALL_DAYS[i].startDate);
+    const end = new Date(ALL_DAYS[i].endDate);
+    if (today >= start && today < end) return i;
+  }
   return null;
 }
 
