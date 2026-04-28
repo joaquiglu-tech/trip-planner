@@ -123,9 +123,16 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
             </details>
           )}
 
-          {/* ═══ TRANSPORT — comparison view ═══ */}
+          {/* ═══ TRANSPORT — times + comparison ═══ */}
           {it.type === 'transport' && (
             <>
+              {(it.departTime || it.route) && (
+                <div className="detail-times-bar">
+                  {it.route && <span className="detail-route">{it.route}</span>}
+                  {it.departTime && <span className="detail-time">Depart: {it.departTime}</span>}
+                  {it.arriveTime && <span className="detail-time">Arrive: {it.arriveTime}</span>}
+                </div>
+              )}
               <p className="detail-desc-full">{it.desc}</p>
               {it.options && (
                 <div className="detail-section">
@@ -153,6 +160,13 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
           {/* ═══ STAY — hotel/apartment detail ═══ */}
           {it.type === 'stay' && (
             <>
+              {(it.checkIn || it.checkOut || it.nights) && (
+                <div className="detail-times-bar">
+                  {it.nights && <span className="detail-time">{it.nights} nights</span>}
+                  {it.checkIn && <span className="detail-time">Check-in: {it.checkIn}</span>}
+                  {it.checkOut && <span className="detail-time">Check-out: {it.checkOut}</span>}
+                </div>
+              )}
               <p className="detail-desc-full">{it.desc}</p>
               {it.options && (
                 <div className="detail-section">

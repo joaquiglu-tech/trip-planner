@@ -152,6 +152,11 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .detail-hours summary { cursor: pointer; color: var(--text-muted); font-weight: 600; padding: 4px 0 }
 .detail-hours ul { list-style: none; padding: 4px 0 4px 16px }
 .detail-hours li { padding: 2px 0; color: var(--text-secondary); font-size: 12px }
+/* Times/route bar for transport and stays */
+.detail-times-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; background: var(--bg-card-hd); border-radius: var(--radius); margin-bottom: 12px; font-size: 12px }
+.detail-route { font-weight: 700; color: var(--text) }
+.detail-time { color: var(--text-secondary) }
+
 .detail-dish-block { background: var(--accent-light); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px }
 .detail-dish-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); display: block; margin-bottom: 2px }
 .detail-dish-text { font-size: 13px; font-weight: 600 }
