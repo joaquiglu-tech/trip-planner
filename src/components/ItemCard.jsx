@@ -1,53 +1,36 @@
 import { memo } from 'react';
 import { $f, usd, SUBCAT_BADGE } from '../data/items';
 
-const TYPE_EMOJI = { stay: '🏨', activity: '🎟️', special: '⭐', dining: '🍝', transport: '🚗' };
-
-function ItemCard({ it, status, onTap, photoUrl: googlePhoto }) {
+function ItemCard({ it, status, onTap }) {
   const st = status || '';
 
   let price = '';
-  let unit = '';
-  if (it.type === 'stay') { price = $f(usd((it.pn || 0) * (it.nights || 1))); unit = `${it.nights}n`; }
-  else if (it.type === 'activity') { price = it.eur === 0 ? 'Free' : $f(usd(it.eur * 2)); unit = it.eur ? '2p' : ''; }
-  else if (it.type === 'special') { price = $f(usd((it.ppEur || 0) * 2)); unit = '2p'; }
-  else if (it.type === 'dining') { price = !it.eur ? '' : $f(usd(it.eur * 2)); unit = it.eur ? '2p' : ''; }
-  else if (it.priceLabel) { price = it.priceLabel; }
+  if (it.type === 'stay') price = $f(usd((it.pn || 0) * (it.nights || 1)));
+  else if (it.type === 'activity') price = it.eur === 0 ? 'Free' : $f(usd(it.eur * 2));
+  else if (it.type === 'special') price = $f(usd((it.ppEur || 0) * 2));
+  else if (it.type === 'dining') price = !it.eur ? '' : $f(usd(it.eur * 2));
+  else if (it.priceLabel) price = it.priceLabel;
 
-  const photoUrl = googlePhoto || it.imageUrl || null;
+  // Date/time info
+  let timeInfo = '';
+  if (it.type === 'stay' && it.checkIn) timeInfo = `In ${it.checkIn} · ${it.nights}n`;
+  else if (it.type === 'stay') timeInfo = `${it.nights}n · ${it.tier || it.city}`;
+  else if (it.type === 'transport' && it.departTime && it.departTime !== 'TBD') timeInfo = `${it.departTime} · ${it.route || ''}`;
+  else if (it.type === 'transport' && it.route) timeInfo = it.route;
+  else if (it.type === 'activity' && it.hrs) timeInfo = `${it.hrs}h · ${it.city}`;
+  else if (it.dish) timeInfo = it.dish;
+  else timeInfo = it.city;
 
   return (
-    <div className={`item-card ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onTap(it)}>
-      {/* Photo or placeholder */}
-      <div className="ic-photo">
-        {photoUrl ? (
-          <img src={photoUrl} alt="" loading="lazy" onError={(e) => { e.target.style.display = 'none'; }} />
-        ) : (
-          <span className="ic-photo-emoji">{TYPE_EMOJI[it.type] || '📌'}</span>
-        )}
-        {st && <div className={`ic-status-dot ${st}`} />}
+    <div className={`item-card-compact ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onTap(it)}>
+      <div className="icc-left">
+        <div className="icc-name">{it.name}</div>
+        <div className="icc-sub">{timeInfo}</div>
+        {it.urgent && !st && <span className="icc-urgent">Book now</span>}
       </div>
-
-      <div className="ic-content">
-        <div className="ic-top-row">
-          <h3 className="ic-title">{it.name}</h3>
-          {price && (
-            <div className="ic-price-block">
-              <span className="ic-price-val">{price}</span>
-              {unit && <span className="ic-price-unit"> {unit}</span>}
-            </div>
-          )}
-        </div>
-
-        {it.dish && <p className="ic-subtitle">{it.dish}</p>}
-        {!it.dish && it.type === 'stay' && <p className="ic-subtitle">{it.tier} · {it.city}{it.checkIn ? ` · In ${it.checkIn}` : ''}</p>}
-        {!it.dish && it.type === 'activity' && <p className="ic-subtitle">{it.city}{it.hrs ? ` · ${it.hrs}h` : ''}</p>}
-        {!it.dish && it.type === 'transport' && <p className="ic-subtitle">{it.route || it.city}{it.departTime && it.departTime !== 'TBD' ? ` · ${it.departTime}` : ''}</p>}
-
-        <div className="ic-tags">
-          {it.urgent && <span className="ic-tag urgent">Book now</span>}
-          {it.subcat && SUBCAT_BADGE[it.subcat] && <span className="ic-tag">{SUBCAT_BADGE[it.subcat].label}</span>}
-        </div>
+      <div className="icc-right">
+        {price && <div className="icc-price">{price}</div>}
+        <div className={`icc-status ${st}`}>{st === 'conf' ? '✓' : st === 'sel' ? '●' : ''}</div>
       </div>
     </div>
   );

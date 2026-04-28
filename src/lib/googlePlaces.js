@@ -31,17 +31,23 @@ export async function fetchPlaceData(itemId, name, city) {
     const place = searchData.places?.[0];
     if (!place) return null;
 
-    // Get photo URL
+    // Get photo URLs (up to 5 for carousel)
     let photoUrl = '';
+    const photoUrls = [];
     if (place.photos?.length > 0) {
-      const photoRef = place.photos[0].name;
-      photoUrl = `https://places.googleapis.com/v1/${photoRef}/media?maxHeightPx=400&maxWidthPx=600&key=${API_KEY}`;
+      const maxPhotos = Math.min(place.photos.length, 5);
+      for (let i = 0; i < maxPhotos; i++) {
+        const url = `https://places.googleapis.com/v1/${place.photos[i].name}/media?maxHeightPx=400&maxWidthPx=600&key=${API_KEY}`;
+        photoUrls.push(url);
+      }
+      photoUrl = photoUrls[0];
     }
 
     const result = {
       item_id: itemId,
       place_id: place.id || '',
       photo_url: photoUrl,
+      photo_urls: photoUrls,
       rating: place.rating || 0,
       total_ratings: place.userRatingCount || 0,
       address: place.formattedAddress || '',

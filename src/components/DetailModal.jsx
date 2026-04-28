@@ -33,6 +33,7 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
   if (!it) return null;
 
   const heroImage = place?.photo_url || it.imageUrl || null;
+  const photoUrls = place?.photo_urls?.length > 0 ? place.photo_urls : (heroImage ? [heroImage] : []);
   const googleRating = place?.rating || null;
   const googleAddress = place?.address || it.address || null;
   const googlePhone = place?.phone || null;
@@ -76,16 +77,28 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
         <div className="detail-handle" />
         <button className="detail-close" onClick={onClose}>✕</button>
 
-        {/* Hero image — Google Places photo or fallback */}
-        {heroImage && (
+        {/* Image carousel — multiple Google Places photos */}
+        {photoUrls.length > 1 ? (
+          <div className="detail-carousel">
+            <div className="detail-carousel-track">
+              {photoUrls.map((url, i) => (
+                <div key={i} className="detail-carousel-slide">
+                  <img src={url} alt={`${it.name} ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} onError={(e) => { e.target.style.display = 'none'; }} />
+                </div>
+              ))}
+            </div>
+            <div className="detail-carousel-dots">
+              {photoUrls.map((_, i) => <span key={i} className="carousel-dot" />)}
+            </div>
+          </div>
+        ) : heroImage ? (
           <div className="detail-hero">
             <img src={heroImage} alt={it.name} onError={(e) => { e.target.parentElement.style.display = 'none'; }} />
             <div className="detail-hero-gradient" />
           </div>
-        )}
-        {loadingPlace && !heroImage && (
+        ) : loadingPlace ? (
           <div className="detail-hero-loading" />
-        )}
+        ) : null}
 
         <div className="detail-content">
           {/* Badges + rating */}
