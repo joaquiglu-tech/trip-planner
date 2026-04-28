@@ -13,7 +13,13 @@ export function usePlaceData() {
       // Load existing cache
       const { data } = await supabase.from('place_cache').select('*');
       const map = {};
-      if (data) data.forEach((row) => { map[row.item_id] = row; });
+      if (data) data.forEach((row) => {
+        // Parse photo_urls from JSON string
+        if (row.photo_urls && typeof row.photo_urls === 'string') {
+          try { row.photo_urls = JSON.parse(row.photo_urls); } catch { row.photo_urls = []; }
+        }
+        map[row.item_id] = row;
+      });
       setPlaces(map);
 
       // Pre-fetch missing items in background (non-transport only)

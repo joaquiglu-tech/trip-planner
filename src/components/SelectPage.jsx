@@ -1,6 +1,5 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { ITEMS, itemCost, $f } from '../data/items';
-import Timeline from './Timeline';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
 import DetailModal from './DetailModal';
@@ -8,8 +7,6 @@ import AddItemModal from './AddItemModal';
 
 const TYPE_LABEL = { transport: '🚗 Transport', stay: '🏨 Stay', activity: '🎟️ Activity', special: '⭐ Special Meal', dining: '🍝 Dining', custom: '📌 Added by You' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
-
-const MemoItemCard = memo(ItemCard);
 
 export default function SelectPage({ active, S, setStatus, onRefresh, customItems, addItem, deleteItem, userEmail, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
@@ -147,7 +144,7 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
             <div className="sect-title">{groupByCity ? `📍 ${label} (${items.length})` : label}</div>
             <div className="items-grid">
               {items.map((it) => (
-                <MemoItemCard key={it.id} it={it} status={S[it.id] || ''} onTap={setSelectedItem} photoUrl={places?.[it.id]?.photo_url} />
+                <ItemCard key={it.id} it={it} status={S[it.id] || ''} onTap={setSelectedItem} />
               ))}
             </div>
           </div>

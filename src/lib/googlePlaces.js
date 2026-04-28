@@ -47,7 +47,7 @@ export async function fetchPlaceData(itemId, name, city) {
       item_id: itemId,
       place_id: place.id || '',
       photo_url: photoUrl,
-      photo_urls: photoUrls,
+      photo_urls: JSON.stringify(photoUrls),
       rating: place.rating || 0,
       total_ratings: place.userRatingCount || 0,
       address: place.formattedAddress || '',
@@ -58,6 +58,9 @@ export async function fetchPlaceData(itemId, name, city) {
 
     // Cache in Supabase
     await supabase.from('place_cache').upsert(result, { onConflict: 'item_id' });
+
+    // Return with parsed photo_urls for immediate use
+    result.photo_urls = photoUrls;
 
     return result;
   } catch (err) {
