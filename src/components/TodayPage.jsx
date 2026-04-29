@@ -329,12 +329,12 @@ function DayDetailView({ day, S, paidPrices, onItemTap, places, visible }) {
         </div>
       )}
 
-      {/* Recommendations from the curated data */}
+      {/* Recommendations — collapsed by default to save space */}
       {day.eat.length > 0 && (
-        <div className="today-section">
-          <div className="today-section-title">Recommended</div>
-          {day.eat.map((e, i) => <div key={i} className="eat-line">{e}</div>)}
-        </div>
+        <details className="today-section">
+          <summary className="today-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>Recommended spots ▾</summary>
+          <div style={{ marginTop: 6 }}>{day.eat.map((e, i) => <div key={i} className="eat-line">{e}</div>)}</div>
+        </details>
       )}
 
       {/* Multi-stop directions */}

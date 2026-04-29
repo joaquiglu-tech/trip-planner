@@ -10,6 +10,9 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
   const [noteText, setNoteText] = useState(note || '');
   const [place, setPlace] = useState(placeData || null);
   const [loadingPlace, setLoadingPlace] = useState(false);
+  const [saved, setSaved] = useState('');
+
+  function showSaved(label) { setSaved(label); setTimeout(() => setSaved(''), 1500); }
 
   // Back button closes modal
   useEffect(() => {
@@ -205,10 +208,10 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
             <>
               <p className="detail-desc-full">{it.desc}</p>
               {it.whatToExpect && (
-                <div className="detail-section">
-                  <div className="detail-section-title">What to Expect</div>
-                  <ul className="detail-tips">{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>
-                </div>
+                <details className="detail-section detail-collapsible">
+                  <summary className="detail-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>What to expect ▾</summary>
+                  <ul className="detail-tips" style={{ marginTop: 6 }}>{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </details>
               )}
               <div className="detail-section">
                 <div className="detail-section-title">Details</div>
@@ -237,17 +240,22 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
                   {it.quoteSource && <cite>— {it.quoteSource}</cite>}
                 </blockquote>
               )}
-              {it.whatToExpect && (
-                <div className="detail-section">
-                  <div className="detail-section-title">What You'll Find</div>
-                  <ul className="detail-tips">{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>
-                </div>
-              )}
-              {it.proTips && (
-                <div className="detail-section">
-                  <div className="detail-section-title">Pro Tips</div>
-                  <ul className="detail-tips">{it.proTips.map((t, i) => <li key={i}>{t}</li>)}</ul>
-                </div>
+              {(it.whatToExpect || it.proTips) && (
+                <details className="detail-section detail-collapsible">
+                  <summary className="detail-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>More details ▾</summary>
+                  {it.whatToExpect && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-muted)', marginBottom: 4 }}>What you'll find</div>
+                      <ul className="detail-tips">{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                    </div>
+                  )}
+                  {it.proTips && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Pro tips</div>
+                      <ul className="detail-tips">{it.proTips.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                    </div>
+                  )}
+                </details>
               )}
               <div className="detail-section">
                 <div className="detail-section-title">Pricing</div>
@@ -268,6 +276,9 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
               </div>
             </>
           )}
+
+          {/* Saved feedback */}
+          {saved && <div className="detail-saved">{saved} ✓</div>}
 
           {/* ═══ COMMON: Reserve note ═══ */}
           {it.reserveNote && <div className="detail-reserve-note">⚠️ {it.reserveNote}</div>}
@@ -313,7 +324,7 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
                 placeholder="Add a note... (e.g. 'Ask for terrace table', 'Ania's pick')"
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                onBlur={() => setNote(it.id, noteText)}
+                onBlur={() => { setNote(it.id, noteText); if (noteText) showSaved('Note saved'); }}
                 rows={2}
               />
             </div>
@@ -333,7 +344,7 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
                   onChange={(e) => setCostInput(e.target.value)}
                   onBlur={() => {
                     const val = parseFloat(costInput);
-                    if (!isNaN(val) && val > 0) setPaidPrice(it.id, val);
+                    if (!isNaN(val) && val > 0) { setPaidPrice(it.id, val); showSaved('Cost saved'); }
                     else if (costInput === '' || costInput === '0') setPaidPrice(it.id, 0);
                   }}
                 />
