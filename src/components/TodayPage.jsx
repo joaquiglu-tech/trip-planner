@@ -62,6 +62,9 @@ function useGoogleMapsReady() {
   return ready;
 }
 
+// Directions API result cache (persists across re-renders, keyed by route key)
+const directionsCache = {};
+
 // ═══ DAY MAP WITH ROUTES ═══
 function DayMap({ day, scheduleEntries, S, visible }) {
   const mapRef = useRef(null);
@@ -91,7 +94,7 @@ function DayMap({ day, scheduleEntries, S, visible }) {
     if (prevKey.current !== key) {
       markersRef.current.forEach(m => m.setMap(null));
       markersRef.current = [];
-      polylinesRef.current.forEach(p => p.setMap(null));
+      polylinesRef.current.forEach(p => { if (p.setMap) p.setMap(null); else if (p.setDirections) p.setDirections({ routes: [] }); });
       polylinesRef.current = [];
       mapInstance.current = null;
       prevKey.current = key;
@@ -132,25 +135,34 @@ function DayMap({ day, scheduleEntries, S, visible }) {
       hasExtra = true;
     });
 
-    // Draw route polylines between sequential items using Directions API
+    // Draw route polylines between sequential items using Directions API (with cache)
     if (mapItems.length >= 2) {
-      const ds = new window.google.maps.DirectionsService();
-      const waypoints = mapItems.slice(1, -1).map(e => ({ location: e.coord, stopover: true }));
-      ds.route({
-        origin: mapItems[0].coord,
-        destination: mapItems[mapItems.length - 1].coord,
-        waypoints: waypoints.slice(0, 8), // max 8 waypoints for free tier
-        travelMode: window.google.maps.TravelMode.DRIVING,
-        optimizeWaypoints: false,
-      }, (result, status) => {
-        if (status === 'OK') {
-          const dr = new window.google.maps.DirectionsRenderer({
-            map: m, directions: result, suppressMarkers: true,
-            polylineOptions: { strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3 },
-          });
-          polylinesRef.current.push(dr);
-        }
-      });
+      const routeKey = mapItems.map(e => `${e.coord.lat},${e.coord.lng}`).join('|');
+      const renderDirections = (result) => {
+        const dr = new window.google.maps.DirectionsRenderer({
+          map: m, directions: result, suppressMarkers: true,
+          polylineOptions: { strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3 },
+        });
+        polylinesRef.current.push(dr);
+      };
+      if (directionsCache[routeKey]) {
+        renderDirections(directionsCache[routeKey]);
+      } else {
+        const ds = new window.google.maps.DirectionsService();
+        const waypoints = mapItems.slice(1, -1).map(e => ({ location: e.coord, stopover: true }));
+        ds.route({
+          origin: mapItems[0].coord,
+          destination: mapItems[mapItems.length - 1].coord,
+          waypoints: waypoints.slice(0, 8),
+          travelMode: window.google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: false,
+        }, (result, status) => {
+          if (status === 'OK') {
+            directionsCache[routeKey] = result;
+            renderDirections(result);
+          }
+        });
+      }
     }
 
     if (hasExtra) {
@@ -324,17 +336,25 @@ function ScheduleTimeline({ entries, S, onItemTap, places }) {
 }
 
 // ═══ PLAN CARDS (previously "Your selections") ═══
-function PlanCards({ day, S, allItems, statusFilter, onItemTap }) {
+function PlanCards({ day, S, allItems, scheduleEntries, statusFilter, onItemTap }) {
   const items = useMemo(() => {
-    return allItems.filter(it => {
+    // Include items from this city + items referenced in the schedule for this day
+    const schedItemIds = new Set(scheduleEntries.map(e => e.item_id));
+    const combined = new Map();
+    allItems.forEach(it => combined.set(it.id, it));
+    scheduleEntries.forEach(e => {
+      const it = getItemById(e.item_id);
+      if (it && !combined.has(it.id)) combined.set(it.id, it);
+    });
+    return Array.from(combined.values()).filter(it => {
       if (it.type === 'transport') return false;
       const st = S[it.id] || '';
-      if (statusFilter === 'all') return true; // show all items for this city
+      if (statusFilter === 'all') return true;
       if (statusFilter === 'sel') return st === 'sel';
       if (statusFilter === 'conf') return st === 'conf';
       return true;
     });
-  }, [allItems, S, statusFilter]);
+  }, [allItems, scheduleEntries, S, statusFilter]);
 
   if (items.length === 0) return null;
 
@@ -359,8 +379,77 @@ function PlanCards({ day, S, allItems, statusFilter, onItemTap }) {
   );
 }
 
-// ═══ OVERVIEW VIEW ═══
-function OverviewView({ S, paidPrices, onItemTap, visible }) {
+// ═══ DESTINATIONS (from HomePage) ═══
+const DESTINATIONS = [
+  { name: 'Madrid', cities: ['Spain'], dates: 'Jul 12–14', nights: 2, phase: 'spain', needsStay: false, needsTransport: false },
+  { name: 'Menorca', cities: ['Spain'], dates: 'Jul 14–18', nights: 4, phase: 'spain', needsStay: false, transportIds: ['tr1'] },
+  { name: 'Malaga', cities: ['Spain'], dates: 'Jul 18–20', nights: 2, phase: 'spain', needsStay: true, transportIds: ['tr2'] },
+  { name: 'Rome', cities: ['Rome'], dates: 'Jul 20–24', nights: 4, phase: 'rome', needsStay: true, transportIds: ['tr3'] },
+  { name: 'Florence', cities: ['Florence'], dates: 'Jul 24–25', nights: 2, phase: 'roadtrip', needsStay: true, transportIds: ['tr4', 'tr5'] },
+  { name: 'Montepulciano', cities: ['Montepulciano', 'Tuscany'], dates: 'Jul 25–26', nights: 1, phase: 'roadtrip', needsStay: true },
+  { name: "Val d'Orcia", cities: ["Val d'Orcia"], dates: 'Jul 26–27', nights: 1, phase: 'roadtrip', needsStay: true },
+  { name: 'Lerici', cities: ['Lerici'], dates: 'Jul 27–28', nights: 1, phase: 'roadtrip', needsStay: true },
+  { name: 'Bergamo', cities: ['Bergamo Alta'], dates: 'Jul 28–29', nights: 1, phase: 'roadtrip', needsStay: true },
+  { name: 'Bellagio', cities: ['Bellagio'], dates: 'Jul 29–30', nights: 1, phase: 'roadtrip', needsStay: true },
+  { name: 'Sirmione', cities: ['Sirmione'], dates: 'Jul 30–31', nights: 1, phase: 'roadtrip', needsStay: true },
+  { name: 'Verona', cities: ['Verona'], dates: 'Jul 31', nights: 1, phase: 'roadtrip', needsStay: true },
+  { name: 'Venice', cities: ['Venice'], dates: 'Aug 1–2', nights: 1, phase: 'venice', needsStay: true, transportIds: ['tr6'] },
+];
+
+function getDestStats(dest, S) {
+  const items = ITEMS.filter(it => dest.cities.includes(it.city));
+  const stays = items.filter(it => it.type === 'stay');
+  const stayBooked = stays.some(it => S[it.id] === 'conf');
+  const staySelected = stays.some(it => S[it.id] === 'sel' || S[it.id] === 'conf');
+  let transportBooked = true, transportSelected = true;
+  if (dest.transportIds) {
+    transportBooked = dest.transportIds.every(id => S[id] === 'conf');
+    transportSelected = dest.transportIds.some(id => S[id] === 'sel' || S[id] === 'conf');
+  } else if (dest.needsTransport === false) { transportBooked = true; transportSelected = true; }
+  const activities = items.filter(it => it.type === 'activity');
+  const dining = items.filter(it => it.type === 'dining' || it.type === 'special');
+  const actSelected = activities.filter(it => S[it.id] === 'sel' || S[it.id] === 'conf').length;
+  const diningSelected = dining.filter(it => S[it.id] === 'sel' || S[it.id] === 'conf').length;
+  const stayOk = !dest.needsStay || stayBooked;
+  const transportOk = transportBooked;
+  let status = 'ready';
+  if (!stayOk || !transportOk) status = 'critical';
+  else if (actSelected === 0 && activities.length > 0) status = 'warning';
+  return { stayBooked, staySelected, transportBooked, transportSelected, actSelected, actTotal: activities.length, diningSelected, diningTotal: dining.length, status, needsStay: dest.needsStay !== false };
+}
+
+// ═══ RECENT ACTIVITY ═══
+function RecentActivity({ recentItems }) {
+  if (!recentItems || recentItems.length === 0) return null;
+  return (
+    <div className="itin-recent">
+      <div className="itin-section-title">Recent activity</div>
+      {recentItems.map((r, i) => (
+        <div key={i} className="itin-recent-row">
+          <span className="itin-recent-who">{(r.updated_by || '').split('@')[0]}</span>
+          <span className="itin-recent-action">{r.status === 'conf' ? 'booked' : r.status === 'sel' ? 'added' : 'updated'}</span>
+          <span className="itin-recent-name">{ITEMS.find(it => it.id === r.item_id)?.name || r.item_id}</span>
+          <span className="itin-recent-time">{formatRelativeTime(r.updated_at)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function formatRelativeTime(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+// ═══ OVERVIEW VIEW (merged Home + Itinerary Overview) ═══
+function OverviewView({ S, paidPrices, onItemTap, visible, onDaySelect, recentItems }) {
   const daysLeft = getDaysUntilTrip();
   const stats = useMemo(() => {
     let selected = 0, booked = 0, estimated = 0, confirmed = 0;
@@ -374,68 +463,102 @@ function OverviewView({ S, paidPrices, onItemTap, visible }) {
     return { selected, booked, estimated, confirmed };
   }, [S, paidPrices]);
   const pct = stats.selected ? Math.round((stats.booked / stats.selected) * 100) : 0;
-  const phases = ['spain', 'rome', 'roadtrip', 'venice'];
+
+  const needsAttention = useMemo(() => ITEMS.filter(it => S[it.id] === 'sel' && it.urgent), [S]);
 
   return (
     <>
+      {/* Countdown + stats */}
       {daysLeft > 0 && (
-        <div className="today-countdown">
-          <div className="today-countdown-num">{daysLeft}</div>
-          <div className="today-countdown-label">days until your trip</div>
+        <div className="home-header">
+          <div className="home-trip-name">{TRIP.name}</div>
+          <div className="home-countdown">{daysLeft} days away</div>
         </div>
       )}
 
-      <div className="today-progress-card">
-        <div className="today-progress-ring">
-          <svg viewBox="0 0 36 36" className="today-ring-svg">
-            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--border)" strokeWidth="3" />
-            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--green)" strokeWidth="3" strokeDasharray={`${pct}, 100`} strokeLinecap="round" />
-          </svg>
-          <span className="today-ring-text">{pct}%</span>
+      <div className="home-stats">
+        <div className="home-stat">
+          <div className="home-stat-num">{stats.booked}</div>
+          <div className="home-stat-label">Booked</div>
         </div>
-        <div className="today-progress-info">
-          <div className="today-progress-title">{stats.booked} of {stats.selected} booked</div>
-          <div className="today-progress-sub">Est: {$f(stats.estimated)} · Confirmed: {$f(stats.confirmed)}</div>
+        <div className="home-stat">
+          <div className="home-stat-num">{stats.selected - stats.booked}</div>
+          <div className="home-stat-label">To book</div>
+        </div>
+        <div className="home-stat">
+          <div className="home-stat-num">{$f(stats.estimated)}</div>
+          <div className="home-stat-label">Estimated</div>
         </div>
       </div>
 
+      {/* Alerts — urgent unbooked items */}
+      {needsAttention.length > 0 && (
+        <div className="home-alerts">
+          <div className="home-alerts-title">
+            <span className="home-alerts-badge">{needsAttention.length}</span>
+            Needs attention
+          </div>
+          {needsAttention.slice(0, 5).map(it => (
+            <div key={it.id} className="home-alert-item" onClick={() => onItemTap(it)}>
+              <span className="home-alert-name">{it.name}</span>
+              <span className="home-alert-arrow">→</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Recent activity */}
+      <RecentActivity recentItems={recentItems} />
+
+      {/* Route map */}
       <RouteMap visible={visible} />
 
-      {phases.map((phase) => {
-        const days = ALL_DAYS.filter((d) => d.phase === phase);
-        return (
-          <div key={phase}>
-            <div className="phase-header" style={{ borderLeftColor: PHASE_COLOR[phase] }}>{PHASE_LABEL[phase]} · {days.length} days</div>
-            {days.map((day) => {
-              const sels = ITEMS.filter(it => {
-                if (it.type === 'transport') return false;
-                const st = S[it.id] || '';
-                if (st !== 'sel' && st !== 'conf') return false;
-                if (it.city === day.city) return true;
-                if (day.city === 'Montepulciano' && it.city === 'Tuscany') return true;
-                return false;
-              });
-              return (
-                <div key={day.n} className="full-trip-day">
-                  <div className="ftd-left">
-                    <div className="ftd-date">{day.date}</div>
-                    <div className="ftd-title">{day.title}</div>
-                    <div className="ftd-sleep">Sleep: {day.sleep}</div>
-                  </div>
-                  {sels.length > 0 && (
-                    <div className="ftd-badges">
-                      {sels.slice(0, 3).map(it => (
-                        <span key={it.id} className={`ftd-badge ${S[it.id] === 'conf' ? 'conf' : 'sel'}`}>{it.name.length > 10 ? it.name.slice(0, 10) + '..' : it.name}</span>
-                      ))}
-                      {sels.length > 3 && <span className="ftd-badge">+{sels.length - 3}</span>}
-                    </div>
-                  )}
+      {/* Destinations with status */}
+      <div className="home-section-title">Your destinations</div>
+      <div className="home-destinations">
+        {DESTINATIONS.map((dest, di) => {
+          const dstats = getDestStats(dest, S);
+          // Find the day index for this destination
+          const dayIdx = ALL_DAYS.findIndex(d => dest.cities.includes(d.city));
+          return (
+            <div key={dest.name} className={`home-dest-card home-dest-${dstats.status}`} onClick={() => dayIdx >= 0 && onDaySelect(dayIdx)}>
+              <div className="home-dest-top">
+                <div>
+                  <div className="home-dest-name">{dest.name}</div>
+                  <div className="home-dest-dates">{dest.dates} · {dest.nights}n</div>
                 </div>
-              );
-            })}
-          </div>
-        );
-      })}
+                <div className="home-dest-indicator">
+                  {dstats.status === 'ready' && <span className="home-flag ready">✓</span>}
+                  {dstats.status === 'critical' && <span className="home-flag critical">!</span>}
+                  {dstats.status === 'warning' && <span className="home-flag warning">—</span>}
+                </div>
+              </div>
+              <div className="home-dest-statuses">
+                {dstats.needsStay && (
+                  <span className={`home-dest-status ${dstats.stayBooked ? 'booked' : dstats.staySelected ? 'selected' : 'missing'}`}>
+                    {dstats.stayBooked ? '✓' : dstats.staySelected ? '●' : '!'} Stay
+                  </span>
+                )}
+                {dest.transportIds && (
+                  <span className={`home-dest-status ${dstats.transportBooked ? 'booked' : dstats.transportSelected ? 'selected' : 'missing'}`}>
+                    {dstats.transportBooked ? '✓' : dstats.transportSelected ? '●' : '!'} Transport
+                  </span>
+                )}
+                {dstats.actTotal > 0 && (
+                  <span className={`home-dest-status ${dstats.actSelected > 0 ? 'selected' : ''}`}>
+                    {dstats.actSelected}/{dstats.actTotal} Activities
+                  </span>
+                )}
+                {dstats.diningTotal > 0 && (
+                  <span className={`home-dest-status ${dstats.diningSelected > 0 ? 'selected' : ''}`}>
+                    {dstats.diningSelected}/{dstats.diningTotal} Dining
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </>
   );
 }
@@ -477,7 +600,7 @@ function DayDetailView({ day, S, paidPrices, onItemTap, places, visible, schedul
       )}
 
       {/* 5. Plan cards */}
-      <PlanCards day={day} S={S} allItems={cityItems} statusFilter={statusFilter} onItemTap={onItemTap} />
+      <PlanCards day={day} S={S} allItems={cityItems} scheduleEntries={scheduleEntries} statusFilter={statusFilter} onItemTap={onItemTap} />
 
       {cityItems.length === 0 && !stay && (
         <div className="empty-state">
@@ -495,11 +618,20 @@ export default function TodayPage({ active, S, setStatus, paidPrices, setPaidPri
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const { schedule, getForDay } = useSchedule();
+  const [recentItems, setRecentItems] = useState([]);
   const todayIdx = getTodayDayIndex();
   const isDuringTrip = todayIdx !== null;
 
   const [view, setView] = useState(isDuringTrip ? todayIdx : 'overview');
   const selectorRef = useRef(null);
+
+  // Fetch recent activity from selections table
+  useEffect(() => {
+    import('../lib/supabase').then(({ supabase }) => {
+      supabase.from('selections').select('item_id, status, updated_by, updated_at').order('updated_at', { ascending: false }).limit(8)
+        .then(({ data }) => { if (data) setRecentItems(data.filter(r => r.status && r.updated_by)); });
+    });
+  }, [S]); // Re-fetch when S changes (captures realtime updates)
 
   // Get schedule entries for current day view, filtered by status
   const scheduleEntries = useMemo(() => {
@@ -539,7 +671,7 @@ export default function TodayPage({ active, S, setStatus, paidPrices, setPaidPri
 
       {/* Content */}
       {view === 'overview' ? (
-        <OverviewView S={S} paidPrices={paidPrices} onItemTap={setSelectedItem} visible={active && view === 'overview'} />
+        <OverviewView S={S} paidPrices={paidPrices} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={setView} recentItems={recentItems} />
       ) : (
         <DayDetailView
           day={ALL_DAYS[view]} S={S} paidPrices={paidPrices} onItemTap={setSelectedItem}

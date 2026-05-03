@@ -7,7 +7,6 @@ import { useExpenses } from './lib/useExpenses';
 import Login from './components/Login';
 import TopBar from './components/TopBar';
 import BottomTabs from './components/BottomTabs';
-import HomePage from './components/HomePage';
 import TodayPage from './components/TodayPage';
 import SelectPage from './components/SelectPage';
 import BudgetPage from './components/BudgetPage';
@@ -17,7 +16,7 @@ import Toast from './components/Toast';
 
 export default function App() {
   const session = useAuth();
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('itinerary');
   const [showFab, setShowFab] = useState(null); // null=closed, 'menu'=menu open
   const [showAddItem, setShowAddItem] = useState(false);
   const email = session?.user?.email || '';
@@ -33,15 +32,8 @@ export default function App() {
 
   const [filterCity, setFilterCity] = useState(null);
 
-  // Navigate to Plan filtered by city (from Home destination cards)
-  const navigatePlanCity = useCallback((city) => {
-    setActiveTab('plan');
-    setFilterCity(city);
-    window.history.pushState({ tab: 'plan', city }, '', '');
-  }, []);
-
   useEffect(() => {
-    window.history.replaceState({ tab: 'home' }, '', '');
+    window.history.replaceState({ tab: 'itinerary' }, '', '');
     function handlePopState(e) { if (e.state?.tab) setActiveTab(e.state.tab); }
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -58,7 +50,6 @@ export default function App() {
     <div className="app-shell">
       <TopBar S={S} session={session} onProfileClick={() => navigateTab('profile')} />
       <div className="page-container">
-        <HomePage active={activeTab === 'home'} S={S} paidPrices={paidPrices} onNavigatePlan={navigatePlanCity} />
         <SelectPage
           active={activeTab === 'plan'}
           S={S} setStatus={setStatus} onRefresh={refresh}

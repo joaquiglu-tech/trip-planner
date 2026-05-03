@@ -223,7 +223,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .sect-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin: 24px 0 10px; padding: 0; background: none; border: none }
 
 /* ═══ FILTERS ═══ */
-.filter-bar { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: wrap }
+.filter-bar { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap }
 .filter-bar::-webkit-scrollbar { display: none }
 .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; background: var(--bg-card); color: var(--text); font-family: var(--font); min-height: 36px; flex-shrink: 0 }
 .filter-bar select:focus, .filter-bar input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,58,237,.1) }
@@ -588,3 +588,12 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 
 .itin-empty { text-align: center; padding: 24px 16px; color: var(--text-muted); font-size: 13px }
 .itin-empty-text { color: var(--text-muted) }
+
+/* Recent activity */
+.itin-recent { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 14px }
+.itin-recent-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--border-lighter); font-size: 12px }
+.itin-recent-row:last-child { border-bottom: none }
+.itin-recent-who { font-weight: 700; color: var(--text); flex-shrink: 0 }
+.itin-recent-action { color: var(--text-muted); flex-shrink: 0 }
+.itin-recent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500 }
+.itin-recent-time { color: var(--text-light); font-size: 10px; flex-shrink: 0 }

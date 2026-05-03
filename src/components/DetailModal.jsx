@@ -342,13 +342,15 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
             </a>
           )}
 
-          {/* Upload */}
-          <div className="detail-upload-row">
-            <label className="detail-upload-btn">
-              {uploading ? 'Uploading...' : '📎 Upload reservation / confirmation'}
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
-            </label>
-          </div>
+          {/* Upload — hide when conf status and top prompt already shows upload */}
+          {!(st === 'conf' && !costInput && !file) && (
+            <div className="detail-upload-row">
+              <label className="detail-upload-btn">
+                {uploading ? 'Uploading...' : 'Upload reservation / confirmation'}
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
+              </label>
+            </div>
+          )}
           {file && (
             <div className="file-chip" style={{ marginTop: 6 }}>
               <span>📄</span>
