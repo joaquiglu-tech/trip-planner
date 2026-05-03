@@ -14,9 +14,16 @@ import ProfilePage from './components/ProfilePage';
 import AddItemModal from './components/AddItemModal';
 import Toast from './components/Toast';
 
+// Read tab from URL hash on load
+function getTabFromHash() {
+  const hash = window.location.hash.replace('#/', '').split('/')[0];
+  if (['plan', 'expenses', 'itinerary', 'profile'].includes(hash)) return hash;
+  return 'itinerary';
+}
+
 export default function App() {
   const session = useAuth();
-  const [activeTab, setActiveTab] = useState('itinerary');
+  const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [showFab, setShowFab] = useState(null);
   const [showAddItem, setShowAddItem] = useState(false);
   const email = session?.user?.email || '';
@@ -27,16 +34,17 @@ export default function App() {
 
   const navigateTab = useCallback((tab) => {
     setActiveTab(tab);
-    window.history.pushState({ tab }, '', '');
+    window.location.hash = `#/${tab}`;
   }, []);
 
   const [filterCity, setFilterCity] = useState(null);
 
+  // Set initial hash if none, and listen for hash changes
   useEffect(() => {
-    window.history.replaceState({ tab: 'itinerary' }, '', '');
-    function handlePopState(e) { if (e.state?.tab) setActiveTab(e.state.tab); }
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    if (!window.location.hash) window.location.hash = `#/${activeTab}`;
+    function handleHashChange() { setActiveTab(getTabFromHash()); }
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   if (session === undefined) return <div className="loading-screen">Loading...</div>;
@@ -60,7 +68,8 @@ export default function App() {
         />
         <BudgetPage
           active={activeTab === 'expenses'}
-          items={items} updateItem={updateItem} setStatus={setStatus}
+          items={items} stops={stops} livePrices={livePrices}
+          updateItem={updateItem} setStatus={setStatus}
           files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
           expenses={expenses} addExpense={addExpense} deleteExpense={deleteExpense}

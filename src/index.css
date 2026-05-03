@@ -417,6 +417,8 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 @media(min-width:768px) { .budget-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px } }
 .budget-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer }
 .budget-item:hover { background: var(--surface-hover) }
+.budget-item-conf { border-left: 3px solid var(--green) }
+.bi-type { text-transform: capitalize }
 .bi-left { flex: 1; min-width: 0 }
 .bi-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .bi-meta { font-size: 10px; color: var(--text-muted) }

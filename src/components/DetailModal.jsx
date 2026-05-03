@@ -406,7 +406,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             <div className="detail-upload-row">
               <label className="detail-upload-btn">
                 {uploading ? 'Uploading...' : `Upload ${itemFiles.length > 0 ? 'another ' : ''}file`}
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
+                <input type="file" accept="*/*" style={{ display: 'none' }} onChange={handleUpload} />
               </label>
             </div>
           )}
