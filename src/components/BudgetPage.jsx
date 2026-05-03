@@ -38,7 +38,7 @@ export default function BudgetPage({ active, items, stops, livePrices, expenses,
                 <div className="bi-name">{e.item?.name || e.note || 'Expense'}</div>
                 <div className="bi-meta">
                   {e.item?.type && <span className="bi-type">{e.item.type}</span>}
-                  {e.stop?.sleep && <span> · {e.stop.sleep}</span>}
+                  {e.stop?.name && <span> · {e.stop.name}</span>}
                   {e.created_at && <span> · {new Date(e.created_at).toLocaleDateString()}</span>}
                 </div>
               </div>
@@ -119,10 +119,10 @@ export default function BudgetPage({ active, items, stops, livePrices, expenses,
                     <span>{selectedExpense.item.type}</span>
                   </div>
                 )}
-                {selectedExpense.stop?.sleep && (
+                {selectedExpense.stop?.name && (
                   <div className="itin-general-row">
                     <span className="itin-general-label">Stop</span>
-                    <span>{selectedExpense.stop.sleep} · {selectedExpense.stop.city}</span>
+                    <span>{selectedExpense.stop.name}</span>
                   </div>
                 )}
                 {selectedExpense.note && (

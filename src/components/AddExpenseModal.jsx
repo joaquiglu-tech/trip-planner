@@ -69,7 +69,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
                         <div className="bi-name">{it.name}</div>
                         <div className="bi-meta">
                           <span className="bi-type">{it.type}</span>
-                          {stop?.sleep && <span> · {stop.sleep}</span>}
+                          {stop?.name && <span> · {stop.sleep}</span>}
                         </div>
                       </div>
                       <div className="bi-right">

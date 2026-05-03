@@ -7,7 +7,7 @@ export default function TopBar({ items, stops, session, onProfileClick }) {
   const email = session?.user?.email || '';
   const name = session?.user?.user_metadata?.display_name || email;
   const initial = (name || '?')[0].toUpperCase();
-  const tripName = stops?.length > 0 ? `${stops[0].sleep} to ${stops[stops.length - 1].sleep}` : 'Trip';
+  const tripName = stops?.length > 0 ? `${stops[0].name} to ${stops[stops.length - 1].name}` : 'Trip';
 
   return (
     <header className="topbar" role="banner">

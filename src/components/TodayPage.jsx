@@ -4,11 +4,8 @@ import DetailModal from './DetailModal';
 
 function getTodayDayIndex(stops) {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   for (let i = 0; i < stops.length; i++) {
-    const start = new Date(stops[i].start_date);
-    const end = new Date(stops[i].end_date);
-    if (today >= start && today < end) return i;
+    if (now >= new Date(stops[i].start_date) && now < new Date(stops[i].end_date)) return i;
   }
   return null;
 }
@@ -23,12 +20,16 @@ function formatStopDate(stop) {
   const s = new Date(stop.start_date);
   const e = new Date(stop.end_date);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const sm = months[s.getUTCMonth()];
-  const sd = s.getUTCDate();
-  const ed = e.getUTCDate();
+  const sd = s.getUTCDate(), sm = months[s.getUTCMonth()];
+  const ed = e.getUTCDate(), em = months[e.getUTCMonth()];
   if (s.getUTCMonth() === e.getUTCMonth() && sd !== ed) return `${sm} ${sd}–${ed}`;
-  if (s.getUTCMonth() !== e.getUTCMonth()) return `${sm} ${sd} – ${months[e.getUTCMonth()]} ${ed}`;
+  if (s.getUTCMonth() !== e.getUTCMonth()) return `${sm} ${sd} – ${em} ${ed}`;
   return `${sm} ${sd}`;
+}
+
+function calcNights(stop) {
+  if (!stop.start_date || !stop.end_date) return 1;
+  return Math.max(1, Math.round((new Date(stop.end_date) - new Date(stop.start_date)) / 86400000));
 }
 
 function formatTime(t) {
@@ -63,7 +64,13 @@ function useGoogleMapsReady() {
 
 const directionsCache = {};
 
-function DayMap({ day, mapItems, visible }) {
+// Get stay for a stop (from items)
+function getStay(items, stopId) {
+  return items.find(it => it.type === 'stay' && it.stop_id === stopId && (it.status === 'sel' || it.status === 'conf'));
+}
+
+// ═══ DAY MAP ═══
+function DayMap({ stop, mapItems, stayCoord, visible }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
@@ -71,49 +78,39 @@ function DayMap({ day, mapItems, visible }) {
   const prevKey = useRef(null);
   const mapsReady = useGoogleMapsReady();
 
-  const key = `${day.n}-${mapItems.map(e => e.id).join(',')}`;
+  // Center on stay coord or first item coord
+  const center = stayCoord || (mapItems.find(it => it.coord)?.coord) || null;
+  const key = `${stop.id}-${mapItems.map(e => e.id).join(',')}`;
   const coords = mapItems.filter(it => it.coord).map(it => it.coord);
   const mapsRouteUrl = coords.length > 1
     ? `https://www.google.com/maps/dir/${coords.map(c => `${c.lat},${c.lng}`).join('/')}`
     : coords.length === 1 ? `https://www.google.com/maps/dir/?api=1&destination=${coords[0].lat},${coords[0].lng}` : null;
 
   useEffect(() => {
-    if (!visible || !mapsReady || !mapRef.current || !day.lat) return;
+    if (!visible || !mapsReady || !mapRef.current || !center) return;
     if (prevKey.current !== key) {
-      markersRef.current.forEach(m => m.setMap(null));
-      markersRef.current = [];
-      polylinesRef.current.forEach(p => { if (p.setMap) p.setMap(null); else if (p.setDirections) p.setDirections({ routes: [] }); });
-      polylinesRef.current = [];
-      mapInstance.current = null;
-      prevKey.current = key;
+      markersRef.current.forEach(m => m.setMap(null)); markersRef.current = [];
+      polylinesRef.current.forEach(p => { if (p.setMap) p.setMap(null); else if (p.setDirections) p.setDirections({ routes: [] }); }); polylinesRef.current = [];
+      mapInstance.current = null; prevKey.current = key;
     }
     if (mapInstance.current) { window.google.maps.event.trigger(mapInstance.current, 'resize'); return; }
 
     const m = new window.google.maps.Map(mapRef.current, {
-      center: { lat: day.lat, lng: day.lng }, zoom: day.zoom || 14,
-      mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
+      center, zoom: 14, mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
     });
     const bounds = new window.google.maps.LatLngBounds();
-    bounds.extend({ lat: day.lat, lng: day.lng });
-    let hasExtra = false;
 
-    // Stay/home marker — always visible, distinct from numbered items
-    const cm = new window.google.maps.Marker({ position: { lat: day.lat, lng: day.lng }, map: m, title: `Stay: ${day.sleep}`,
-      label: { text: 'H', color: '#fff', fontSize: '11px', fontWeight: '700' },
-      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 14, fillColor: '#7C3AED', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 },
-      zIndex: 1000,
-    });
-    markersRef.current.push(cm);
-
-    if (day.drive_from) {
-      const path = [day.drive_from, ...(day.drive_via || []), { lat: day.lat, lng: day.lng }];
-      polylinesRef.current.push(new window.google.maps.Polyline({ path, geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.8, strokeWeight: 3, map: m }));
-      bounds.extend(day.drive_from);
-      if (day.drive_via) day.drive_via.forEach(v => bounds.extend(v));
-      hasExtra = true;
+    // Stay/home marker
+    if (stayCoord) {
+      const cm = new window.google.maps.Marker({ position: stayCoord, map: m, title: `Stay: ${stop.name}`,
+        label: { text: 'H', color: '#fff', fontSize: '11px', fontWeight: '700' },
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 14, fillColor: '#7C3AED', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 }, zIndex: 1000 });
+      markersRef.current.push(cm);
+      bounds.extend(stayCoord);
     }
 
-    // Item markers — numbered in time order, color-coded by type
+    // Item markers — numbered, color-coded by type
     const TYPE_MAP_COLOR = { stay: '#7C3AED', dining: '#D97706', special: '#D97706', activity: '#16A34A', transport: '#2563EB' };
     const withCoords = mapItems.filter(it => it.coord);
     withCoords.forEach((it, idx) => {
@@ -123,36 +120,27 @@ function DayMap({ day, mapItems, visible }) {
         icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
       markersRef.current.push(marker);
       bounds.extend(it.coord);
-      hasExtra = true;
     });
 
+    // Route between items
     if (withCoords.length >= 2) {
       const routeKey = withCoords.map(e => `${e.coord.lat},${e.coord.lng}`).join('|');
-      const renderDirections = (result) => {
-        polylinesRef.current.push(new window.google.maps.DirectionsRenderer({
-          map: m, directions: result, suppressMarkers: true,
-          polylineOptions: { strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3 },
-        }));
-      };
-      if (directionsCache[routeKey]) { renderDirections(directionsCache[routeKey]); }
+      const render = (result) => { polylinesRef.current.push(new window.google.maps.DirectionsRenderer({ map: m, directions: result, suppressMarkers: true, polylineOptions: { strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3 } })); };
+      if (directionsCache[routeKey]) { render(directionsCache[routeKey]); }
       else {
-        const ds = new window.google.maps.DirectionsService();
-        ds.route({
+        new window.google.maps.DirectionsService().route({
           origin: withCoords[0].coord, destination: withCoords[withCoords.length - 1].coord,
           waypoints: withCoords.slice(1, -1).map(e => ({ location: e.coord, stopover: true })).slice(0, 8),
           travelMode: window.google.maps.TravelMode.DRIVING, optimizeWaypoints: false,
-        }, (result, status) => { if (status === 'OK') { directionsCache[routeKey] = result; renderDirections(result); } });
+        }, (result, status) => { if (status === 'OK') { directionsCache[routeKey] = result; render(result); } });
       }
     }
 
-    if (hasExtra) {
-      m.fitBounds(bounds, 40);
-      const listener = window.google.maps.event.addListener(m, 'idle', () => { if (m.getZoom() > 16) m.setZoom(16); window.google.maps.event.removeListener(listener); });
-    }
+    if (markersRef.current.length > 1 || withCoords.length > 0) m.fitBounds(bounds, 40);
     mapInstance.current = m;
   }, [visible, key, mapsReady]);
 
-  if (!day.lat) return null;
+  if (!center) return null;
   return (
     <div style={{ marginBottom: 12 }}>
       <div ref={mapRef} className="map-wrap" style={{ height: 240 }}></div>
@@ -166,47 +154,39 @@ function DayMap({ day, mapItems, visible }) {
   );
 }
 
-// Overview map — generated from stops table (no hardcoded routes)
-function RouteMap({ visible, stops }) {
+// ═══ OVERVIEW MAP — from items (stays) ═══
+function RouteMap({ visible, stops, items }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const mapsReady = useGoogleMapsReady();
   useEffect(() => {
-    if (!visible || !mapsReady || !mapRef.current || mapInstance.current || !stops?.length) return;
-    const validStops = stops.filter(s => s.lat && s.lng);
-    if (!validStops.length) return;
-    // Center on midpoint
-    const avgLat = validStops.reduce((s, st) => s + Number(st.lat), 0) / validStops.length;
-    const avgLng = validStops.reduce((s, st) => s + Number(st.lng), 0) / validStops.length;
+    if (!visible || !mapsReady || !mapRef.current || mapInstance.current) return;
+    // Get stay coords for each stop
+    const points = stops.map(s => {
+      const stay = getStay(items, s.id);
+      return { stop: s, coord: stay?.coord || null };
+    }).filter(p => p.coord);
+    if (!points.length) return;
+    const avgLat = points.reduce((s, p) => s + p.coord.lat, 0) / points.length;
+    const avgLng = points.reduce((s, p) => s + p.coord.lng, 0) / points.length;
     const m = new window.google.maps.Map(mapRef.current, {
       center: { lat: avgLat, lng: avgLng }, zoom: 6,
       mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
       styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }],
     });
     const bounds = new window.google.maps.LatLngBounds();
-    // Draw polyline connecting all stops in order
-    const path = validStops.map(s => ({ lat: Number(s.lat), lng: Number(s.lng) }));
-    new window.google.maps.Polyline({ path, geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3, map: m });
-    // Drive-via waypoints as dashed lines
-    validStops.forEach(s => {
-      if (s.drive_via) {
-        const viaPath = [s.drive_from || path[0], ...(Array.isArray(s.drive_via) ? s.drive_via : []), { lat: Number(s.lat), lng: Number(s.lng) }].filter(Boolean);
-        if (viaPath.length > 1) {
-          new window.google.maps.Polyline({ path: viaPath, geodesic: true, strokeColor: s.color || '#7C3AED', strokeOpacity: 0, strokeWeight: 2,
-            icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.6, scale: 2 }, offset: '0', repeat: '12px' }], map: m });
-        }
-      }
-    });
-    // Markers for each stop
-    validStops.forEach(s => {
-      const pos = { lat: Number(s.lat), lng: Number(s.lng) };
-      new window.google.maps.Marker({ position: pos, map: m, title: `${s.sleep} (${s.city})`,
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: s.nights > 1 ? 6 : 4, fillColor: s.color || '#7C3AED', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } });
-      bounds.extend(pos);
+    // Polyline
+    new window.google.maps.Polyline({ path: points.map(p => p.coord), geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3, map: m });
+    // Markers
+    points.forEach(p => {
+      const nights = calcNights(p.stop);
+      new window.google.maps.Marker({ position: p.coord, map: m, title: p.stop.name,
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: nights > 1 ? 6 : 4, fillColor: p.stop.color || '#7C3AED', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } });
+      bounds.extend(p.coord);
     });
     m.fitBounds(bounds, 30);
     mapInstance.current = m;
-  }, [visible, mapsReady, stops]);
+  }, [visible, mapsReady, stops, items]);
   return <div ref={mapRef} className="map-wrap" style={{ height: 200, marginBottom: 12 }}></div>;
 }
 
@@ -220,26 +200,22 @@ function StatusFilter({ value, onChange }) {
   );
 }
 
-// Derive destination stats from stops + items (no hardcoded data)
+// ═══ STOP STATS (for overview destination cards) ═══
 function getStopStats(stop, items) {
   const stopItems = items.filter(it => it.stop_id === stop.id);
-  const cityItems = items.filter(it => it.city === stop.city);
-  const allItems = [...new Map([...stopItems, ...cityItems].map(it => [it.id, it])).values()];
-  const stays = allItems.filter(it => it.type === 'stay');
-  const transports = allItems.filter(it => it.type === 'transport');
-  const activities = allItems.filter(it => it.type === 'activity');
-  const food = allItems.filter(it => it.type === 'dining' || it.type === 'special');
+  const stays = stopItems.filter(it => it.type === 'stay');
+  const transports = stopItems.filter(it => it.type === 'transport');
+  const activities = stopItems.filter(it => it.type === 'activity');
+  const food = stopItems.filter(it => it.type === 'dining' || it.type === 'special');
   const stayBooked = stays.some(it => it.status === 'conf');
   const staySelected = stays.some(it => it.status === 'sel' || it.status === 'conf');
   const transportBooked = transports.length === 0 || transports.every(it => it.status === 'conf');
-  const transportSelected = transports.some(it => it.status === 'sel' || it.status === 'conf');
   const actSelected = activities.filter(it => it.status === 'sel' || it.status === 'conf').length;
   const foodSelected = food.filter(it => it.status === 'sel' || it.status === 'conf').length;
-  const hasStays = stays.length > 0;
   let status = 'ready';
-  if ((hasStays && !stayBooked) || (transports.length > 0 && !transportBooked)) status = 'critical';
+  if ((stays.length > 0 && !stayBooked) || (transports.length > 0 && !transportBooked)) status = 'critical';
   else if (actSelected === 0 && activities.length > 0) status = 'warning';
-  return { stayBooked, staySelected, transportBooked, transportSelected, hasTransport: transports.length > 0, actSelected, actTotal: activities.length, foodSelected, foodTotal: food.length, status, hasStays };
+  return { stayBooked, staySelected, hasTransport: transports.length > 0, transportBooked, actSelected, actTotal: activities.length, foodSelected, foodTotal: food.length, status, hasStays: stays.length > 0 };
 }
 
 // ═══ OVERVIEW ═══
@@ -267,7 +243,7 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
     <>
       {daysLeft > 0 && (
         <div className="home-header">
-          <div className="home-trip-name">{stops[0]?.sleep} to {stops[stops.length - 1]?.sleep}</div>
+          <div className="home-trip-name">{stops[0]?.name} to {stops[stops.length - 1]?.name}</div>
           <div className="home-countdown">{daysLeft} days away</div>
         </div>
       )}
@@ -301,17 +277,21 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
         </div>
       )}
 
-      <RouteMap visible={visible} stops={stops} />
+      <RouteMap visible={visible} stops={stops} items={items} />
 
       <div className="home-section-title">Your destinations</div>
       <div className="home-destinations">
         {stops.map((stop, idx) => {
           const ss = getStopStats(stop, items);
-          const nights = stop.start_date && stop.end_date ? Math.round((new Date(stop.end_date) - new Date(stop.start_date)) / 86400000) : (stop.nights || 1);
+          const nights = calcNights(stop);
+          const stay = getStay(items, stop.id);
           return (
             <div key={stop.id} className={`home-dest-card home-dest-${ss.status}`} onClick={() => onDaySelect(idx)}>
               <div className="home-dest-top">
-                <div><div className="home-dest-name">{stop.sleep || stop.city}</div><div className="home-dest-dates">{formatStopDate(stop)}{nights > 1 ? ` · ${nights}n` : ''}</div></div>
+                <div>
+                  <div className="home-dest-name">{stop.name}</div>
+                  <div className="home-dest-dates">{formatStopDate(stop)}{nights > 1 ? ` · ${nights}n` : ''}</div>
+                </div>
                 <div className="home-dest-indicator">
                   {ss.status === 'ready' && <span className="home-flag ready">✓</span>}
                   {ss.status === 'critical' && <span className="home-flag critical">!</span>}
@@ -319,8 +299,8 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
                 </div>
               </div>
               <div className="home-dest-statuses">
-                {ss.hasStays && <span className={`home-dest-status ${ss.stayBooked ? 'booked' : ss.staySelected ? 'selected' : 'missing'}`}>{ss.stayBooked ? '✓' : ss.staySelected ? '●' : '!'} Stay</span>}
-                {ss.hasTransport && <span className={`home-dest-status ${ss.transportBooked ? 'booked' : ss.transportSelected ? 'selected' : 'missing'}`}>{ss.transportBooked ? '✓' : ss.transportSelected ? '●' : '!'} Transport</span>}
+                {ss.hasStays && <span className={`home-dest-status ${ss.stayBooked ? 'booked' : ss.staySelected ? 'selected' : 'missing'}`}>{ss.stayBooked ? '✓' : ss.staySelected ? '●' : '!'} {stay?.name || 'Stay'}</span>}
+                {ss.hasTransport && <span className={`home-dest-status ${ss.transportBooked ? 'booked' : 'missing'}`}>{ss.transportBooked ? '✓' : '!'} Transport</span>}
                 {ss.actTotal > 0 && <span className={`home-dest-status ${ss.actSelected > 0 ? 'selected' : ''}`}>{ss.actSelected}/{ss.actTotal} Activities</span>}
                 {ss.foodTotal > 0 && <span className={`home-dest-status ${ss.foodSelected > 0 ? 'selected' : ''}`}>{ss.foodSelected}/{ss.foodTotal} Food</span>}
               </div>
@@ -333,9 +313,9 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
 }
 
 // ═══ DAY DETAIL ═══
-function DayDetailView({ day, items, onItemTap, places, visible, statusFilter }) {
+function DayDetailView({ stop, items, onItemTap, places, visible, statusFilter }) {
   const scheduled = useMemo(() => {
-    return items.filter(it => it.stop_id === day.id && it.type !== 'transport')
+    return items.filter(it => it.stop_id === stop.id && it.type !== 'transport')
       .filter(it => {
         if (statusFilter === 'all') return it.status === 'sel' || it.status === 'conf';
         if (statusFilter === 'sel') return it.status === 'sel';
@@ -343,42 +323,32 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
         return it.status === 'sel' || it.status === 'conf';
       })
       .sort((a, b) => (a.start_time || 'zz').localeCompare(b.start_time || 'zz') || (a.sort_order || 0) - (b.sort_order || 0));
-  }, [items, day.n, statusFilter]);
+  }, [items, stop.id, statusFilter]);
 
-  const cityItems = useMemo(() => {
-    const scheduledIds = new Set(scheduled.map(it => it.id));
-    const fromCity = items.filter(it => {
-      if (it.type === 'transport') return false;
-      if (it.city === day.city) return true;
-      if (day.city === 'Montepulciano' && it.city === 'Tuscany') return true;
-      return false;
-    });
-    // Also include items scheduled for this day but from other cities
-    const fromSchedule = items.filter(it => it.stop_id === day.id && it.type !== 'transport' && !fromCity.some(c => c.id === it.id));
-    return [...fromCity, ...fromSchedule];
-  }, [items, day.city, day.n]);
+  const allStopItems = useMemo(() => {
+    return items.filter(it => it.stop_id === stop.id && it.type !== 'transport');
+  }, [items, stop.id]);
 
-  const stay = cityItems.find(it => it.type === 'stay' && (it.status === 'sel' || it.status === 'conf'));
+  const stay = getStay(items, stop.id);
   const stayCoord = stay?.coord || null;
   const stayPlace = stay ? places?.[stay.id] : null;
-  const nights = day.start_date && day.end_date ? Math.round((new Date(day.end_date) - new Date(day.start_date)) / 86400000) : (day.nights || 1);
-  const tips = day.tips?.length > 0 ? day.tips : null;
+  const nights = calcNights(stop);
+  const tips = stop.tips?.length > 0 ? stop.tips : null;
 
   const planItems = useMemo(() => {
-    return cityItems.filter(it => {
-      if (it.type === 'transport') return false;
+    return allStopItems.filter(it => {
       if (statusFilter === 'all') return true;
       if (statusFilter === 'sel') return it.status === 'sel';
       if (statusFilter === 'conf') return it.status === 'conf';
       return true;
     });
-  }, [cityItems, statusFilter]);
+  }, [allStopItems, statusFilter]);
 
   return (
     <>
       {/* General details */}
       <div className="itin-general">
-        <div className="itin-general-row"><span className="itin-general-label">Dates</span><span>{formatStopDate(day)}{nights > 1 ? ` (${nights} nights)` : ''}</span></div>
+        <div className="itin-general-row"><span className="itin-general-label">Dates</span><span>{formatStopDate(stop)}{nights > 1 ? ` (${nights} nights)` : ''}</span></div>
         {stay && (
           <>
             <div className="itin-general-row"><span className="itin-general-label">Stay</span><span>{stay.name}</span></div>
@@ -391,7 +361,7 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
       </div>
 
       {/* Map */}
-      <DayMap day={day} mapItems={scheduled} visible={visible} />
+      <DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} />
 
       {/* Schedule */}
       <div className="itin-section-title">Schedule</div>
@@ -406,7 +376,7 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
               <div className="itin-sched-dot-col"><div className={`itin-sched-dot ${it.status}`} /><div className="itin-sched-line" /></div>
               <div className="itin-sched-info">
                 <div className="itin-sched-name">{it.name}</div>
-                <div className="itin-sched-sub">{it.dish ? it.dish : it.hrs ? `${it.hrs}h` : it.city}</div>
+                <div className="itin-sched-sub">{it.dish ? it.dish : it.hrs ? `${it.hrs}h` : ''}</div>
               </div>
               <div className="itin-sched-actions">
                 {it.status === 'conf' && <span className="itin-sched-check">Booked</span>}
@@ -435,7 +405,7 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
             <div key={it.id} className={`item-card-compact ${it.status === 'conf' ? 'confirmed' : it.status === 'sel' ? 'selected' : ''}`} onClick={() => onItemTap(it)}>
               <div className="icc-left">
                 <div className="icc-name">{it.name}</div>
-                <div className="icc-sub">{it.dish || (it.hrs ? `${it.hrs}h` : it.city)}</div>
+                <div className="icc-sub">{it.dish || (it.hrs ? `${it.hrs}h` : '')}</div>
               </div>
               <div className="icc-right">
                 <div className={`icc-status ${it.status}`}>{it.status === 'conf' ? 'Booked' : it.status === 'sel' ? 'Added' : ''}</div>
@@ -448,24 +418,25 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
   );
 }
 
-// Generate calendar dates from stops
+// ═══ CALENDAR DATES ═══
 function getCalendarDates(stops) {
   if (!stops.length) return [];
   const start = new Date(stops[0].start_date);
   const end = new Date(stops[stops.length - 1].end_date);
   const dates = [];
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
     const dateStr = d.toISOString().split('T')[0];
-    // Find which stop this date falls in
-    const stop = stops.find(s => dateStr >= s.start_date && dateStr < s.end_date);
+    const overlapping = stops.filter(s => dateStr >= s.start_date.split('T')[0] && dateStr < s.end_date.split('T')[0]);
+    const stop = overlapping[0] || null;
+    const title = overlapping.length > 1 ? overlapping.map(s => s.name).join(' / ') : (stop?.name || '');
     dates.push({
       date: dateStr,
-      label: `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}`,
       shortLabel: `${months[d.getMonth()]} ${d.getDate()}`,
+      title,
       stop,
       stopIdx: stop ? stops.indexOf(stop) : -1,
+      color: stop?.color || '#7C3AED',
     });
   }
   return dates;
@@ -475,13 +446,13 @@ function getCalendarDates(stops) {
 export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, setStatus, addExpense, files, setFile, removeFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectorMode, setSelectorMode] = useState('stops'); // 'stops' | 'dates'
+  const [selectorMode, setSelectorMode] = useState('stops');
   const todayIdx = getTodayDayIndex(stops);
   const isDuringTrip = todayIdx !== null;
   const [view, setView] = useState(isDuringTrip ? todayIdx : 'overview');
   const selectorRef = useRef(null);
-
   const calendarDates = useMemo(() => getCalendarDates(stops), [stops]);
+  const todayDateStr = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (selectorRef.current && view !== 'overview') {
@@ -490,45 +461,36 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
     }
   }, [view, selectorMode]);
 
-  // Find today's calendar date index
-  const todayDateStr = new Date().toISOString().split('T')[0];
-
   return (
     <div className={`page ${active ? 'active' : ''}`}>
-      {/* Mode toggle */}
       <div className="itin-mode-toggle">
         <button className={`fp ${selectorMode === 'stops' ? 'fp-active' : ''}`} onClick={() => setSelectorMode('stops')}>Stops</button>
         <button className={`fp ${selectorMode === 'dates' ? 'fp-active' : ''}`} onClick={() => setSelectorMode('dates')}>Dates</button>
       </div>
 
-      {/* Selector pills */}
       <div className="today-selector" ref={selectorRef}>
         <button className={`today-sel-pill ${view === 'overview' ? 'active' : ''}`} onClick={() => setView('overview')}>Overview</button>
         {isDuringTrip && view !== todayIdx && <button className="today-sel-pill today-pill-accent" onClick={() => setView(todayIdx)}>Today</button>}
 
         {selectorMode === 'stops' ? (
-          stops.map((d, i) => (
-            <button key={d.id} data-active={view === i ? 'true' : 'false'} className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`} onClick={() => setView(i)} style={{ borderLeftColor: d.color || '#7C3AED' }}>
-              <span className="pill-stop-name">{d.sleep}</span>
-              <span className="pill-stop-date">{formatStopDate(d)}</span>
+          stops.map((s, i) => (
+            <button key={s.id} data-active={view === i ? 'true' : 'false'}
+              className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`}
+              onClick={() => setView(i)} style={{ borderLeftColor: s.color || '#7C3AED' }}>
+              <span className="pill-stop-name">{s.name}</span>
+              <span className="pill-stop-date">{formatStopDate(s)}</span>
             </button>
           ))
         ) : (
-          calendarDates.map(cd => {
-            // Find all stops that overlap this date (usually 1, but could be transition days)
-            const overlapping = stops.filter(s => cd.date >= s.start_date && cd.date < s.end_date);
-            const title = overlapping.length > 1 ? overlapping.map(s => s.sleep).join(' / ') : (cd.stop?.sleep || '');
-            const borderColor = cd.stop?.color || '#7C3AED';
-            return (
-              <button key={cd.date} data-active={cd.stopIdx === view ? 'true' : 'false'}
-                className={`today-sel-pill today-sel-pill-stop ${cd.stopIdx === view ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`}
-                onClick={() => cd.stopIdx >= 0 && setView(cd.stopIdx)}
-                style={{ borderLeftColor: borderColor, opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
-                <span className="pill-stop-name">{title}</span>
-                <span className="pill-stop-date">{cd.shortLabel}</span>
-              </button>
-            );
-          })
+          calendarDates.map(cd => (
+            <button key={cd.date} data-active={cd.stopIdx === view ? 'true' : 'false'}
+              className={`today-sel-pill today-sel-pill-stop ${cd.stopIdx === view ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`}
+              onClick={() => cd.stopIdx >= 0 && setView(cd.stopIdx)}
+              style={{ borderLeftColor: cd.color, opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
+              <span className="pill-stop-name">{cd.title}</span>
+              <span className="pill-stop-date">{cd.shortLabel}</span>
+            </button>
+          ))
         )}
       </div>
 
@@ -537,7 +499,7 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
       {view === 'overview' ? (
         <OverviewView items={items} stops={stops} expenses={expenses} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={setView} />
       ) : (
-        <DayDetailView day={stops[view]} items={items} onItemTap={setSelectedItem} places={places} visible={active && view !== 'overview'} statusFilter={statusFilter} />
+        <DayDetailView stop={stops[view]} items={items} onItemTap={setSelectedItem} places={places} visible={active && view !== 'overview'} statusFilter={statusFilter} />
       )}
 
       {selectedItem && (() => {

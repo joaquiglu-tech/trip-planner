@@ -193,17 +193,20 @@ export function useItems(currentUserEmail) {
 
 // Stay date lookup from stops table (dynamic, no hardcoded dates)
 function getStayDates(stay, stops) {
-  // Find the stop for this stay's city
-  const stop = stops.find(s => s.city === stay.city);
-  if (stop) {
-    return { checkIn: stop.start_date, checkOut: stop.end_date };
-  }
-  // Fallback: find by stop_id
+  // Find by stop_id (most reliable)
   if (stay.stop_id) {
     const byId = stops.find(s => s.id === stay.stop_id);
-    if (byId) return { checkIn: byId.start_date, checkOut: byId.end_date };
+    if (byId) {
+      const checkIn = byId.start_date?.split('T')[0] || byId.start_date;
+      const checkOut = byId.end_date?.split('T')[0] || byId.end_date;
+      return { checkIn, checkOut };
+    }
   }
-  // Last resort: first stop's dates
-  if (stops.length > 0) return { checkIn: stops[0].start_date, checkOut: stops[0].end_date };
+  // Fallback: match by city name
+  const stop = stops.find(s => s.name === stay.city || s.name.includes(stay.city));
+  if (stop) {
+    return { checkIn: stop.start_date?.split('T')[0], checkOut: stop.end_date?.split('T')[0] };
+  }
+  if (stops.length > 0) return { checkIn: stops[0].start_date?.split('T')[0], checkOut: stops[stops.length - 1].end_date?.split('T')[0] };
   return { checkIn: '2026-07-20', checkOut: '2026-07-24' };
 }
