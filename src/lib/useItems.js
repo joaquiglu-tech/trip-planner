@@ -73,8 +73,7 @@ export function useItems(currentUserEmail) {
           for (const stay of staysWithKeys) {
             // Skip if live price was fetched recently (within 24h)
             if (stay.live_price_updated && (Date.now() - new Date(stay.live_price_updated).getTime()) < 86400000) continue;
-            const checkIn = stay.day_n ? getCheckInDate(stay.day_n) : '2026-07-20';
-            const checkOut = addDays(checkIn, stay.nights || 1);
+            const { checkIn, checkOut } = getStayDates(stay);
             try {
               const price = await fetchHotelPrice(stay.xotelo_key, checkIn, checkOut);
               if (price) {
@@ -214,15 +213,36 @@ export function useItems(currentUserEmail) {
 }
 
 // Date helpers for Xotelo check-in/out calculation
-const DAY_START_DATES = {
-  4: '2026-07-20', 5: '2026-07-21', 6: '2026-07-22', 7: '2026-07-23',
-  8: '2026-07-24', 9: '2026-07-25', 10: '2026-07-26', 11: '2026-07-27',
-  12: '2026-07-28', 13: '2026-07-29', 14: '2026-07-30', 15: '2026-07-31',
-  16: '2026-08-01', 17: '2026-08-02',
+// City → check-in date + nights (from allDays trip structure)
+const CITY_DATES = {
+  'Rome': { checkIn: '2026-07-20', nights: 4 },
+  'Florence': { checkIn: '2026-07-24', nights: 2 },
+  'Montepulciano': { checkIn: '2026-07-25', nights: 1 },
+  "Val d'Orcia": { checkIn: '2026-07-26', nights: 1 },
+  'Lerici': { checkIn: '2026-07-27', nights: 1 },
+  'Bergamo Alta': { checkIn: '2026-07-28', nights: 1 },
+  'Bellagio': { checkIn: '2026-07-29', nights: 1 },
+  'Sirmione': { checkIn: '2026-07-30', nights: 1 },
+  'Verona': { checkIn: '2026-07-31', nights: 1 },
+  'Venice': { checkIn: '2026-08-01', nights: 1 },
 };
 
-function getCheckInDate(dayN) {
-  return DAY_START_DATES[dayN] || '2026-07-20';
+function getStayDates(stay) {
+  // Use city to determine check-in/out dates
+  const cityKey = stay.stay_city || stay.city;
+  const cityDates = CITY_DATES[cityKey];
+  if (cityDates) {
+    const checkOut = addDays(cityDates.checkIn, stay.nights || cityDates.nights);
+    return { checkIn: cityDates.checkIn, checkOut };
+  }
+  // Fallback: use day_n to estimate
+  if (stay.day_n) {
+    const base = new Date('2026-07-12');
+    base.setDate(base.getDate() + (stay.day_n - 1));
+    const checkIn = base.toISOString().split('T')[0];
+    return { checkIn, checkOut: addDays(checkIn, stay.nights || 1) };
+  }
+  return { checkIn: '2026-07-20', checkOut: '2026-07-24' };
 }
 
 function addDays(dateStr, days) {
