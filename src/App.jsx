@@ -12,6 +12,7 @@ import SelectPage from './components/SelectPage';
 import BudgetPage from './components/BudgetPage';
 import ProfilePage from './components/ProfilePage';
 import AddItemModal from './components/AddItemModal';
+import AddExpenseModal from './components/AddExpenseModal';
 import Toast from './components/Toast';
 
 // Read tab from URL hash on load
@@ -26,6 +27,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [showFab, setShowFab] = useState(null);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [showAddExpense, setShowAddExpense] = useState(false);
   const email = session?.user?.email || '';
   const { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
   const { stops, loaded: stopsLoaded } = useStops();
@@ -91,8 +93,8 @@ export default function App() {
           {showFab === 'menu' && (
             <div className="fab-overlay" onClick={() => setShowFab(null)}>
               <div className="fab-menu" onClick={(e) => e.stopPropagation()}>
-                <button className="fab-option" onClick={() => { setShowFab(null); setShowAddItem(true); }}>Add reservation</button>
-                <button className="fab-option" onClick={() => { setShowFab(null); setActiveTab('expenses'); }}>Add expense</button>
+                <button className="fab-option" onClick={() => { setShowFab(null); setShowAddItem(true); }}>Add item</button>
+                <button className="fab-option" onClick={() => { setShowFab(null); setShowAddExpense(true); }}>Add expense</button>
               </div>
             </div>
           )}
@@ -101,6 +103,7 @@ export default function App() {
       )}
 
       {showAddItem && <AddItemModal onClose={() => setShowAddItem(false)} onAdd={addItem} userEmail={email} />}
+      {showAddExpense && <AddExpenseModal items={items} stops={stops} onAdd={addExpense} onClose={() => setShowAddExpense(false)} userEmail={email} />}
 
       {!isProfile && <BottomTabs activeTab={activeTab} setActiveTab={navigateTab} />}
     </div>

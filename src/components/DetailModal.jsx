@@ -26,6 +26,7 @@ function getBookingUrl(source, hotelName, city) {
 export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, addExpense }) {
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [draft, setDraft] = useState({});
   const [uploading, setUploading] = useState(false);
   const [costInput, setCostInput] = useState('');
@@ -242,14 +243,37 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
               {!st && <button className="detail-btn sel" onClick={handleSelect}>Add to our trip</button>}
-              {st === 'sel' && (
+              {st === 'sel' && !confirming && (
                 <>
                   <div className="status-banner sel-banner"><span>Added to trip</span><button className="status-change-btn" onClick={handleSelect}>Remove</button></div>
-                  <button className="detail-btn conf" onClick={handleConfirm} style={{ marginTop: 6 }}>Mark as booked</button>
+                  <button className="detail-btn conf" onClick={() => setConfirming(true)} style={{ marginTop: 6 }}>Confirm & pay</button>
                 </>
               )}
+              {st === 'sel' && confirming && (
+                <div className="detail-booking-prompt" style={{ margin: 0 }}>
+                  <div className="detail-section-title" style={{ marginBottom: 8 }}>How much did you pay?</div>
+                  <div className="cost-input-row" style={{ marginBottom: 8 }}>
+                    <span className="cost-input-prefix">$</span>
+                    <input type="number" className="cost-input" placeholder="0" value={costInput} onChange={e => setCostInput(e.target.value)} autoFocus />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="detail-btn" onClick={() => setConfirming(false)} style={{ flex: 1 }}>Cancel</button>
+                    <button className="detail-btn conf" onClick={async () => {
+                      const val = parseFloat(costInput);
+                      if (!val || val <= 0) return;
+                      await addExpense({ amount: val, category: (it.type === 'dining' || it.type === 'special') ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_id || '', created_by: '' });
+                      setStatus(it.id, 'conf');
+                      setCostInput(''); setConfirming(false);
+                      showSaved('Confirmed');
+                    }} style={{ flex: 1 }}>Confirm</button>
+                  </div>
+                </div>
+              )}
               {st === 'conf' && (
-                <div className="status-banner conf-banner"><span>Booked</span><button className="status-change-btn" onClick={() => setStatus(it.id, 'sel')}>Change</button></div>
+                <div className="status-banner conf-banner">
+                  <span>Booked{expenseAmount > 0 ? ` · ${$f(expenseAmount)}` : ''}</span>
+                  <button className="status-change-btn" onClick={() => setStatus(it.id, 'sel')}>Change</button>
+                </div>
               )}
             </div>
             <button className="edit-toggle-btn" onClick={startEdit}>Edit</button>
@@ -411,22 +435,24 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             </div>
           )}
 
-          {/* Log payment — when confirmed and no expense yet */}
-          {st === 'conf' && expenseAmount === 0 && addExpense && (
-            <div className="detail-booking-prompt">
-              <div className="detail-section-title" style={{ marginBottom: 8 }}>How much did you pay?</div>
-              <div className="cost-input-row" style={{ marginBottom: 8 }}>
-                <span className="cost-input-prefix">$</span>
-                <input type="number" className="cost-input" placeholder="0" value={costInput} onChange={e => setCostInput(e.target.value)} />
+          {/* Log additional payment — when confirmed but want to add more */}
+          {st === 'conf' && addExpense && (
+            <details className="detail-section detail-collapsible" style={{ marginTop: 8 }}>
+              <summary className="detail-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>Add payment</summary>
+              <div style={{ marginTop: 8 }}>
+                <div className="cost-input-row" style={{ marginBottom: 8 }}>
+                  <span className="cost-input-prefix">$</span>
+                  <input type="number" className="cost-input" placeholder="0" value={costInput} onChange={e => setCostInput(e.target.value)} />
+                </div>
+                <button className="detail-btn sel" onClick={async () => {
+                  const val = parseFloat(costInput);
+                  if (!val || val <= 0) return;
+                  await addExpense({ amount: val, category: (it.type === 'dining' || it.type === 'special') ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_id || '', created_by: '' });
+                  setCostInput('');
+                  showSaved('Payment added');
+                }}>Add payment</button>
               </div>
-              <button className="detail-btn sel" onClick={async () => {
-                const val = parseFloat(costInput);
-                if (!val || val <= 0) return;
-                await addExpense({ amount: val, category: it.type, note: it.name, item_id: it.id, stop_id: it.stop_id, created_by: '' });
-                setCostInput('');
-                showSaved('Payment logged');
-              }}>Log payment</button>
-            </div>
+            </details>
           )}
 
           {it.notes && !editing && (
