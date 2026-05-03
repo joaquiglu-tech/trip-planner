@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { ROUTE_STOPS, ROUTE_LINES } from '../data/routes';
 import { $f, itemCost } from '../lib/useItems';
 import DetailModal from './DetailModal';
-
-const PHASE_COLOR = { spain: '#D97706', rome: '#2563EB', roadtrip: '#7C3AED', venice: '#2563EB' };
 
 function getTodayDayIndex(stops) {
   const now = new Date();
@@ -169,21 +166,47 @@ function DayMap({ day, mapItems, visible }) {
   );
 }
 
-function RouteMap({ visible }) {
+// Overview map — generated from stops table (no hardcoded routes)
+function RouteMap({ visible, stops }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const mapsReady = useGoogleMapsReady();
   useEffect(() => {
-    if (!visible || !mapsReady || !mapRef.current || mapInstance.current) return;
+    if (!visible || !mapsReady || !mapRef.current || mapInstance.current || !stops?.length) return;
+    const validStops = stops.filter(s => s.lat && s.lng);
+    if (!validStops.length) return;
+    // Center on midpoint
+    const avgLat = validStops.reduce((s, st) => s + Number(st.lat), 0) / validStops.length;
+    const avgLng = validStops.reduce((s, st) => s + Number(st.lng), 0) / validStops.length;
     const m = new window.google.maps.Map(mapRef.current, {
-      center: { lat: 44.0, lng: 11.0 }, zoom: 6,
+      center: { lat: avgLat, lng: avgLng }, zoom: 6,
       mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
       styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }],
     });
-    ROUTE_LINES.forEach(seg => new window.google.maps.Polyline({ path: seg.path, geodesic: true, strokeColor: seg.color, strokeOpacity: seg.dash ? 0 : 0.7, strokeWeight: seg.w, icons: seg.dash ? [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.8, scale: 3 }, offset: '0', repeat: '14px' }] : [], map: m }));
-    ROUTE_STOPS.forEach(s => new window.google.maps.Marker({ position: { lat: s.lat, lng: s.lng }, map: m, title: s.label, icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: s.big ? 6 : 4, fillColor: s.color, fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } }));
+    const bounds = new window.google.maps.LatLngBounds();
+    // Draw polyline connecting all stops in order
+    const path = validStops.map(s => ({ lat: Number(s.lat), lng: Number(s.lng) }));
+    new window.google.maps.Polyline({ path, geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3, map: m });
+    // Drive-via waypoints as dashed lines
+    validStops.forEach(s => {
+      if (s.drive_via) {
+        const viaPath = [s.drive_from || path[0], ...(Array.isArray(s.drive_via) ? s.drive_via : []), { lat: Number(s.lat), lng: Number(s.lng) }].filter(Boolean);
+        if (viaPath.length > 1) {
+          new window.google.maps.Polyline({ path: viaPath, geodesic: true, strokeColor: s.color || '#7C3AED', strokeOpacity: 0, strokeWeight: 2,
+            icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.6, scale: 2 }, offset: '0', repeat: '12px' }], map: m });
+        }
+      }
+    });
+    // Markers for each stop
+    validStops.forEach(s => {
+      const pos = { lat: Number(s.lat), lng: Number(s.lng) };
+      new window.google.maps.Marker({ position: pos, map: m, title: `${s.sleep} (${s.city})`,
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: s.nights > 1 ? 6 : 4, fillColor: s.color || '#7C3AED', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } });
+      bounds.extend(pos);
+    });
+    m.fitBounds(bounds, 30);
     mapInstance.current = m;
-  }, [visible, mapsReady]);
+  }, [visible, mapsReady, stops]);
   return <div ref={mapRef} className="map-wrap" style={{ height: 200, marginBottom: 12 }}></div>;
 }
 
@@ -278,7 +301,7 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
         </div>
       )}
 
-      <RouteMap visible={visible} />
+      <RouteMap visible={visible} stops={stops} />
 
       <div className="home-section-title">Your destinations</div>
       <div className="home-destinations">
@@ -485,18 +508,27 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
 
         {selectorMode === 'stops' ? (
           stops.map((d, i) => (
-            <button key={d.id} data-active={view === i ? 'true' : 'false'} className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`} onClick={() => setView(i)} style={{ borderLeftColor: PHASE_COLOR[d.phase] }}>
+            <button key={d.id} data-active={view === i ? 'true' : 'false'} className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`} onClick={() => setView(i)} style={{ borderLeftColor: d.color || '#7C3AED' }}>
               <span className="pill-stop-name">{d.sleep}</span>
               <span className="pill-stop-date">{formatStopDate(d)}</span>
             </button>
           ))
         ) : (
-          calendarDates.map(cd => (
-            <button key={cd.date} data-active={cd.stopIdx === view ? 'true' : 'false'} className={`today-sel-pill ${cd.stopIdx === view ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`} onClick={() => cd.stopIdx >= 0 && setView(cd.stopIdx)} style={{ opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
-              <span className="pill-stop-name">{cd.shortLabel}</span>
-              <span className="pill-stop-date" style={{ fontSize: 9 }}>{cd.stop?.sleep || ''}</span>
-            </button>
-          ))
+          calendarDates.map(cd => {
+            // Find all stops that overlap this date (usually 1, but could be transition days)
+            const overlapping = stops.filter(s => cd.date >= s.start_date && cd.date < s.end_date);
+            const title = overlapping.length > 1 ? overlapping.map(s => s.sleep).join(' / ') : (cd.stop?.sleep || '');
+            const borderColor = cd.stop?.color || '#7C3AED';
+            return (
+              <button key={cd.date} data-active={cd.stopIdx === view ? 'true' : 'false'}
+                className={`today-sel-pill today-sel-pill-stop ${cd.stopIdx === view ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`}
+                onClick={() => cd.stopIdx >= 0 && setView(cd.stopIdx)}
+                style={{ borderLeftColor: borderColor, opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
+                <span className="pill-stop-name">{title}</span>
+                <span className="pill-stop-date">{cd.shortLabel}</span>
+              </button>
+            );
+          })
         )}
       </div>
 

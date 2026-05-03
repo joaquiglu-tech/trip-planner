@@ -64,10 +64,13 @@ export function useItems(currentUserEmail) {
       // Fetch live hotel prices in background (in-memory only)
       const staysWithKeys = merged.filter(it => it.type === 'stay' && it.xotelo_key);
       if (staysWithKeys.length > 0) {
+        // Load stops for date lookup (one query, not hardcoded)
+        const { data: stopsData } = await supabase.from('stops').select('id, city, start_date, end_date, nights').order('sort_order');
+        const stopsLookup = stopsData || [];
         (async () => {
           for (const stay of staysWithKeys) {
             try {
-              const dates = getStayDates(stay);
+              const dates = getStayDates(stay, stopsLookup);
               const price = await fetchHotelPrice(stay.xotelo_key, dates.checkIn, dates.checkOut);
               if (price) {
                 setLivePrices(prev => ({ ...prev, [stay.id]: { perNight: price.per_night, source: price.source, allRates: price.all_rates } }));
@@ -188,26 +191,19 @@ export function useItems(currentUserEmail) {
   return { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile };
 }
 
-// Stay date lookup from stops (loaded separately)
-function getStayDates(stay) {
-  // City-based date lookup for Xotelo
-  const CITY_DATES = {
-    'Rome': { checkIn: '2026-07-20', nights: 4 },
-    'Florence': { checkIn: '2026-07-24', nights: 2 },
-    'Montepulciano': { checkIn: '2026-07-25', nights: 1 },
-    "Val d'Orcia": { checkIn: '2026-07-26', nights: 1 },
-    'Lerici': { checkIn: '2026-07-27', nights: 1 },
-    'Bergamo Alta': { checkIn: '2026-07-28', nights: 1 },
-    'Bellagio': { checkIn: '2026-07-29', nights: 1 },
-    'Sirmione': { checkIn: '2026-07-30', nights: 1 },
-    'Verona': { checkIn: '2026-07-31', nights: 1 },
-    'Venice': { checkIn: '2026-08-01', nights: 1 },
-  };
-  const cityDates = CITY_DATES[stay.city];
-  if (cityDates) {
-    const d = new Date(cityDates.checkIn);
-    d.setDate(d.getDate() + cityDates.nights);
-    return { checkIn: cityDates.checkIn, checkOut: d.toISOString().split('T')[0] };
+// Stay date lookup from stops table (dynamic, no hardcoded dates)
+function getStayDates(stay, stops) {
+  // Find the stop for this stay's city
+  const stop = stops.find(s => s.city === stay.city);
+  if (stop) {
+    return { checkIn: stop.start_date, checkOut: stop.end_date };
   }
+  // Fallback: find by stop_id
+  if (stay.stop_id) {
+    const byId = stops.find(s => s.id === stay.stop_id);
+    if (byId) return { checkIn: byId.start_date, checkOut: byId.end_date };
+  }
+  // Last resort: first stop's dates
+  if (stops.length > 0) return { checkIn: stops[0].start_date, checkOut: stops[0].end_date };
   return { checkIn: '2026-07-20', checkOut: '2026-07-24' };
 }
