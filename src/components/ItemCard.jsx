@@ -1,15 +1,9 @@
 import { memo } from 'react';
-import { $f, usd } from '../lib/useItems';
+import { priceLabel } from '../lib/useItems';
 
 function ItemCard({ it, status, onTap }) {
   const st = status || it.status || '';
-
-  let price = '';
-  if (it.type === 'stay') price = $f(usd((it.pn || 0) * (it.nights || 1)));
-  else if (it.type === 'activity') price = it.eur === 0 ? 'Free' : $f(usd(it.eur * 2));
-  else if (it.type === 'special') price = $f(usd((it.pp_eur || 0) * 2));
-  else if (it.type === 'dining') price = !it.eur ? '' : $f(usd(it.eur * 2));
-  else if (it.price_label) price = it.price_label;
+  const price = priceLabel(it);
 
   let timeInfo = '';
   if (it.type === 'stay' && it.check_in) timeInfo = `In ${it.check_in} · ${it.nights}n`;
@@ -28,7 +22,12 @@ function ItemCard({ it, status, onTap }) {
         {it.urgent && !st && <span className="icc-urgent">Book now</span>}
       </div>
       <div className="icc-right">
-        {price && <div className="icc-price">{price}</div>}
+        {price.text && (
+          <div className={`icc-price ${price.type === 'live' ? 'icc-price-live' : price.type === 'confirmed' ? 'icc-price-conf' : ''}`}>
+            {price.text}
+            {price.type === 'live' && <span className="icc-live-dot" />}
+          </div>
+        )}
         <div className={`icc-status ${st}`}>{st === 'conf' ? '✓' : st === 'sel' ? '●' : ''}</div>
       </div>
     </div>

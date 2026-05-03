@@ -1,27 +1,68 @@
 import { useState, useEffect } from 'react';
-import { $f, usd } from '../lib/useItems';
+import { $f, usd, priceLabel } from '../lib/useItems';
 import { uploadFile, deleteFile } from '../lib/storage';
 
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', special: 'Special Meal', dining: 'Dining' };
+const TYPE_OPTIONS = [
+  { value: 'dining', label: 'Dining' }, { value: 'stay', label: 'Stay' }, { value: 'activity', label: 'Activity' },
+  { value: 'transport', label: 'Transport' }, { value: 'special', label: 'Special Meal' },
+];
 const SUBCAT_BADGE = {
-  bourdain: { cls: 'b-bourdain', label: 'Bourdain' },
-  michelin: { cls: 'b-michelin', label: 'Michelin' },
-  local: { cls: 'b-local', label: 'Local pick' },
-  bar: { cls: 'b-bar', label: 'Bar/Aperitivo' },
-  cheap: { cls: 'b-cheap', label: 'Cheap eats' },
+  bourdain: 'Bourdain', michelin: 'Michelin', local: 'Local pick', bar: 'Bar/Aperitivo', cheap: 'Cheap eats',
 };
+const PRICE_LEVEL_LABEL = { PRICE_LEVEL_FREE: 'Free', PRICE_LEVEL_INEXPENSIVE: '$', PRICE_LEVEL_MODERATE: '$$', PRICE_LEVEL_EXPENSIVE: '$$$', PRICE_LEVEL_VERY_EXPENSIVE: '$$$$' };
 
 export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData }) {
   const st = status || it.status || '';
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({});
   const [uploading, setUploading] = useState(false);
-  const [costInput, setCostInput] = useState(it.paid_price ? String(it.paid_price) : '');
-  const [noteText, setNoteText] = useState(it.notes || '');
   const [place, setPlace] = useState(placeData || null);
   const [loadingPlace, setLoadingPlace] = useState(false);
   const [saved, setSaved] = useState('');
   const itemFiles = files || [];
 
   function showSaved(label) { setSaved(label); setTimeout(() => setSaved(''), 1500); }
+
+  function startEdit() {
+    setDraft({
+      name: it.name || '', type: it.type || 'dining', city: it.city || '',
+      description: it.description || '', dish: it.dish || '', link: it.link || '',
+      price_label: it.price_label || '', notes: it.notes || '',
+      paid_price: it.paid_price ? String(it.paid_price) : '',
+      day_n: it.day_n ? String(it.day_n) : '', start_time: it.start_time || '', end_time: it.end_time || '',
+      check_in: it.check_in || '', check_out: it.check_out || '',
+      urgent: !!it.urgent, src: it.src || '',
+    });
+    setEditing(true);
+  }
+
+  function saveEdit() {
+    const changes = {};
+    if (draft.name !== (it.name || '')) changes.name = draft.name;
+    if (draft.type !== (it.type || 'dining')) changes.type = draft.type;
+    if (draft.city !== (it.city || '')) changes.city = draft.city;
+    if (draft.description !== (it.description || '')) changes.description = draft.description;
+    if (draft.dish !== (it.dish || '')) changes.dish = draft.dish;
+    if (draft.link !== (it.link || '')) changes.link = draft.link;
+    if (draft.price_label !== (it.price_label || '')) changes.price_label = draft.price_label;
+    if (draft.notes !== (it.notes || '')) changes.notes = draft.notes;
+    const pp = parseFloat(draft.paid_price);
+    if (!isNaN(pp) && pp !== (it.paid_price || 0)) changes.paid_price = pp;
+    const dn = draft.day_n ? parseInt(draft.day_n) : null;
+    if (dn !== it.day_n) changes.day_n = dn;
+    if (draft.start_time !== (it.start_time || '')) changes.start_time = draft.start_time || null;
+    if (draft.end_time !== (it.end_time || '')) changes.end_time = draft.end_time || null;
+    if (draft.check_in !== (it.check_in || '')) changes.check_in = draft.check_in;
+    if (draft.check_out !== (it.check_out || '')) changes.check_out = draft.check_out;
+    if (draft.urgent !== !!it.urgent) changes.urgent = draft.urgent;
+    if (draft.src !== (it.src || '')) changes.src = draft.src;
+    if (Object.keys(changes).length > 0) {
+      updateItem(it.id, changes);
+      showSaved('Saved');
+    }
+    setEditing(false);
+  }
 
   useEffect(() => {
     window.history.pushState({ modal: true }, '', '');
@@ -34,10 +75,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
     if (!it || it.type === 'transport' || place?.photo_url) return;
     if (!getPlaceData) return;
     setLoadingPlace(true);
-    getPlaceData(it.id, it.name, it.city).then((result) => {
-      if (result) setPlace(result);
-      setLoadingPlace(false);
-    });
+    getPlaceData(it.id, it.name, it.city).then((result) => { if (result) setPlace(result); setLoadingPlace(false); });
   }, [it?.id]);
 
   if (!it) return null;
@@ -48,16 +86,13 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   const googleAddress = place?.address || it.address || null;
   const googlePhone = place?.phone || null;
   const googleHours = place?.hours?.length ? place.hours : null;
+  const priceLvl = place?.price_level ? PRICE_LEVEL_LABEL[place.price_level] : null;
   const faviconUrl = it.link ? (() => { try { return `https://www.google.com/s2/favicons?domain=${new URL(it.link).hostname}&sz=64`; } catch { return null; } })() : null;
+  const price = priceLabel(it);
+  const desc = it.description || it.desc || '';
 
-  function handleSelect() {
-    if (navigator.vibrate) navigator.vibrate(15);
-    setStatus(it.id, st ? '' : 'sel');
-  }
-  function handleConfirm() {
-    if (navigator.vibrate) navigator.vibrate(15);
-    setStatus(it.id, st === 'conf' ? 'sel' : 'conf');
-  }
+  function handleSelect() { if (navigator.vibrate) navigator.vibrate(15); setStatus(it.id, st ? '' : 'sel'); }
+  function handleConfirm() { if (navigator.vibrate) navigator.vibrate(15); setStatus(it.id, st === 'conf' ? 'sel' : 'conf'); }
 
   async function handleUpload(e) {
     const f = e.target.files[0];
@@ -77,14 +112,105 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
     if (removeFile) removeFile(it.id, filePath);
   }
 
-  const desc = it.description || it.desc || '';
+  // ═══ EDIT MODE ═══
+  if (editing) {
+    const u = (key, val) => setDraft(d => ({ ...d, [key]: val }));
+    return (
+      <div className="detail-overlay" onClick={onClose}>
+        <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="detail-handle" />
+          <div className="detail-action-top">
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="detail-btn" onClick={() => setEditing(false)} style={{ flex: 1 }}>Cancel</button>
+              <button className="detail-btn sel" onClick={saveEdit} style={{ flex: 1 }}>Save</button>
+            </div>
+          </div>
+          <div className="detail-content">
+            {/* Basic info */}
+            <div className="edit-section-title">Basic Info</div>
+            <label className="edit-label">Name</label>
+            <input className="edit-input" value={draft.name} onChange={e => u('name', e.target.value)} />
+            <div className="edit-row-2">
+              <div><label className="edit-label">Type</label>
+                <select className="edit-input" value={draft.type} onChange={e => u('type', e.target.value)}>
+                  {TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div><label className="edit-label">City</label>
+                <input className="edit-input" value={draft.city} onChange={e => u('city', e.target.value)} />
+              </div>
+            </div>
+            <label className="edit-label">Description</label>
+            <textarea className="edit-textarea" value={draft.description} onChange={e => u('description', e.target.value)} rows={3} />
+            {(draft.type === 'dining' || draft.type === 'special') && (
+              <><label className="edit-label">What to order</label>
+              <input className="edit-input" value={draft.dish} onChange={e => u('dish', e.target.value)} placeholder="Signature dish" /></>
+            )}
+            <label className="edit-label">Link</label>
+            <input className="edit-input" value={draft.link} onChange={e => u('link', e.target.value)} placeholder="https://..." type="url" />
+            <label className="edit-label">Source</label>
+            <input className="edit-input" value={draft.src} onChange={e => u('src', e.target.value)} placeholder="Where you found this" />
+            <div className="edit-row-2">
+              <div><label className="edit-label">Urgent</label>
+                <button className={`fp ${draft.urgent ? 'fp-urgent-active' : 'fp-urgent'}`} onClick={() => u('urgent', !draft.urgent)} style={{ width: '100%' }}>
+                  {draft.urgent ? 'Yes — Book now' : 'No'}
+                </button>
+              </div>
+              <div></div>
+            </div>
 
+            {/* Schedule */}
+            <div className="edit-section-title">Schedule</div>
+            <div className="edit-row-3">
+              <div><label className="edit-label">Day #</label>
+                <input className="edit-input" value={draft.day_n} onChange={e => u('day_n', e.target.value)} type="number" placeholder="1-17" />
+              </div>
+              <div><label className="edit-label">Start</label>
+                <input className="edit-input" value={draft.start_time} onChange={e => u('start_time', e.target.value)} type="time" />
+              </div>
+              <div><label className="edit-label">End</label>
+                <input className="edit-input" value={draft.end_time} onChange={e => u('end_time', e.target.value)} type="time" />
+              </div>
+            </div>
+            {draft.type === 'stay' && (
+              <div className="edit-row-2">
+                <div><label className="edit-label">Check-in</label>
+                  <input className="edit-input" value={draft.check_in} onChange={e => u('check_in', e.target.value)} placeholder="3:00 PM" />
+                </div>
+                <div><label className="edit-label">Check-out</label>
+                  <input className="edit-input" value={draft.check_out} onChange={e => u('check_out', e.target.value)} placeholder="11:00 AM" />
+                </div>
+              </div>
+            )}
+
+            {/* Pricing */}
+            <div className="edit-section-title">Pricing</div>
+            <div className="edit-row-2">
+              <div><label className="edit-label">Price estimate</label>
+                <input className="edit-input" value={draft.price_label} onChange={e => u('price_label', e.target.value)} placeholder="~$50/pp" />
+              </div>
+              <div><label className="edit-label">Paid (USD)</label>
+                <input className="edit-input" value={draft.paid_price} onChange={e => u('paid_price', e.target.value)} type="number" placeholder="0" />
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="edit-section-title">Notes</div>
+            <textarea className="edit-textarea" value={draft.notes} onChange={e => u('notes', e.target.value)} rows={3} placeholder="Any notes..." />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══ VIEW MODE ═══
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="detail-handle" />
         <button className="detail-close" onClick={onClose}>✕</button>
 
+        {/* Photos */}
         {photoUrls.length > 1 ? (
           <div className="detail-carousel">
             <div className="detail-carousel-track">
@@ -94,61 +220,78 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                 </div>
               ))}
             </div>
-            <div className="detail-carousel-dots">
-              {photoUrls.map((_, i) => <span key={i} className="carousel-dot" />)}
-            </div>
           </div>
         ) : heroImage ? (
           <div className="detail-hero">
             <img src={heroImage} alt={it.name} onError={(e) => { e.target.parentElement.style.display = 'none'; }} />
             <div className="detail-hero-gradient" />
           </div>
-        ) : loadingPlace ? (
-          <div className="detail-hero-loading" />
-        ) : null}
+        ) : loadingPlace ? (<div className="detail-hero-loading" />) : null}
 
-        {/* Action bar — top */}
+        {/* Actions */}
         <div className="detail-action-top">
-          {!st && <button className="detail-btn sel" onClick={handleSelect}>Add to our trip</button>}
-          {st === 'sel' && (
-            <>
-              <div className="status-banner sel-banner">
-                <span>Added to trip</span>
-                <button className="status-change-btn" onClick={handleSelect}>Remove</button>
-              </div>
-              <button className="detail-btn conf" onClick={handleConfirm}>Mark as booked</button>
-            </>
-          )}
-          {st === 'conf' && (
-            <div className="status-banner conf-banner">
-              <span>Booked</span>
-              <button className="status-change-btn" onClick={() => setStatus(it.id, 'sel')}>Change status</button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              {!st && <button className="detail-btn sel" onClick={handleSelect}>Add to our trip</button>}
+              {st === 'sel' && (
+                <>
+                  <div className="status-banner sel-banner"><span>Added to trip</span><button className="status-change-btn" onClick={handleSelect}>Remove</button></div>
+                  <button className="detail-btn conf" onClick={handleConfirm} style={{ marginTop: 6 }}>Mark as booked</button>
+                </>
+              )}
+              {st === 'conf' && (
+                <div className="status-banner conf-banner"><span>Booked</span><button className="status-change-btn" onClick={() => setStatus(it.id, 'sel')}>Change</button></div>
+              )}
             </div>
-          )}
+            <button className="edit-toggle-btn" onClick={startEdit}>Edit</button>
+          </div>
         </div>
 
         <div className="detail-content">
+          {/* Badges */}
           <div className="detail-badges">
             <span className={`badge b-${it.type}`}>{TYPE_LABEL[it.type] || it.type}</span>
             {it.city && <span className="badge b-city">{it.city}</span>}
             {googleRating && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>Rating {googleRating}</span>}
+            {priceLvl && <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a' }}>{priceLvl}</span>}
             {it.urgent && <span className="badge b-urgent">Book Now</span>}
-            {it.subcat && SUBCAT_BADGE[it.subcat] && <span className={`badge ${SUBCAT_BADGE[it.subcat].cls}`}>{SUBCAT_BADGE[it.subcat].label}</span>}
+            {it.subcat && SUBCAT_BADGE[it.subcat] && <span className="badge">{SUBCAT_BADGE[it.subcat]}</span>}
             {it.tier && <span className="badge b-bar">{it.tier}</span>}
           </div>
 
           <h2 className="detail-name">{it.name}</h2>
           {googleAddress && <div className="detail-address">{googleAddress}</div>}
           {googlePhone && <div className="detail-address">{googlePhone}</div>}
-
           {googleHours && (
-            <details className="detail-hours">
-              <summary>Opening hours</summary>
+            <details className="detail-hours"><summary>Opening hours</summary>
               <ul>{googleHours.map((h, i) => <li key={i}>{h}</li>)}</ul>
             </details>
           )}
 
-          {/* Transport */}
+          {/* Price display */}
+          {(price.text || it.live_price > 0) && (
+            <div className="detail-price-display">
+              {it.live_price > 0 && it.type === 'stay' && (
+                <div className="detail-live-price">
+                  <span className="detail-live-label">Live price</span>
+                  <span className="detail-live-value">{$f(it.live_price)}/night</span>
+                  <span className="detail-live-source">via {it.live_price_source}</span>
+                </div>
+              )}
+              {it.estimated_cost > 0 && (
+                <div className="detail-est-price">
+                  <span>Estimate: {$f(it.estimated_cost)}</span>
+                </div>
+              )}
+              {it.paid_price > 0 && (
+                <div className="detail-paid-price">
+                  <span>Paid: {$f(it.paid_price)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Type-specific content */}
           {it.type === 'transport' && (
             <>
               {(it.departTime || it.route) && (
@@ -159,151 +302,70 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                 </div>
               )}
               {desc && <p className="detail-desc-full">{desc}</p>}
-              {it.options && (
-                <div className="detail-section">
-                  <div className="detail-section-title">Compare & Book</div>
-                  {it.options.map((opt, i) => (
-                    <a key={i} href={opt.url} target="_blank" rel="noopener" className="transport-option">
-                      <div className="transport-option-info">
-                        <span className="transport-option-name">{opt.name}</span>
-                        {opt.detail && <span className="transport-option-detail">{opt.detail}</span>}
-                      </div>
-                      <span className="transport-option-price">{opt.price}</span>
-                    </a>
-                  ))}
-                </div>
-              )}
+              {it.options?.map((opt, i) => (
+                <a key={i} href={opt.url} target="_blank" rel="noopener" className="transport-option">
+                  <div className="transport-option-info"><span className="transport-option-name">{opt.name}</span>{opt.detail && <span className="transport-option-detail">{opt.detail}</span>}</div>
+                  <span className="transport-option-price">{opt.price}</span>
+                </a>
+              ))}
             </>
           )}
 
-          {/* Stay */}
           {it.type === 'stay' && (
             <>
-              {(it.check_in || it.check_out || it.nights) && (
+              {(it.check_in || it.check_out || it.nights > 0) && (
                 <div className="detail-times-bar">
                   {it.nights > 0 && <span className="detail-time">{it.nights} nights</span>}
-                  {it.check_in && <span className="detail-time">Check-in: {it.check_in}</span>}
-                  {it.check_out && <span className="detail-time">Check-out: {it.check_out}</span>}
+                  {it.check_in && <span className="detail-time">In: {it.check_in}</span>}
+                  {it.check_out && <span className="detail-time">Out: {it.check_out}</span>}
                 </div>
               )}
               {desc && <p className="detail-desc-full">{desc}</p>}
-              {it.options && (
-                <div className="detail-section">
-                  <div className="detail-section-title">Compare & Book</div>
-                  {it.options.map((opt, i) => (
-                    <a key={i} href={opt.url} target="_blank" rel="noopener" className="transport-option">
-                      <div className="transport-option-info">
-                        <span className="transport-option-name">{opt.name}</span>
-                        {opt.detail && <span className="transport-option-detail">{opt.detail}</span>}
-                      </div>
-                      <span className="transport-option-price">{opt.price}</span>
-                    </a>
-                  ))}
-                </div>
-              )}
-              {it.highlights && (
-                <div className="detail-section">
-                  <div className="detail-section-title">Highlights</div>
-                  <ul className="detail-tips">{it.highlights.map((h, i) => <li key={i}>{h}</li>)}</ul>
-                </div>
-              )}
-              {it.pn > 0 && (
-                <div className="detail-section">
-                  <div className="detail-section-title">Pricing</div>
-                  <div className="detail-price-table">
-                    <div className="dpt-row"><span>Tier</span><span>{it.tier}</span></div>
-                    <div className="dpt-row"><span>Per night</span><span>{$f(usd(it.pn))}</span></div>
-                    <div className="dpt-row"><span>Nights</span><span>{it.nights}</span></div>
-                    <div className="dpt-row total"><span>Total</span><span>{$f(usd(it.pn * (it.nights || 1)))}</span></div>
-                  </div>
-                </div>
-              )}
+              {it.highlights && <ul className="detail-tips">{it.highlights.map((h, i) => <li key={i}>{h}</li>)}</ul>}
+              {it.options?.map((opt, i) => (
+                <a key={i} href={opt.url} target="_blank" rel="noopener" className="transport-option">
+                  <div className="transport-option-info"><span className="transport-option-name">{opt.name}</span>{opt.detail && <span className="transport-option-detail">{opt.detail}</span>}</div>
+                  <span className="transport-option-price">{opt.price}</span>
+                </a>
+              ))}
             </>
           )}
 
-          {/* Activity */}
           {it.type === 'activity' && (
             <>
               {desc && <p className="detail-desc-full">{desc}</p>}
               {it.whatToExpect && (
-                <details className="detail-section detail-collapsible">
-                  <summary className="detail-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>What to expect</summary>
+                <details className="detail-section detail-collapsible"><summary className="detail-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>What to expect</summary>
                   <ul className="detail-tips" style={{ marginTop: 6 }}>{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>
                 </details>
               )}
-              <div className="detail-section">
-                <div className="detail-section-title">Details</div>
-                <div className="detail-price-table">
-                  {it.hrs > 0 && <div className="dpt-row"><span>Duration</span><span>{it.hrs} hours</span></div>}
-                  <div className="dpt-row"><span>Per person</span><span>{it.eur === 0 ? 'Free' : $f(usd(it.eur))}</span></div>
-                  {it.eur > 0 && <div className="dpt-row total"><span>Couple</span><span>{$f(usd(it.eur * 2))}</span></div>}
-                </div>
-              </div>
             </>
           )}
 
-          {/* Dining / Special */}
           {(it.type === 'dining' || it.type === 'special') && (
             <>
-              {it.dish && (
-                <div className="detail-dish-block">
-                  <span className="detail-dish-label">What to order</span>
-                  <span className="detail-dish-text">{it.dish}</span>
-                </div>
-              )}
+              {it.dish && (<div className="detail-dish-block"><span className="detail-dish-label">What to order</span><span className="detail-dish-text">{it.dish}</span></div>)}
               {desc && <p className="detail-desc-full">{desc}</p>}
-              {it.quote && (
-                <blockquote className="detail-quote">
-                  "{it.quote}"
-                  {it.quoteSource && <cite>— {it.quoteSource}</cite>}
-                </blockquote>
-              )}
+              {it.quote && (<blockquote className="detail-quote">"{it.quote}"{it.quoteSource && <cite>— {it.quoteSource}</cite>}</blockquote>)}
               {(it.whatToExpect || it.proTips) && (
-                <details className="detail-section detail-collapsible">
-                  <summary className="detail-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>More details</summary>
+                <details className="detail-section detail-collapsible"><summary className="detail-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>More details</summary>
                   {it.whatToExpect && <ul className="detail-tips" style={{ marginTop: 6 }}>{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>}
                   {it.proTips && <ul className="detail-tips" style={{ marginTop: 6 }}>{it.proTips.map((t, i) => <li key={i}>{t}</li>)}</ul>}
                 </details>
               )}
-              <div className="detail-section">
-                <div className="detail-section-title">Pricing</div>
-                <div className="detail-price-table">
-                  {it.type === 'special' ? (
-                    <>
-                      <div className="dpt-row"><span>Per person</span><span>{$f(usd(it.pp_eur || 0))}</span></div>
-                      <div className="dpt-row total"><span>Couple</span><span>{$f(usd((it.pp_eur || 0) * 2))}</span></div>
-                    </>
-                  ) : it.eur > 0 ? (
-                    <>
-                      <div className="dpt-row"><span>Avg per person</span><span>{$f(usd(it.eur))}</span></div>
-                      <div className="dpt-row total"><span>Couple</span><span>{$f(usd(it.eur * 2))}</span></div>
-                    </>
-                  ) : null}
-                  <div className="dpt-row"><span>Location</span><span>{it.city}</span></div>
-                </div>
-              </div>
             </>
           )}
 
           {saved && <div className="detail-saved">{saved}</div>}
-
           {it.reserveNote && <div className="detail-reserve-note">{it.reserveNote}</div>}
-
-          {it.src && (
-            <div className="detail-source-block">
-              <span className="detail-source-label">Recommended by</span>
-              <div className="detail-source-val">{it.src}</div>
-            </div>
-          )}
-
+          {it.src && <div className="detail-source-block"><span className="detail-source-label">Recommended by</span><div className="detail-source-val">{it.src}</div></div>}
           {it.link && (
             <a href={it.link} target="_blank" rel="noopener" className="detail-book-link">
-              {faviconUrl && <img src={faviconUrl} alt="" className="detail-favicon" />}
-              <span>Book / Reserve</span>
+              {faviconUrl && <img src={faviconUrl} alt="" className="detail-favicon" />}<span>Book / Reserve</span>
             </a>
           )}
 
-          {/* Files — multiple */}
+          {/* Files */}
           {itemFiles.length > 0 && (
             <div className="detail-section">
               <div className="detail-section-title">Attachments ({itemFiles.length})</div>
@@ -317,7 +379,6 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             </div>
           )}
 
-          {/* Upload — always available when selected or confirmed */}
           {(st === 'sel' || st === 'conf') && (
             <div className="detail-upload-row">
               <label className="detail-upload-btn">
@@ -327,38 +388,10 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             </div>
           )}
 
-          {/* Notes */}
-          {(st === 'sel' || st === 'conf') && updateItem && (
+          {it.notes && !editing && (
             <div className="detail-section" style={{ marginTop: 8 }}>
               <div className="detail-section-title">Notes</div>
-              <textarea
-                className="note-input"
-                placeholder="Add a note..."
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                onBlur={() => { updateItem(it.id, { notes: noteText }); if (noteText) showSaved('Note saved'); }}
-                rows={2}
-              />
-            </div>
-          )}
-
-          {/* Cost */}
-          {(st === 'sel' || st === 'conf') && updateItem && (
-            <div className="detail-section" style={{ marginTop: 8 }}>
-              <div className="detail-section-title">Actual Cost Paid (USD)</div>
-              <div className="cost-input-row">
-                <span className="cost-input-prefix">$</span>
-                <input
-                  type="number" className="cost-input" placeholder="0"
-                  value={costInput}
-                  onChange={(e) => setCostInput(e.target.value)}
-                  onBlur={() => {
-                    const val = parseFloat(costInput);
-                    if (!isNaN(val) && val > 0) { updateItem(it.id, { paid_price: val }); showSaved('Cost saved'); }
-                    else if (costInput === '' || costInput === '0') updateItem(it.id, { paid_price: 0 });
-                  }}
-                />
-              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{it.notes}</div>
             </div>
           )}
         </div>

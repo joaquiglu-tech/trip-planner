@@ -3,17 +3,40 @@ import { supabase } from './supabase';
 import { ENRICHMENT } from '../data/enrichment';
 import { ITEM_COORDS } from '../data/coords';
 import { listFiles } from './storage';
+import { fetchHotelPrice } from './hotelPrices';
 
 const EUR = 1.17;
 export const usd = (e) => Math.round(e * EUR);
 export const $f = (n) => '$' + n.toLocaleString();
 
+// Returns the best available cost estimate for budget calculations
 export function itemCost(it) {
+  // 1. If user confirmed a paid price, use that
+  if (it.paid_price > 0) return it.paid_price;
+  // 2. If live price available (Xotelo for hotels), use that
+  if (it.live_price > 0 && it.type === 'stay') return it.live_price * (it.nights || 1);
+  // 3. Use the researched estimated_cost (pre-calculated USD)
+  if (it.estimated_cost > 0) return it.estimated_cost;
+  // 4. Fallback to EUR conversion
   if (it.type === 'stay') return usd((it.pn || 0) * (it.nights || 1));
   if (it.type === 'activity') return usd((it.eur || 0) * 2);
   if (it.type === 'special') return usd((it.pp_eur || 0) * 2);
   if (it.type === 'dining') return usd((it.eur || 0) * 2);
   return 0;
+}
+
+// Price display label for cards
+export function priceLabel(it) {
+  if (it.paid_price > 0) return { text: $f(it.paid_price), type: 'confirmed' };
+  if (it.live_price > 0 && it.type === 'stay') return { text: `${$f(it.live_price)}/n`, type: 'live', source: it.live_price_source };
+  if (it.estimated_cost > 0) return { text: $f(it.estimated_cost), type: 'estimate' };
+  if (it.price_label) return { text: it.price_label, type: 'estimate' };
+  if (it.type === 'stay' && it.pn > 0) return { text: $f(usd(it.pn * (it.nights || 1))), type: 'estimate' };
+  if (it.type === 'activity' && it.eur === 0) return { text: 'Free', type: 'estimate' };
+  if (it.type === 'activity' && it.eur > 0) return { text: $f(usd(it.eur * 2)), type: 'estimate' };
+  if (it.type === 'special' && it.pp_eur > 0) return { text: $f(usd(it.pp_eur * 2)), type: 'estimate' };
+  if (it.type === 'dining' && it.eur > 0) return { text: $f(usd(it.eur * 2)), type: 'estimate' };
+  return { text: '', type: 'none' };
 }
 
 export function useItems(currentUserEmail) {
@@ -42,6 +65,27 @@ export function useItems(currentUserEmail) {
       });
       setItems(merged);
       setLoaded(true);
+
+      // Fetch live hotel prices in background (non-blocking)
+      const staysWithKeys = merged.filter(it => it.type === 'stay' && it.xotelo_key);
+      if (staysWithKeys.length > 0) {
+        (async () => {
+          for (const stay of staysWithKeys) {
+            // Skip if live price was fetched recently (within 24h)
+            if (stay.live_price_updated && (Date.now() - new Date(stay.live_price_updated).getTime()) < 86400000) continue;
+            const checkIn = stay.day_n ? getCheckInDate(stay.day_n) : '2026-07-20';
+            const checkOut = addDays(checkIn, stay.nights || 1);
+            try {
+              const price = await fetchHotelPrice(stay.xotelo_key, checkIn, checkOut);
+              if (price) {
+                setItems(prev => prev.map(it => it.id === stay.id ? { ...it, live_price: price.per_night, live_price_source: price.source, live_price_updated: new Date().toISOString() } : it));
+                await supabase.from('items').update({ live_price: price.per_night, live_price_source: price.source, live_price_updated: new Date().toISOString() }).eq('id', stay.id);
+              }
+            } catch { /* skip failures */ }
+            await new Promise(r => setTimeout(r, 500));
+          }
+        })();
+      }
 
       // Load files for confirmed items in parallel (non-blocking)
       const confItems = merged.filter(it => it.status === 'conf');
@@ -167,4 +211,22 @@ export function useItems(currentUserEmail) {
   }, []);
 
   return { items, loaded, files, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile, itemCost: itemCost };
+}
+
+// Date helpers for Xotelo check-in/out calculation
+const DAY_START_DATES = {
+  4: '2026-07-20', 5: '2026-07-21', 6: '2026-07-22', 7: '2026-07-23',
+  8: '2026-07-24', 9: '2026-07-25', 10: '2026-07-26', 11: '2026-07-27',
+  12: '2026-07-28', 13: '2026-07-29', 14: '2026-07-30', 15: '2026-07-31',
+  16: '2026-08-01', 17: '2026-08-02',
+};
+
+function getCheckInDate(dayN) {
+  return DAY_START_DATES[dayN] || '2026-07-20';
+}
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
 }

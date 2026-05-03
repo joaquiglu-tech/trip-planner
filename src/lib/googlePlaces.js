@@ -17,10 +17,10 @@ export async function fetchPlaceData(itemId, name, city) {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': API_KEY,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.currentOpeningHours,places.photos',
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.currentOpeningHours,places.photos,places.priceLevel',
         },
         body: JSON.stringify({
-          textQuery: `${name} ${city} Italy`,
+          textQuery: `${name} ${city}`,
           maxResultCount: 1,
         }),
       }
@@ -54,6 +54,7 @@ export async function fetchPlaceData(itemId, name, city) {
       phone: place.nationalPhoneNumber || '',
       website: place.websiteUri || '',
       hours: place.currentOpeningHours?.weekdayDescriptions || [],
+      price_level: place.priceLevel || null,
     };
 
     // Cache in Supabase
