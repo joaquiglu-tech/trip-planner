@@ -1,25 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ROUTE_STOPS, ROUTE_LINES } from '../data/routes';
-import { TRIP } from '../data/trip';
 import { $f, itemCost } from '../lib/useItems';
 import DetailModal from './DetailModal';
 
 const PHASE_COLOR = { spain: '#D97706', rome: '#2563EB', roadtrip: '#7C3AED', venice: '#2563EB' };
-const PHASE_LABEL = { spain: 'Spain', rome: 'Rome', roadtrip: 'Road Trip', venice: 'Venice' };
-
-const DAY_TIPS = {
-  'Spain': ['Tipping: not expected, round up or leave loose change', 'Tapas crawl: order 1-2 plates per bar, then move on', 'Siesta hours (2-5pm): many shops close'],
-  'Rome': ['Cover knees + shoulders for churches — they WILL turn you away', 'Free water: Rome has ~2,500 nasoni drinking fountains', 'Bus 64 to Vatican is a pickpocket hotspot — walk or take a taxi'],
-  'Florence': ['Friendship bracelet scam near Duomo — keep hands in pockets', 'Trattoria Mario is cash only, lunch only', 'Uffizi: book 8:15am slot, done by 11am'],
-  'Montepulciano': ['Park OUTSIDE the walls — ZTL cameras will fine you $100-300', 'Wine cellars are walk-in, no appointment needed'],
-  "Val d'Orcia": ['Drive to Podere Il Casale SOBER first thing, then drink all day', 'Stop in Pienza: free pecorino tastings'],
-  'Lerici': ['Skip Cinque Terre in July (overcrowded)', 'Walk to Tellaro — one of Italy\'s most beautiful villages'],
-  'Bergamo Alta': ['Take the funicular up, don\'t drive', 'Park OUTSIDE the walls — ZTL enforced'],
-  'Bellagio': ['Tour buses arrive 10am, leave 5pm — go early or late', 'Buy the ferry day pass, not single tickets'],
-  'Sirmione': ['Walk to Grotte di Catullo at the tip — almost nobody goes', 'Park OUTSIDE medieval walls'],
-  'Verona': ['Park at Parcheggio Arena — OUTSIDE ZTL', 'Valpolicella wine region is 20min away'],
-  'Venice': ['Venice entry fee does NOT apply after Jul 26', 'No eating/drinking while sitting on monuments — fine', 'Gondola: agree on price BEFORE boarding ($80/30min)'],
-};
 
 function getTodayDayIndex(stops) {
   const now = new Date();
@@ -32,7 +16,10 @@ function getTodayDayIndex(stops) {
   return null;
 }
 
-function getDaysUntilTrip() { return Math.ceil((new Date(TRIP.startDate) - new Date()) / 86400000); }
+function getDaysUntilTrip(stops) {
+  if (!stops.length) return 0;
+  return Math.ceil((new Date(stops[0].start_date) - new Date()) / 86400000);
+}
 
 function formatStopDate(stop) {
   if (!stop.start_date) return '';
@@ -199,46 +186,31 @@ function StatusFilter({ value, onChange }) {
   );
 }
 
-// ═══ DESTINATIONS ═══
-const DESTINATIONS = [
-  { name: 'Madrid', cities: ['Spain'], dates: 'Jul 12-14', nights: 2, phase: 'spain', needsStay: false, needsTransport: false },
-  { name: 'Menorca', cities: ['Spain'], dates: 'Jul 14-18', nights: 4, phase: 'spain', needsStay: false, transportIds: ['tr1a'] },
-  { name: 'Malaga', cities: ['Spain'], dates: 'Jul 18-20', nights: 2, phase: 'spain', needsStay: true, transportIds: ['tr2'] },
-  { name: 'Rome', cities: ['Rome'], dates: 'Jul 20-24', nights: 4, phase: 'rome', needsStay: true, transportIds: ['tr3'] },
-  { name: 'Florence', cities: ['Florence'], dates: 'Jul 24-25', nights: 2, phase: 'roadtrip', needsStay: true, transportIds: ['tr4', 'tr5'] },
-  { name: 'Montepulciano', cities: ['Montepulciano', 'Tuscany'], dates: 'Jul 25-26', nights: 1, phase: 'roadtrip', needsStay: true },
-  { name: "Val d'Orcia", cities: ["Val d'Orcia"], dates: 'Jul 26-27', nights: 1, phase: 'roadtrip', needsStay: true },
-  { name: 'Lerici', cities: ['Lerici'], dates: 'Jul 27-28', nights: 1, phase: 'roadtrip', needsStay: true },
-  { name: 'Bergamo', cities: ['Bergamo Alta'], dates: 'Jul 28-29', nights: 1, phase: 'roadtrip', needsStay: true },
-  { name: 'Bellagio', cities: ['Bellagio'], dates: 'Jul 29-30', nights: 1, phase: 'roadtrip', needsStay: true },
-  { name: 'Sirmione', cities: ['Sirmione'], dates: 'Jul 30-31', nights: 1, phase: 'roadtrip', needsStay: true },
-  { name: 'Verona', cities: ['Verona'], dates: 'Jul 31', nights: 1, phase: 'roadtrip', needsStay: true },
-  { name: 'Venice', cities: ['Venice'], dates: 'Aug 1-2', nights: 1, phase: 'venice', needsStay: true, transportIds: ['tr6'] },
-];
-
-function getDestStats(dest, items) {
-  const cityItems = items.filter(it => dest.cities.includes(it.city));
-  const stays = cityItems.filter(it => it.type === 'stay');
+// Derive destination stats from stops + items (no hardcoded data)
+function getStopStats(stop, items) {
+  const stopItems = items.filter(it => it.stop_id === stop.id);
+  const cityItems = items.filter(it => it.city === stop.city);
+  const allItems = [...new Map([...stopItems, ...cityItems].map(it => [it.id, it])).values()];
+  const stays = allItems.filter(it => it.type === 'stay');
+  const transports = allItems.filter(it => it.type === 'transport');
+  const activities = allItems.filter(it => it.type === 'activity');
+  const food = allItems.filter(it => it.type === 'dining' || it.type === 'special');
   const stayBooked = stays.some(it => it.status === 'conf');
   const staySelected = stays.some(it => it.status === 'sel' || it.status === 'conf');
-  let transportBooked = true, transportSelected = true;
-  if (dest.transportIds) {
-    transportBooked = dest.transportIds.every(id => { const it = items.find(i => i.id === id); return it?.status === 'conf'; });
-    transportSelected = dest.transportIds.some(id => { const it = items.find(i => i.id === id); return it?.status === 'sel' || it?.status === 'conf'; });
-  } else if (dest.needsTransport === false) { transportBooked = true; transportSelected = true; }
-  const activities = cityItems.filter(it => it.type === 'activity');
-  const dining = cityItems.filter(it => it.type === 'dining' || it.type === 'special');
+  const transportBooked = transports.length === 0 || transports.every(it => it.status === 'conf');
+  const transportSelected = transports.some(it => it.status === 'sel' || it.status === 'conf');
   const actSelected = activities.filter(it => it.status === 'sel' || it.status === 'conf').length;
-  const diningSelected = dining.filter(it => it.status === 'sel' || it.status === 'conf').length;
+  const foodSelected = food.filter(it => it.status === 'sel' || it.status === 'conf').length;
+  const hasStays = stays.length > 0;
   let status = 'ready';
-  if (!(dest.needsStay === false || stayBooked) || !transportBooked) status = 'critical';
+  if ((hasStays && !stayBooked) || (transports.length > 0 && !transportBooked)) status = 'critical';
   else if (actSelected === 0 && activities.length > 0) status = 'warning';
-  return { stayBooked, staySelected, transportBooked, transportSelected, actSelected, actTotal: activities.length, diningSelected, diningTotal: dining.length, status, needsStay: dest.needsStay !== false };
+  return { stayBooked, staySelected, transportBooked, transportSelected, hasTransport: transports.length > 0, actSelected, actTotal: activities.length, foodSelected, foodTotal: food.length, status, hasStays };
 }
 
 // ═══ OVERVIEW ═══
 function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect }) {
-  const daysLeft = getDaysUntilTrip();
+  const daysLeft = getDaysUntilTrip(stops);
   const stats = useMemo(() => {
     let selected = 0, booked = 0, estimated = 0, confirmed = 0;
     items.forEach(it => {
@@ -261,7 +233,7 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
     <>
       {daysLeft > 0 && (
         <div className="home-header">
-          <div className="home-trip-name">{TRIP.name}</div>
+          <div className="home-trip-name">{stops[0]?.sleep} to {stops[stops.length - 1]?.sleep}</div>
           <div className="home-countdown">{daysLeft} days away</div>
         </div>
       )}
@@ -299,24 +271,24 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
 
       <div className="home-section-title">Your destinations</div>
       <div className="home-destinations">
-        {DESTINATIONS.map(dest => {
-          const dstats = getDestStats(dest, items);
-          const dayIdx = stops.findIndex(d => dest.cities.includes(d.city));
+        {stops.map((stop, idx) => {
+          const ss = getStopStats(stop, items);
+          const nights = stop.start_date && stop.end_date ? Math.round((new Date(stop.end_date) - new Date(stop.start_date)) / 86400000) : (stop.nights || 1);
           return (
-            <div key={dest.name} className={`home-dest-card home-dest-${dstats.status}`} onClick={() => dayIdx >= 0 && onDaySelect(dayIdx)}>
+            <div key={stop.id} className={`home-dest-card home-dest-${ss.status}`} onClick={() => onDaySelect(idx)}>
               <div className="home-dest-top">
-                <div><div className="home-dest-name">{dest.name}</div><div className="home-dest-dates">{dest.dates} · {dest.nights}n</div></div>
+                <div><div className="home-dest-name">{stop.sleep || stop.city}</div><div className="home-dest-dates">{formatStopDate(stop)}{nights > 1 ? ` · ${nights}n` : ''}</div></div>
                 <div className="home-dest-indicator">
-                  {dstats.status === 'ready' && <span className="home-flag ready">✓</span>}
-                  {dstats.status === 'critical' && <span className="home-flag critical">!</span>}
-                  {dstats.status === 'warning' && <span className="home-flag warning">—</span>}
+                  {ss.status === 'ready' && <span className="home-flag ready">✓</span>}
+                  {ss.status === 'critical' && <span className="home-flag critical">!</span>}
+                  {ss.status === 'warning' && <span className="home-flag warning">—</span>}
                 </div>
               </div>
               <div className="home-dest-statuses">
-                {dstats.needsStay && <span className={`home-dest-status ${dstats.stayBooked ? 'booked' : dstats.staySelected ? 'selected' : 'missing'}`}>{dstats.stayBooked ? '✓' : dstats.staySelected ? '●' : '!'} Stay</span>}
-                {dest.transportIds && <span className={`home-dest-status ${dstats.transportBooked ? 'booked' : dstats.transportSelected ? 'selected' : 'missing'}`}>{dstats.transportBooked ? '✓' : dstats.transportSelected ? '●' : '!'} Transport</span>}
-                {dstats.actTotal > 0 && <span className={`home-dest-status ${dstats.actSelected > 0 ? 'selected' : ''}`}>{dstats.actSelected}/{dstats.actTotal} Activities</span>}
-                {dstats.diningTotal > 0 && <span className={`home-dest-status ${dstats.diningSelected > 0 ? 'selected' : ''}`}>{dstats.diningSelected}/{dstats.diningTotal} Dining</span>}
+                {ss.hasStays && <span className={`home-dest-status ${ss.stayBooked ? 'booked' : ss.staySelected ? 'selected' : 'missing'}`}>{ss.stayBooked ? '✓' : ss.staySelected ? '●' : '!'} Stay</span>}
+                {ss.hasTransport && <span className={`home-dest-status ${ss.transportBooked ? 'booked' : ss.transportSelected ? 'selected' : 'missing'}`}>{ss.transportBooked ? '✓' : ss.transportSelected ? '●' : '!'} Transport</span>}
+                {ss.actTotal > 0 && <span className={`home-dest-status ${ss.actSelected > 0 ? 'selected' : ''}`}>{ss.actSelected}/{ss.actTotal} Activities</span>}
+                {ss.foodTotal > 0 && <span className={`home-dest-status ${ss.foodSelected > 0 ? 'selected' : ''}`}>{ss.foodSelected}/{ss.foodTotal} Food</span>}
               </div>
             </div>
           );
@@ -329,7 +301,7 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
 // ═══ DAY DETAIL ═══
 function DayDetailView({ day, items, onItemTap, places, visible, statusFilter }) {
   const scheduled = useMemo(() => {
-    return items.filter(it => it.day_n === day.n && it.type !== 'transport')
+    return items.filter(it => it.stop_id === day.id && it.type !== 'transport')
       .filter(it => {
         if (statusFilter === 'all') return it.status === 'sel' || it.status === 'conf';
         if (statusFilter === 'sel') return it.status === 'sel';
@@ -348,15 +320,15 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
       return false;
     });
     // Also include items scheduled for this day but from other cities
-    const fromSchedule = items.filter(it => it.day_n === day.n && it.type !== 'transport' && !fromCity.some(c => c.id === it.id));
+    const fromSchedule = items.filter(it => it.stop_id === day.id && it.type !== 'transport' && !fromCity.some(c => c.id === it.id));
     return [...fromCity, ...fromSchedule];
   }, [items, day.city, day.n]);
 
   const stay = cityItems.find(it => it.type === 'stay' && (it.status === 'sel' || it.status === 'conf'));
-  const stayCoord = stay ? ITEM_COORDS[stay.id] || stay.coord : null;
+  const stayCoord = stay?.coord || null;
   const stayPlace = stay ? places?.[stay.id] : null;
   const nights = day.start_date && day.end_date ? Math.round((new Date(day.end_date) - new Date(day.start_date)) / 86400000) : (day.nights || 1);
-  const tips = DAY_TIPS[day.city] || null;
+  const tips = day.tips?.length > 0 ? day.tips : null;
 
   const planItems = useMemo(() => {
     return cityItems.filter(it => {

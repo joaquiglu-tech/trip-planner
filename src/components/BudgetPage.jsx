@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { $f, itemCost } from '../lib/useItems';
 import DetailModal from './DetailModal';
+import BudgetSummary from './BudgetSummary';
 
 const CATEGORIES = [
   { id: 'food', label: 'Food', color: '#E8734A' },
@@ -19,13 +20,6 @@ export default function BudgetPage({ active, items, updateItem, setStatus, files
 
   const planned = useMemo(() => items.filter(it => it.status === 'sel' || it.status === 'conf'), [items]);
 
-  const totals = useMemo(() => {
-    let estimated = 0, spent = 0;
-    planned.forEach(it => { estimated += itemCost(it); });
-    (expenses || []).forEach(e => { spent += Number(e.amount || 0); });
-    return { estimated, spent };
-  }, [planned, expenses]);
-
   async function handleAddExpense() {
     const val = parseFloat(amount);
     if (!val || val <= 0) return;
@@ -37,12 +31,7 @@ export default function BudgetPage({ active, items, updateItem, setStatus, files
 
   return (
     <div id="page-budget" className={`page ${active ? "active" : ""}`}>
-      <div className="budget-summary">
-        <div className="budget-row-main">
-          <div><div className="budget-label">Estimated</div><div className="budget-amount">{$f(totals.estimated)}</div></div>
-          <div><div className="budget-label">Spent</div><div className="budget-amount green">{totals.spent > 0 ? $f(totals.spent) : '—'}</div></div>
-        </div>
-      </div>
+      <BudgetSummary items={items} expenses={expenses} />
 
       {expenses && expenses.length > 0 && (
         <div style={{ marginBottom: 16 }}>

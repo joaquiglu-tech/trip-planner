@@ -47,7 +47,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <TopBar items={items} session={session} onProfileClick={() => navigateTab('profile')} />
+      <TopBar items={items} stops={stops} session={session} onProfileClick={() => navigateTab('profile')} />
       <div className="page-container">
         <SelectPage
           active={activeTab === 'plan'}

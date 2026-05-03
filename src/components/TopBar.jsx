@@ -1,6 +1,4 @@
-import { TRIP } from '../data/trip';
-
-export default function TopBar({ items, session, onProfileClick }) {
+export default function TopBar({ items, stops, session, onProfileClick }) {
   const stays = items.filter(it => it.type === 'stay');
   const cities = [...new Set(stays.map(it => it.city))];
   const booked = cities.filter(city => stays.some(it => it.city === city && it.status === 'conf')).length;
@@ -9,6 +7,7 @@ export default function TopBar({ items, session, onProfileClick }) {
   const email = session?.user?.email || '';
   const name = session?.user?.user_metadata?.display_name || email;
   const initial = (name || '?')[0].toUpperCase();
+  const tripName = stops?.length > 0 ? `${stops[0].sleep} to ${stops[stops.length - 1].sleep}` : 'Trip';
 
   return (
     <header className="topbar" role="banner">
@@ -30,7 +29,7 @@ export default function TopBar({ items, session, onProfileClick }) {
           </svg>
         </div>
         <div className="topbar-sub">
-          <span className="topbar-dates">{TRIP.name}</span>
+          <span className="topbar-dates">{tripName}</span>
           <span className="topbar-progress">{booked}/{total}</span>
           <div className="topbar-bar" role="progressbar" aria-valuenow={pct}><div className="topbar-fill" style={{ width: pct + '%' }} /></div>
         </div>

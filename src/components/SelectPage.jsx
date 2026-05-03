@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
-import { $f, itemCost } from '../lib/useItems';
+import { itemCost } from '../lib/useItems';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
 import DetailModal from './DetailModal';
 import AddItemModal from './AddItemModal';
+import BudgetSummary from './BudgetSummary';
 
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];
@@ -18,29 +19,8 @@ export default function SelectPage({ active, items, livePrices, expenses, update
     }
   }, [filterCity, active]);
 
-  const [summaryCollapsed, setSummaryCollapsed] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
-
-  const breakdown = useMemo(() => {
-    const bd = { transport: 0, stay: 0, activity: 0, food: 0, total: 0, count: 0, confCount: 0 };
-    let estimated = 0, spent = 0;
-    items.forEach((it) => {
-      if (it.status !== 'sel' && it.status !== 'conf') return;
-      const v = itemCost(it);
-      // Group special + dining into "food"
-      const typeKey = (it.type === 'dining' || it.type === 'special') ? 'food' : it.type;
-      bd[typeKey] = (bd[typeKey] || 0) + v;
-      bd.total += v;
-      bd.count++;
-      estimated += v;
-      if (it.status === 'conf') bd.confCount++;
-    });
-    (expenses || []).forEach(e => { spent += Number(e.amount || 0); });
-    return { ...bd, estimated, spent };
-  }, [items, expenses]);
-
-  const pct = breakdown.count ? Math.round((breakdown.confCount / breakdown.count) * 100) : 0;
 
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase();
@@ -82,25 +62,7 @@ export default function SelectPage({ active, items, livePrices, expenses, update
 
   return (
     <div id="page-select" className={`page ${active ? "active" : ""}`}>
-      <div className="budget-summary" onClick={() => setSummaryCollapsed(!summaryCollapsed)} style={{ cursor: 'pointer' }}>
-        <div className="budget-row-main">
-          <div><div className="budget-label">Estimated</div><div className="budget-amount">{$f(breakdown.estimated)}</div></div>
-          <div><div className="budget-label">Spent</div><div className="budget-amount green">{breakdown.spent > 0 ? $f(breakdown.spent) : '—'}</div></div>
-        </div>
-        {!summaryCollapsed && (
-          <>
-            <div className="prog-bar" style={{ marginTop: 8 }}><div className="prog-fill" style={{ width: pct + '%' }}></div></div>
-            <div style={{ fontSize: 10, color: '#888', marginTop: 3, textAlign: 'center' }}>{breakdown.confCount} booked / {breakdown.count} selected</div>
-            <div className="breakdown-grid">
-              {breakdown.stay > 0 && <div className="bd-row"><span>Stays</span><span>{$f(breakdown.stay)}</span></div>}
-              {breakdown.activity > 0 && <div className="bd-row"><span>Activities</span><span>{$f(breakdown.activity)}</span></div>}
-              {breakdown.food > 0 && <div className="bd-row"><span>Food</span><span>{$f(breakdown.food)}</span></div>}
-              {breakdown.transport > 0 && <div className="bd-row"><span>Transport</span><span>{$f(breakdown.transport)}</span></div>}
-              <div className="bd-row bd-total"><span>Total Estimated</span><span>{$f(breakdown.estimated)}</span></div>
-            </div>
-          </>
-        )}
-      </div>
+      <BudgetSummary items={items} expenses={expenses} />
 
       <div className="planner-sticky-bar">
         <FilterBar filters={filters} setFilters={setFilters} items={items} />
