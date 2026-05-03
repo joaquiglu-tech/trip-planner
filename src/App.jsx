@@ -31,12 +31,13 @@ export default function App() {
     window.history.pushState({ tab }, '', '');
   }, []);
 
+  const [filterCity, setFilterCity] = useState(null);
+
   // Navigate to Plan filtered by city (from Home destination cards)
   const navigatePlanCity = useCallback((city) => {
     setActiveTab('plan');
+    setFilterCity(city);
     window.history.pushState({ tab: 'plan', city }, '', '');
-    // SelectPage will pick up the city filter from a state we pass
-    window.__anisitaFilterCity = city;
   }, []);
 
   useEffect(() => {
@@ -65,6 +66,7 @@ export default function App() {
           userEmail={email} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
           notes={notes} setNote={setNote} files={files} setFile={setFile}
           places={places} getPlaceData={getPlaceData}
+          filterCity={filterCity} clearFilterCity={() => setFilterCity(null)}
         />
         <BudgetPage
           active={activeTab === 'expenses'}

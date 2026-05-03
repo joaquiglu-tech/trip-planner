@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ITEMS, itemCost, $f } from '../data/items';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
@@ -8,8 +8,16 @@ import AddItemModal from './AddItemModal';
 const TYPE_LABEL = { transport: '🚗 Transport', stay: '🏨 Stay', activity: '🎟️ Activity', special: '⭐ Special Meal', dining: '🍝 Dining', custom: '📌 Added by You' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
 
-export default function SelectPage({ active, S, setStatus, onRefresh, customItems, addItem, deleteItem, userEmail, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData }) {
+export default function SelectPage({ active, S, setStatus, onRefresh, customItems, addItem, deleteItem, userEmail, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData, filterCity, clearFilterCity }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
+
+  // Apply city filter from Home destination cards
+  useEffect(() => {
+    if (filterCity && active) {
+      setFilters(f => ({ ...f, city: filterCity }));
+      clearFilterCity();
+    }
+  }, [filterCity, active]);
   const [summaryCollapsed, setSummaryCollapsed] = useState(true);
   const [pulling, setPulling] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);

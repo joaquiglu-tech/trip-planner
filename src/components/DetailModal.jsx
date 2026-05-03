@@ -103,6 +103,49 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
           <div className="detail-hero-loading" />
         ) : null}
 
+        {/* Action bar — top position for quick status changes */}
+        <div className="detail-action-top">
+          {!st && (
+            <button className="detail-btn sel" onClick={handleSelect}>Add to our trip</button>
+          )}
+          {st === 'sel' && (
+            <>
+              <div className="status-banner sel-banner">
+                <span>Added to trip</span>
+                <button className="status-change-btn" onClick={handleSelect}>Remove</button>
+              </div>
+              <button className="detail-btn conf" onClick={handleConfirm}>Mark as booked</button>
+            </>
+          )}
+          {st === 'conf' && (
+            <>
+              <div className="status-banner conf-banner">
+                <span>Booked</span>
+                <button className="status-change-btn" onClick={() => { setStatus(it.id, 'sel'); }}>Change status</button>
+              </div>
+              {(!costInput && !file) && setPaidPrice && (
+                <div className="detail-booking-prompt">
+                  <div className="detail-section-title" style={{ marginBottom: 8 }}>Booking details</div>
+                  <div className="cost-input-row" style={{ marginBottom: 10 }}>
+                    <span className="cost-input-prefix">$</span>
+                    <input type="number" className="cost-input" placeholder="How much did you pay?" value={costInput} onChange={(e) => setCostInput(e.target.value)} onBlur={() => { const val = parseFloat(costInput); if (!isNaN(val) && val > 0) setPaidPrice(it.id, val); }} />
+                  </div>
+                  <label className="upload-cta" style={{ marginBottom: 0 }}>
+                    Attach confirmation
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
+                  </label>
+                </div>
+              )}
+              {!file && costInput && (
+                <label className="detail-btn upload-cta">
+                  Attach ticket or confirmation
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
+                </label>
+              )}
+            </>
+          )}
+        </div>
+
         <div className="detail-content">
           {/* Badges + rating */}
           <div className="detail-badges">
@@ -353,52 +396,11 @@ export default function DetailModal({ it, status, setStatus, onClose, onDelete, 
           )}
         </div>
 
-        {/* Sticky action bar — clear status + actions */}
-        <div className="detail-action-bar">
-          {!st && (
-            <button className="detail-btn sel" onClick={handleSelect}>Add to our trip</button>
-          )}
-          {st === 'sel' && (
-            <>
-              <div className="status-banner sel-banner">
-                <span>✓ Added to trip</span>
-                <button className="status-change-btn" onClick={handleSelect}>Remove</button>
-              </div>
-              <button className="detail-btn conf" onClick={handleConfirm}>Mark as booked</button>
-            </>
-          )}
-          {st === 'conf' && (
-            <>
-              <div className="status-banner conf-banner">
-                <span>✓ Booked</span>
-                <button className="status-change-btn" onClick={() => { setStatus(it.id, 'sel'); }}>Change status</button>
-              </div>
-              {/* Booking details prompt — price + file together */}
-              {(!costInput && !file) && setPaidPrice && (
-                <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 14, marginBottom: 8 }}>
-                  <div className="detail-section-title" style={{ marginBottom: 8 }}>Booking details</div>
-                  <div className="cost-input-row" style={{ marginBottom: 10 }}>
-                    <span className="cost-input-prefix">$</span>
-                    <input type="number" className="cost-input" placeholder="How much did you pay?" value={costInput} onChange={(e) => setCostInput(e.target.value)} onBlur={() => { const val = parseFloat(costInput); if (!isNaN(val) && val > 0) setPaidPrice(it.id, val); }} />
-                  </div>
-                  <label className="upload-cta" style={{ marginBottom: 0 }}>
-                    📎 Attach confirmation
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
-                  </label>
-                </div>
-              )}
-              {!file && costInput && (
-                <label className="detail-btn upload-cta">
-                  📎 Attach ticket or confirmation
-                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
-                </label>
-              )}
-            </>
-          )}
-          {onDelete && (
+        {onDelete && (
+          <div style={{ padding: '0 16px 16px' }}>
             <button className="detail-btn-delete" onClick={() => { if (confirm('Remove this item?')) onDelete(); }}>Remove</button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

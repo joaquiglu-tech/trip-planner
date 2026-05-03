@@ -112,8 +112,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 /* ═══ ITEM CARD — compact row ═══ */
 .item-card-compact { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: background var(--duration) }
 .item-card-compact:hover { background: var(--surface-hover) }
-.item-card-compact.selected { border-color: var(--accent) }
-.item-card-compact.confirmed { border-color: var(--green) }
+.item-card-compact.selected { border-color: var(--accent); background: var(--accent-light) }
+.item-card-compact.confirmed { border-color: var(--green); background: var(--green-light) }
 .icc-left { flex: 1; min-width: 0 }
 .icc-name { font-size: 13px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .icc-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px }
@@ -193,7 +193,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .transport-option-detail { font-size: 11px; color: var(--text-muted) }
 .transport-option-price { font-size: 14px; font-weight: 700; color: var(--accent); white-space: nowrap }
 .transport-option::after { content: '→'; color: var(--text-muted); margin-left: 6px; flex-shrink: 0 }
-.detail-action-bar { position: sticky; bottom: 0; padding: 10px 16px; background: var(--bg-card); border-top: 1px solid var(--border-light); padding-bottom: max(10px, env(safe-area-inset-bottom)) }
+.detail-action-top { padding: 12px 16px 4px; background: var(--bg-card); border-bottom: 1px solid var(--border-light) }
+.detail-booking-prompt { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-top: 8px }
 
 /* ═══ BUTTONS ═══ */
 .detail-btn { width: 100%; padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); font-size: 14px; font-weight: 600; cursor: pointer; transition: all var(--duration); background: var(--bg-card); color: var(--text); min-height: 44px }
@@ -222,12 +223,14 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .sect-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin: 24px 0 10px; padding: 0; background: none; border: none }
 
 /* ═══ FILTERS ═══ */
-.filter-bar { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap }
+.filter-bar { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: wrap }
 .filter-bar::-webkit-scrollbar { display: none }
 .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; background: var(--bg-card); color: var(--text); font-family: var(--font); min-height: 36px; flex-shrink: 0 }
 .filter-bar select:focus, .filter-bar input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,58,237,.1) }
 .filter-bar input[type="search"] { min-width: 120px; flex-shrink: 1 }
+.filter-pill-group { display: flex; gap: 4px; flex-shrink: 0 }
 .fp { padding: 6px 12px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-secondary); white-space: nowrap; min-height: 36px; display: flex; align-items: center; font-family: var(--font); flex-shrink: 0 }
+.fp-active { background: var(--text); color: var(--bg); border-color: var(--text) }
 .fp-urgent { background: #FEF2F2; border-color: #FECACA; color: #991b1b }
 .fp-urgent-active { background: #DC2626; border-color: #DC2626; color: #fff }
 [data-theme="dark"] .fp-urgent { background: #450a0a; border-color: #7f1d1d; color: #fca5a5 }
@@ -547,3 +550,41 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .today-item-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .today-item-actions { display: flex; gap: 4px; flex-shrink: 0 }
 .today-action-btn-sm { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-card-hd); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 14px }
+
+/* ═══ ITINERARY — NEW COMPONENTS ═══ */
+.itin-filter { display: flex; gap: 4px; margin-bottom: 12px }
+.itin-general { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 12px }
+.itin-general-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-lighter); font-size: 13px }
+.itin-general-row:last-child { border-bottom: none }
+.itin-general-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; flex-shrink: 0; min-width: 80px }
+.itin-link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 13px }
+.itin-maps-btn { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 6px; padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font-size: 11px; font-weight: 600; text-decoration: none; cursor: pointer }
+.itin-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 14px 0 8px }
+
+/* Schedule timeline */
+.itin-schedule { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 12px }
+.itin-sched-row { display: flex; align-items: flex-start; gap: 0; padding: 10px 12px; border-bottom: 1px solid var(--border-lighter); cursor: pointer }
+.itin-sched-row:last-child { border-bottom: none }
+.itin-sched-row:hover { background: var(--surface-hover) }
+.itin-sched-row.sel { background: var(--accent-light) }
+.itin-sched-row.conf { background: var(--green-light) }
+.itin-sched-time { width: 64px; flex-shrink: 0; font-size: 11px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 1px; padding-top: 1px }
+.itin-sched-end { font-weight: 400; font-size: 10px; color: var(--text-light) }
+.itin-sched-dot-col { display: flex; flex-direction: column; align-items: center; width: 16px; flex-shrink: 0; padding-top: 4px }
+.itin-sched-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0 }
+.itin-sched-dot.sel { background: var(--accent) }
+.itin-sched-dot.conf { background: var(--green) }
+.itin-sched-line { width: 2px; flex: 1; background: var(--border-light); min-height: 12px; margin-top: 4px }
+.itin-sched-info { flex: 1; min-width: 0; padding-left: 8px }
+.itin-sched-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.itin-sched-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px }
+.itin-sched-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; padding-top: 2px }
+.itin-sched-check { font-size: 10px; font-weight: 700; color: var(--green); padding: 2px 6px; border-radius: var(--radius-pill); background: var(--green-light) }
+.itin-action-sm { padding: 3px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font-size: 10px; font-weight: 600; text-decoration: none; white-space: nowrap }
+
+/* Plan section in itinerary */
+.itin-plan-section { margin-top: 4px; margin-bottom: 12px }
+.itin-plan-section .item-card-compact { margin-bottom: 4px }
+
+.itin-empty { text-align: center; padding: 24px 16px; color: var(--text-muted); font-size: 13px }
+.itin-empty-text { color: var(--text-muted) }

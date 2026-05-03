@@ -41,19 +41,16 @@ export function useSelections(currentUserEmail) {
         setPaidPricesState(pp);
         setNotesState(nn);
 
-        // Load files for confirmed items (non-blocking)
-        try {
-          const fileMap = {};
-          for (const row of data) {
-            if (row.status === 'conf') {
-              try {
-                const itemFiles = await listFiles(row.item_id);
-                if (itemFiles.length > 0) fileMap[row.item_id] = itemFiles[0];
-              } catch { /* skip failed file loads */ }
-            }
-          }
-          setFiles(fileMap);
-        } catch { /* ignore file loading errors entirely */ }
+        // Load files for confirmed items in parallel (non-blocking)
+        const confRows = data.filter(row => row.status === 'conf');
+        if (confRows.length > 0) {
+          Promise.allSettled(confRows.map(row => listFiles(row.item_id).then(files => ({ item_id: row.item_id, files }))))
+            .then(results => {
+              const fileMap = {};
+              results.forEach(r => { if (r.status === 'fulfilled' && r.value.files.length > 0) fileMap[r.value.item_id] = r.value.files[0]; });
+              setFiles(fileMap);
+            });
+        }
       }
       setLoaded(true);
     }

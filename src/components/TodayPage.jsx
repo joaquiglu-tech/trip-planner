@@ -4,11 +4,12 @@ import { ITEMS, TYPE_LABEL, $f, usd, itemCost } from '../data/items';
 import { ITEM_COORDS } from '../data/coords';
 import { ROUTE_STOPS, ROUTE_LINES } from '../data/routes';
 import { TRIP } from '../data/trip';
+import { useSchedule } from '../lib/useSchedule';
 import DetailModal from './DetailModal';
 
 const PHASE_COLOR = { spain: '#D97706', rome: '#2563EB', roadtrip: '#7C3AED', venice: '#2563EB' };
 const PHASE_LABEL = { spain: 'Spain', rome: 'Rome', roadtrip: 'Road Trip', venice: 'Venice' };
-const TYPE_ICON = { stay: '🏨', activity: '🎟️', special: '⭐', dining: '🍝' };
+const TYPE_ICON = { stay: 'Stay', activity: 'Activity', special: 'Special', dining: 'Dining', transport: 'Transport' };
 
 const DAY_TIPS = {
   'Spain': ['Tipping: not expected, round up or leave loose change', 'Tapas crawl: order 1-2 plates per bar, then move on', 'Siesta hours (2-5pm): many shops close'],
@@ -24,16 +25,7 @@ const DAY_TIPS = {
   'Venice': ['Venice entry fee does NOT apply after Jul 26', 'No eating/drinking while sitting on monuments — fine', 'Gondola: agree on price BEFORE boarding ($80/30min)'],
 };
 
-function getSelectedForCity(city, S) {
-  return ITEMS.filter((it) => {
-    if (it.type === 'transport') return false;
-    const st = S[it.id] || '';
-    if (st !== 'sel' && st !== 'conf') return false;
-    if (it.city === city) return true;
-    if (city === 'Montepulciano' && it.city === 'Tuscany') return true;
-    return false;
-  });
-}
+function getItemById(id) { return ITEMS.find(it => it.id === id); }
 
 function getTodayDayIndex() {
   const now = new Date();
@@ -50,7 +42,16 @@ function getDaysUntilTrip() {
   return Math.ceil((new Date(TRIP.startDate) - new Date()) / 86400000);
 }
 
-// ═══ MAP ═══
+function formatTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hour = parseInt(h);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${h12}:${m} ${ampm}`;
+}
+
+// ═══ GOOGLE MAPS READY HOOK ═══
 function useGoogleMapsReady() {
   const [ready, setReady] = useState(!!window.google?.maps);
   useEffect(() => {
@@ -61,17 +62,40 @@ function useGoogleMapsReady() {
   return ready;
 }
 
-function DayMap({ day, selections, visible }) {
+// ═══ DAY MAP WITH ROUTES ═══
+function DayMap({ day, scheduleEntries, S, visible }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
+  const polylinesRef = useRef([]);
   const prevKey = useRef(null);
   const mapsReady = useGoogleMapsReady();
-  const key = `${day.n}-${selections.map(s => s.id).join(',')}`;
+
+  // Build list of items with coords, in time order
+  const mapItems = useMemo(() => {
+    return scheduleEntries
+      .map(entry => ({ ...entry, item: getItemById(entry.item_id), coord: ITEM_COORDS[entry.item_id] }))
+      .filter(e => e.coord && e.item);
+  }, [scheduleEntries]);
+
+  const key = `${day.n}-${mapItems.map(e => e.item_id).join(',')}`;
+
+  // Build multi-stop Google Maps directions URL
+  const coords = mapItems.map(e => e.coord);
+  const mapsRouteUrl = coords.length > 1
+    ? `https://www.google.com/maps/dir/${coords.map(c => `${c.lat},${c.lng}`).join('/')}`
+    : coords.length === 1 ? `https://www.google.com/maps/dir/?api=1&destination=${coords[0].lat},${coords[0].lng}` : null;
 
   useEffect(() => {
     if (!visible || !mapsReady || !mapRef.current || !day.lat) return;
-    if (prevKey.current !== key) { markersRef.current.forEach(m => m.setMap(null)); markersRef.current = []; mapInstance.current = null; prevKey.current = key; }
+    if (prevKey.current !== key) {
+      markersRef.current.forEach(m => m.setMap(null));
+      markersRef.current = [];
+      polylinesRef.current.forEach(p => p.setMap(null));
+      polylinesRef.current = [];
+      mapInstance.current = null;
+      prevKey.current = key;
+    }
     if (mapInstance.current) { window.google.maps.event.trigger(mapInstance.current, 'resize'); return; }
 
     const m = new window.google.maps.Map(mapRef.current, {
@@ -82,31 +106,52 @@ function DayMap({ day, selections, visible }) {
     bounds.extend({ lat: day.lat, lng: day.lng });
     let hasExtra = false;
 
-    // Center marker
+    // Center marker (accommodation)
     const cm = new window.google.maps.Marker({ position: { lat: day.lat, lng: day.lng }, map: m, title: day.sleep,
       icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: PHASE_COLOR[day.phase], fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
     markersRef.current.push(cm);
 
-    // Drive route
+    // Drive route into city
     if (day.driveFrom) {
       const path = [day.driveFrom, ...(day.driveVia || []), { lat: day.lat, lng: day.lng }];
-      new window.google.maps.Polyline({ path, geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.8, strokeWeight: 3, map: m });
+      const pl = new window.google.maps.Polyline({ path, geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.8, strokeWeight: 3, map: m });
+      polylinesRef.current.push(pl);
       bounds.extend(day.driveFrom);
       if (day.driveVia) day.driveVia.forEach(v => bounds.extend(v));
       hasExtra = true;
     }
 
-    // Selection markers
-    selections.forEach((it) => {
-      const coord = ITEM_COORDS[it.id];
-      if (!coord) return;
-      const color = it.type === 'stay' ? '#7C3AED' : it.type === 'dining' || it.type === 'special' ? '#D97706' : '#16A34A';
-      const marker = new window.google.maps.Marker({ position: coord, map: m, title: it.name,
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 5, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+    // Selection markers with numbered labels
+    mapItems.forEach((entry, idx) => {
+      const color = entry.item.type === 'stay' ? '#7C3AED' : entry.item.type === 'dining' || entry.item.type === 'special' ? '#D97706' : '#16A34A';
+      const marker = new window.google.maps.Marker({ position: entry.coord, map: m, title: entry.item.name,
+        label: { text: String(idx + 1), color: '#fff', fontSize: '10px', fontWeight: '700' },
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
       markersRef.current.push(marker);
-      bounds.extend(coord);
+      bounds.extend(entry.coord);
       hasExtra = true;
     });
+
+    // Draw route polylines between sequential items using Directions API
+    if (mapItems.length >= 2) {
+      const ds = new window.google.maps.DirectionsService();
+      const waypoints = mapItems.slice(1, -1).map(e => ({ location: e.coord, stopover: true }));
+      ds.route({
+        origin: mapItems[0].coord,
+        destination: mapItems[mapItems.length - 1].coord,
+        waypoints: waypoints.slice(0, 8), // max 8 waypoints for free tier
+        travelMode: window.google.maps.TravelMode.DRIVING,
+        optimizeWaypoints: false,
+      }, (result, status) => {
+        if (status === 'OK') {
+          const dr = new window.google.maps.DirectionsRenderer({
+            map: m, directions: result, suppressMarkers: true,
+            polylineOptions: { strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3 },
+          });
+          polylinesRef.current.push(dr);
+        }
+      });
+    }
 
     if (hasExtra) {
       m.fitBounds(bounds, 40);
@@ -116,9 +161,19 @@ function DayMap({ day, selections, visible }) {
   }, [visible, key, mapsReady]);
 
   if (!day.lat) return null;
-  return <div ref={mapRef} className="map-wrap" style={{ height: 220 }}></div>;
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div ref={mapRef} className="map-wrap" style={{ height: 240 }}></div>
+      {mapsRouteUrl && (
+        <a href={mapsRouteUrl} target="_blank" rel="noopener" className="itin-maps-btn">
+          Open in Google Maps
+        </a>
+      )}
+    </div>
+  );
 }
 
+// ═══ ROUTE MAP (OVERVIEW) ═══
 function RouteMap({ visible }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -146,7 +201,7 @@ function RouteMap({ visible }) {
   return <div ref={mapRef} className="map-wrap" style={{ height: 200, marginBottom: 12 }}></div>;
 }
 
-// ═══ DRIVE TIME ═══
+// ═══ DRIVE INFO ═══
 function DriveInfo({ day }) {
   const [info, setInfo] = useState(null);
   useEffect(() => {
@@ -156,7 +211,152 @@ function DriveInfo({ day }) {
     });
   }, [day.n]);
   if (!day.driveFrom || !info) return null;
-  return <div className="drive-info-bar"><span>🚗</span><span>{info.durationText}</span><span className="drive-info-dist">{info.distanceKm} km</span></div>;
+  return <div className="drive-info-bar"><span>Drive</span><span>{info.durationText}</span><span className="drive-info-dist">{info.distanceKm} km</span></div>;
+}
+
+// ═══ STATUS FILTER PILLS ═══
+function StatusFilter({ value, onChange }) {
+  const options = [
+    { value: 'all', label: 'All' },
+    { value: 'sel', label: 'Selected' },
+    { value: 'conf', label: 'Confirmed' },
+  ];
+  return (
+    <div className="itin-filter">
+      {options.map(o => (
+        <button key={o.value} className={`fp ${value === o.value ? 'fp-active' : ''}`} onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ═══ GENERAL DETAILS SECTION ═══
+function GeneralDetails({ day, stay, places }) {
+  const nights = day.startDate && day.endDate ? Math.round((new Date(day.endDate) - new Date(day.startDate)) / 86400000) : 1;
+  const stayCoord = stay ? ITEM_COORDS[stay.id] : null;
+  const stayPlace = stay ? places?.[stay.id] : null;
+
+  return (
+    <div className="itin-general">
+      <div className="itin-general-row">
+        <span className="itin-general-label">Dates</span>
+        <span>{day.date}{nights > 1 ? ` (${nights} nights)` : ''}</span>
+      </div>
+      {stay && (
+        <>
+          <div className="itin-general-row">
+            <span className="itin-general-label">Stay</span>
+            <span>{stay.name}</span>
+          </div>
+          {(stayPlace?.address || stay.address) && (
+            <div className="itin-general-row">
+              <span className="itin-general-label">Address</span>
+              <span>{stayPlace?.address || stay.address}</span>
+            </div>
+          )}
+          {stayCoord && (
+            <div className="itin-general-row">
+              <span className="itin-general-label">Directions</span>
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${stayCoord.lat},${stayCoord.lng}`} target="_blank" rel="noopener" className="itin-link">Google Maps</a>
+            </div>
+          )}
+          {stayPlace?.phone && (
+            <div className="itin-general-row">
+              <span className="itin-general-label">Contact</span>
+              <a href={`tel:${stayPlace.phone}`} className="itin-link">{stayPlace.phone}</a>
+            </div>
+          )}
+          {(stay.checkIn || stay.checkOut) && (
+            <div className="itin-general-row">
+              <span className="itin-general-label">Check-in/out</span>
+              <span>{stay.checkIn && `In ${stay.checkIn}`}{stay.checkIn && stay.checkOut && ' · '}{stay.checkOut && `Out ${stay.checkOut}`}</span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ═══ SCHEDULE TIMELINE ═══
+function ScheduleTimeline({ entries, S, onItemTap, places }) {
+  if (entries.length === 0) return (
+    <div className="itin-empty">
+      <div className="itin-empty-text">No items scheduled. Add items from the Plan tab.</div>
+    </div>
+  );
+
+  return (
+    <div className="itin-schedule">
+      {entries.map((entry) => {
+        const item = getItemById(entry.item_id);
+        if (!item) return null;
+        const st = S[entry.item_id] || '';
+        const coord = ITEM_COORDS[entry.item_id];
+        return (
+          <div key={entry.id} className={`itin-sched-row ${st}`} onClick={() => onItemTap(item)}>
+            <div className="itin-sched-time">
+              {entry.start_time ? formatTime(entry.start_time) : ''}
+              {entry.end_time && <span className="itin-sched-end">{formatTime(entry.end_time)}</span>}
+            </div>
+            <div className="itin-sched-dot-col">
+              <div className={`itin-sched-dot ${st}`} />
+              <div className="itin-sched-line" />
+            </div>
+            <div className="itin-sched-info">
+              <div className="itin-sched-name">{item.name}</div>
+              <div className="itin-sched-sub">
+                {TYPE_ICON[item.type] || ''}{item.dish ? ` · ${item.dish}` : item.hrs ? ` · ${item.hrs}h` : ''}
+              </div>
+            </div>
+            <div className="itin-sched-actions">
+              {st === 'conf' && <span className="itin-sched-check">Booked</span>}
+              {coord && <a href={`https://www.google.com/maps/dir/?api=1&destination=${coord.lat},${coord.lng}`} target="_blank" rel="noopener" className="itin-action-sm" onClick={(e) => e.stopPropagation()}>Go</a>}
+              {places?.[entry.item_id]?.phone && <a href={`tel:${places[entry.item_id].phone}`} className="itin-action-sm" onClick={(e) => e.stopPropagation()}>Call</a>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ═══ PLAN CARDS (previously "Your selections") ═══
+function PlanCards({ day, S, allItems, statusFilter, onItemTap }) {
+  const items = useMemo(() => {
+    return allItems.filter(it => {
+      if (it.type === 'transport') return false;
+      const st = S[it.id] || '';
+      if (statusFilter === 'all') return true; // show all items for this city
+      if (statusFilter === 'sel') return st === 'sel';
+      if (statusFilter === 'conf') return st === 'conf';
+      return true;
+    });
+  }, [allItems, S, statusFilter]);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="itin-plan-section">
+      <div className="itin-section-title">Plan ({items.length})</div>
+      {items.map(it => {
+        const st = S[it.id] || '';
+        return (
+          <div key={it.id} className={`item-card-compact ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onItemTap(it)}>
+            <div className="icc-left">
+              <div className="icc-name">{it.name}</div>
+              <div className="icc-sub">{it.dish || (it.hrs ? `${it.hrs}h` : it.city)}</div>
+            </div>
+            <div className="icc-right">
+              <div className={`icc-status ${st}`}>{st === 'conf' ? 'Booked' : st === 'sel' ? 'Added' : ''}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ═══ OVERVIEW VIEW ═══
@@ -164,16 +364,14 @@ function OverviewView({ S, paidPrices, onItemTap, visible }) {
   const daysLeft = getDaysUntilTrip();
   const stats = useMemo(() => {
     let selected = 0, booked = 0, estimated = 0, confirmed = 0;
-    const needsAttention = [];
     ITEMS.forEach((it) => {
       const st = S[it.id] || '';
       if (st === 'sel' || st === 'conf') {
         selected++; estimated += itemCost(it);
         if (st === 'conf') { booked++; confirmed += paidPrices[it.id] || itemCost(it); }
-        if (st === 'sel' && it.urgent) needsAttention.push(it);
       }
     });
-    return { selected, booked, estimated, confirmed, needsAttention };
+    return { selected, booked, estimated, confirmed };
   }, [S, paidPrices]);
   const pct = stats.selected ? Math.round((stats.booked / stats.selected) * 100) : 0;
   const phases = ['spain', 'rome', 'roadtrip', 'venice'];
@@ -209,7 +407,14 @@ function OverviewView({ S, paidPrices, onItemTap, visible }) {
           <div key={phase}>
             <div className="phase-header" style={{ borderLeftColor: PHASE_COLOR[phase] }}>{PHASE_LABEL[phase]} · {days.length} days</div>
             {days.map((day) => {
-              const sels = getSelectedForCity(day.city, S);
+              const sels = ITEMS.filter(it => {
+                if (it.type === 'transport') return false;
+                const st = S[it.id] || '';
+                if (st !== 'sel' && st !== 'conf') return false;
+                if (it.city === day.city) return true;
+                if (day.city === 'Montepulciano' && it.city === 'Tuscany') return true;
+                return false;
+              });
               return (
                 <div key={day.n} className="full-trip-day">
                   <div className="ftd-left">
@@ -220,7 +425,7 @@ function OverviewView({ S, paidPrices, onItemTap, visible }) {
                   {sels.length > 0 && (
                     <div className="ftd-badges">
                       {sels.slice(0, 3).map(it => (
-                        <span key={it.id} className={`ftd-badge ${S[it.id] === 'conf' ? 'conf' : 'sel'}`}>{TYPE_ICON[it.type]} {it.name.length > 10 ? it.name.slice(0, 10) + '..' : it.name}</span>
+                        <span key={it.id} className={`ftd-badge ${S[it.id] === 'conf' ? 'conf' : 'sel'}`}>{it.name.length > 10 ? it.name.slice(0, 10) + '..' : it.name}</span>
                       ))}
                       {sels.length > 3 && <span className="ftd-badge">+{sels.length - 3}</span>}
                     </div>
@@ -236,125 +441,47 @@ function OverviewView({ S, paidPrices, onItemTap, visible }) {
 }
 
 // ═══ DAY DETAIL VIEW ═══
-function DayDetailView({ day, S, paidPrices, onItemTap, places, visible }) {
-  const selections = useMemo(() => getSelectedForCity(day.city, S), [day.city, S]);
-  const stay = selections.find((it) => it.type === 'stay');
-  const activities = selections.filter((it) => it.type === 'activity');
-  const dining = selections.filter((it) => it.type === 'dining' || it.type === 'special');
-  const allSelected = [...activities, ...dining].sort((a, b) => (a.name > b.name ? 1 : -1));
+function DayDetailView({ day, S, paidPrices, onItemTap, places, visible, scheduleEntries, statusFilter }) {
+  // Get all items for this city
+  const cityItems = useMemo(() => {
+    return ITEMS.filter(it => {
+      if (it.type === 'transport') return false;
+      if (it.city === day.city) return true;
+      if (day.city === 'Montepulciano' && it.city === 'Tuscany') return true;
+      return false;
+    });
+  }, [day.city]);
+
+  const stay = cityItems.find(it => it.type === 'stay' && (S[it.id] === 'sel' || S[it.id] === 'conf'));
   const tips = DAY_TIPS[day.city] || null;
-
-  // Calculate nights for this stop
-  const nights = day.startDate && day.endDate ? Math.round((new Date(day.endDate) - new Date(day.startDate)) / 86400000) : 1;
-
-  // Build multi-stop Google Maps directions URL
-  const coords = allSelected.map(it => ITEM_COORDS[it.id]).filter(Boolean);
-  const mapsRouteUrl = coords.length > 1
-    ? `https://www.google.com/maps/dir/${coords.map(c => `${c.lat},${c.lng}`).join('/')}`
-    : coords.length === 1 ? `https://www.google.com/maps/dir/?api=1&destination=${coords[0].lat},${coords[0].lng}` : null;
 
   return (
     <>
-      <DayMap day={day} selections={selections} visible={visible} />
+      {/* 1. General details */}
+      <GeneralDetails day={day} stay={stay} places={places} />
+
+      {/* 2. Map with routes */}
       <DriveInfo day={day} />
+      <DayMap day={day} scheduleEntries={scheduleEntries} S={S} visible={visible} />
 
-      {/* Header */}
-      <div className="today-day-header">
-        <div className="today-day-badge" style={{ background: PHASE_COLOR[day.phase] }}>{day.sleep}</div>
-        <div>
-          <div className="today-day-date">{day.date}{nights > 1 ? ` · ${nights} nights` : ''}</div>
-          <div className="today-day-title">{day.title}</div>
-        </div>
-      </div>
+      {/* 3. Schedule timeline */}
+      <div className="itin-section-title">Schedule</div>
+      <ScheduleTimeline entries={scheduleEntries} S={S} onItemTap={onItemTap} places={places} />
 
-      {/* Stay */}
-      {stay && (
-        <div className="today-stay-card" onClick={() => onItemTap(stay)}>
-          <div className="today-stay-top">
-            <div>
-              <div className="today-stay-label">Stay</div>
-              <div className="today-stay-name">{stay.name}</div>
-              {stay.address && <div className="today-stay-address">{stay.address}</div>}
-            </div>
-            <div className={`today-stay-badge ${S[stay.id] === 'conf' ? 'booked' : ''}`}>{S[stay.id] === 'conf' ? '✓' : '—'}</div>
-          </div>
-          {(stay.checkIn || stay.checkOut) && (
-            <div className="today-stay-times">
-              {stay.checkIn && <span>In {stay.checkIn}</span>}
-              {stay.checkOut && <span>Out {stay.checkOut}</span>}
-            </div>
-          )}
-          <div className="today-stay-actions">
-            {ITEM_COORDS[stay.id] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${ITEM_COORDS[stay.id].lat},${ITEM_COORDS[stay.id].lng}`} target="_blank" rel="noopener" className="today-action-btn" onClick={(e) => e.stopPropagation()}>Directions</a>}
-            {places?.[stay.id]?.phone && <a href={`tel:${places[stay.id].phone}`} className="today-action-btn" onClick={(e) => e.stopPropagation()}>Call</a>}
-          </div>
-        </div>
-      )}
-
-      {/* Plan timeline */}
-      <div className="today-section">
-        <div className="today-section-title">Schedule</div>
-        <div className="today-timeline">
-          {day.plan.map((p, i) => (
-            <div key={i} className="tl-step">
-              <div className="tl-step-dot" />
-              {i < day.plan.length - 1 && <div className="tl-step-line" />}
-              <div className="tl-step-text">{p}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Your selections — combined activities + dining */}
-      {allSelected.length > 0 && (
-        <div className="today-section">
-          <div className="today-section-title">Your selections ({allSelected.length})</div>
-          {allSelected.map((it) => {
-            const st = S[it.id] || '';
-            return (
-              <div key={it.id} className="today-item" onClick={() => onItemTap(it)}>
-                <span className="today-item-icon">{TYPE_ICON[it.type]}</span>
-                <div className="today-item-info">
-                  <div className="today-item-name">{it.name}</div>
-                  <div className="today-item-sub">{it.dish || (it.hrs ? `${it.hrs}h` : it.city)}</div>
-                </div>
-                <div className="today-item-right">
-                  <span className={`today-item-status ${st === 'conf' ? 'booked' : ''}`}>{st === 'conf' ? '✓' : '●'}</span>
-                  {ITEM_COORDS[it.id] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${ITEM_COORDS[it.id].lat},${ITEM_COORDS[it.id].lng}`} target="_blank" rel="noopener" className="today-action-btn-sm" onClick={(e) => e.stopPropagation()}>🧭</a>}
-                  {places?.[it.id]?.phone && <a href={`tel:${places[it.id].phone}`} className="today-action-btn-sm" onClick={(e) => e.stopPropagation()}>📞</a>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Recommendations — collapsed by default to save space */}
-      {day.eat.length > 0 && (
-        <details className="today-section">
-          <summary className="today-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>Recommended spots ▾</summary>
-          <div style={{ marginTop: 6 }}>{day.eat.map((e, i) => <div key={i} className="eat-line">{e}</div>)}</div>
-        </details>
-      )}
-
-      {/* Multi-stop directions */}
-      {mapsRouteUrl && allSelected.length > 1 && (
-        <a href={mapsRouteUrl} target="_blank" rel="noopener" className="gmaps-btn" style={{ marginTop: 8, width: '100%' }}>
-          Navigate all {allSelected.length} stops →
-        </a>
-      )}
-
-      {/* Travel tips */}
+      {/* 4. Travel tips */}
       {tips && (
-        <details className="today-section" style={{ cursor: 'pointer' }}>
-          <summary className="today-section-title" style={{ listStyle: 'none' }}>💡 Travel tips</summary>
+        <details className="today-section">
+          <summary className="today-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>Travel tips</summary>
           <ul className="detail-tips" style={{ marginTop: 6 }}>{tips.map((t, i) => <li key={i}>{t}</li>)}</ul>
         </details>
       )}
 
-      {selections.length === 0 && !stay && (
+      {/* 5. Plan cards */}
+      <PlanCards day={day} S={S} allItems={cityItems} statusFilter={statusFilter} onItemTap={onItemTap} />
+
+      {cityItems.length === 0 && !stay && (
         <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
+          <div className="empty-state-icon">Plan</div>
           <div className="empty-state-title">Nothing planned yet</div>
           <div className="empty-state-text">Go to the Plan tab to pick stays, restaurants, and activities for {day.city}.</div>
         </div>
@@ -366,23 +493,28 @@ function DayDetailView({ day, S, paidPrices, onItemTap, places, visible }) {
 // ═══ MAIN EXPORT ═══
 export default function TodayPage({ active, S, setStatus, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const { schedule, getForDay } = useSchedule();
   const todayIdx = getTodayDayIndex();
   const isDuringTrip = todayIdx !== null;
 
-  // View: 'overview' or day index (0-16)
   const [view, setView] = useState(isDuringTrip ? todayIdx : 'overview');
   const selectorRef = useRef(null);
 
-  // Auto-scroll to active pill
+  // Get schedule entries for current day view, filtered by status
+  const scheduleEntries = useMemo(() => {
+    if (view === 'overview') return [];
+    const day = ALL_DAYS[view];
+    if (!day) return [];
+    return getForDay(day.n, S, statusFilter);
+  }, [view, S, statusFilter, getForDay, schedule]);
+
   useEffect(() => {
     if (selectorRef.current && view !== 'overview') {
       const btn = selectorRef.current.querySelector(`[data-day="${view}"]`);
       if (btn) btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
   }, [view]);
-
-  // Phase groupings for the selector
-  const phases = ['spain', 'rome', 'roadtrip', 'venice'];
 
   return (
     <div className={`page ${active ? 'active' : ''}`}>
@@ -400,11 +532,20 @@ export default function TodayPage({ active, S, setStatus, paidPrices, setPaidPri
         ))}
       </div>
 
+      {/* Status filter — only shown on day views */}
+      {view !== 'overview' && (
+        <StatusFilter value={statusFilter} onChange={setStatusFilter} />
+      )}
+
       {/* Content */}
       {view === 'overview' ? (
         <OverviewView S={S} paidPrices={paidPrices} onItemTap={setSelectedItem} visible={active && view === 'overview'} />
       ) : (
-        <DayDetailView day={ALL_DAYS[view]} S={S} paidPrices={paidPrices} onItemTap={setSelectedItem} places={places} visible={active && view !== 'overview'} />
+        <DayDetailView
+          day={ALL_DAYS[view]} S={S} paidPrices={paidPrices} onItemTap={setSelectedItem}
+          places={places} visible={active && view !== 'overview'}
+          scheduleEntries={scheduleEntries} statusFilter={statusFilter}
+        />
       )}
 
       {selectedItem && (
