@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './lib/useAuth';
 import { useItems } from './lib/useItems';
+import { useStops } from './lib/useStops';
 import { usePlaceData } from './lib/usePlaceData';
 import { useExpenses } from './lib/useExpenses';
 import Login from './components/Login';
@@ -20,6 +21,7 @@ export default function App() {
   const [showAddItem, setShowAddItem] = useState(false);
   const email = session?.user?.email || '';
   const { items, loaded, files, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
+  const { stops, loaded: stopsLoaded } = useStops();
   const { places, getPlaceData } = usePlaceData();
   const { expenses, addExpense, deleteExpense } = useExpenses();
 
@@ -39,7 +41,7 @@ export default function App() {
 
   if (session === undefined) return <div className="loading-screen">Loading...</div>;
   if (!session) return <Login />;
-  if (!loaded) return <div className="loading-screen">Loading...</div>;
+  if (!loaded || !stopsLoaded) return <div className="loading-screen">Loading...</div>;
 
   const isProfile = activeTab === 'profile';
 
@@ -65,7 +67,7 @@ export default function App() {
         />
         <TodayPage
           active={activeTab === 'itinerary'}
-          items={items} updateItem={updateItem} setStatus={setStatus}
+          items={items} stops={stops} updateItem={updateItem} setStatus={setStatus}
           files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
         />

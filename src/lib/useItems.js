@@ -4,6 +4,7 @@ import { ENRICHMENT } from '../data/enrichment';
 import { ITEM_COORDS } from '../data/coords';
 import { listFiles } from './storage';
 import { fetchHotelPrice } from './hotelPrices';
+import { enrichItem } from './enrichItem';
 
 const EUR = 1.17;
 export const usd = (e) => Math.round(e * EUR);
@@ -59,9 +60,25 @@ export function useItems(currentUserEmail) {
       if (error) { console.warn('Failed to load items:', error); setLoaded(true); return; }
       // Merge enrichment data (read-only reference: quotes, whatToExpect, highlights, options, etc.)
       const merged = (data || []).map(row => {
-        const extra = ENRICHMENT[row.id];
-        const coord = ITEM_COORDS[row.id];
-        return { ...row, ...(extra || {}), coord: coord || null };
+        const extra = ENRICHMENT[row.id] || {};
+        const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : ITEM_COORDS[row.id] || null;
+        // DB JSONB fields take priority over enrichment.js fallback
+        const enriched = {
+          ...row,
+          ...extra,
+          coord,
+          // Override with DB columns if populated
+          ...(row.reserve_note ? { reserveNote: row.reserve_note } : {}),
+          ...(row.depart_time ? { departTime: row.depart_time } : {}),
+          ...(row.arrive_time ? { arriveTime: row.arrive_time } : {}),
+          ...(row.route ? { route: row.route } : {}),
+          ...(row.quotes?.length ? { quote: row.quotes[0]?.text, quoteSource: row.quotes[0]?.source } : {}),
+          ...(row.what_to_expect?.length ? { whatToExpect: row.what_to_expect } : {}),
+          ...(row.pro_tips?.length ? { proTips: row.pro_tips } : {}),
+          ...(row.item_highlights?.length ? { highlights: row.item_highlights } : {}),
+          ...(row.booking_options?.length ? { options: row.booking_options } : {}),
+        };
+        return enriched;
       });
       setItems(merged);
       setLoaded(true);
@@ -111,8 +128,8 @@ export function useItems(currentUserEmail) {
         } else {
           const row = payload.new;
           const extra = ENRICHMENT[row.id];
-          const coord = ITEM_COORDS[row.id];
-          const merged = { ...row, ...(extra || {}), coord: coord || null };
+          const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : ITEM_COORDS[row.id] || null;
+          const merged = { ...row, ...(extra || {}), coord };
           setItems(prev => {
             const idx = prev.findIndex(it => it.id === row.id);
             if (idx >= 0) {
@@ -183,6 +200,12 @@ export function useItems(currentUserEmail) {
     if (error) throw error;
     const merged = { ...data, ...(ENRICHMENT[data.id] || {}), coord: ITEM_COORDS[data.id] || null };
     setItems(prev => [...prev, merged]);
+    // Auto-enrich in background (Google Places photos/rating, Xotelo price for stays)
+    enrichItem(data).then(changes => {
+      if (Object.keys(changes).length > 0) {
+        setItems(prev => prev.map(it => it.id === data.id ? { ...it, ...changes } : it));
+      }
+    });
     return data;
   }, [currentUserEmail]);
 

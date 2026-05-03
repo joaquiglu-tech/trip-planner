@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { ALL_DAYS } from '../data/allDays';
-import { ITEM_COORDS } from '../data/coords';
 import { ROUTE_STOPS, ROUTE_LINES } from '../data/routes';
 import { TRIP } from '../data/trip';
 import { $f, itemCost } from '../lib/useItems';
@@ -23,18 +21,31 @@ const DAY_TIPS = {
   'Venice': ['Venice entry fee does NOT apply after Jul 26', 'No eating/drinking while sitting on monuments — fine', 'Gondola: agree on price BEFORE boarding ($80/30min)'],
 };
 
-function getTodayDayIndex() {
+function getTodayDayIndex(stops) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  for (let i = 0; i < ALL_DAYS.length; i++) {
-    const start = new Date(ALL_DAYS[i].startDate);
-    const end = new Date(ALL_DAYS[i].endDate);
+  for (let i = 0; i < stops.length; i++) {
+    const start = new Date(stops[i].start_date);
+    const end = new Date(stops[i].end_date);
     if (today >= start && today < end) return i;
   }
   return null;
 }
 
 function getDaysUntilTrip() { return Math.ceil((new Date(TRIP.startDate) - new Date()) / 86400000); }
+
+function formatStopDate(stop) {
+  if (!stop.start_date) return '';
+  const s = new Date(stop.start_date);
+  const e = new Date(stop.end_date);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const sm = months[s.getUTCMonth()];
+  const sd = s.getUTCDate();
+  const ed = e.getUTCDate();
+  if (s.getUTCMonth() === e.getUTCMonth() && sd !== ed) return `${sm} ${sd}–${ed}`;
+  if (s.getUTCMonth() !== e.getUTCMonth()) return `${sm} ${sd} – ${months[e.getUTCMonth()]} ${ed}`;
+  return `${sm} ${sd}`;
+}
 
 function formatTime(t) {
   if (!t) return '';
@@ -106,11 +117,11 @@ function DayMap({ day, mapItems, visible }) {
       icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: PHASE_COLOR[day.phase], fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
     markersRef.current.push(cm);
 
-    if (day.driveFrom) {
-      const path = [day.driveFrom, ...(day.driveVia || []), { lat: day.lat, lng: day.lng }];
+    if (day.drive_from) {
+      const path = [day.drive_from, ...(day.drive_via || []), { lat: day.lat, lng: day.lng }];
       polylinesRef.current.push(new window.google.maps.Polyline({ path, geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.8, strokeWeight: 3, map: m }));
-      bounds.extend(day.driveFrom);
-      if (day.driveVia) day.driveVia.forEach(v => bounds.extend(v));
+      bounds.extend(day.drive_from);
+      if (day.drive_via) day.drive_via.forEach(v => bounds.extend(v));
       hasExtra = true;
     }
 
@@ -285,7 +296,7 @@ function OverviewView({ items, onItemTap, visible, onDaySelect }) {
       <div className="home-destinations">
         {DESTINATIONS.map(dest => {
           const dstats = getDestStats(dest, items);
-          const dayIdx = ALL_DAYS.findIndex(d => dest.cities.includes(d.city));
+          const dayIdx = stops.findIndex(d => dest.cities.includes(d.city));
           return (
             <div key={dest.name} className={`home-dest-card home-dest-${dstats.status}`} onClick={() => dayIdx >= 0 && onDaySelect(dayIdx)}>
               <div className="home-dest-top">
@@ -339,7 +350,7 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
   const stay = cityItems.find(it => it.type === 'stay' && (it.status === 'sel' || it.status === 'conf'));
   const stayCoord = stay ? ITEM_COORDS[stay.id] || stay.coord : null;
   const stayPlace = stay ? places?.[stay.id] : null;
-  const nights = day.startDate && day.endDate ? Math.round((new Date(day.endDate) - new Date(day.startDate)) / 86400000) : 1;
+  const nights = day.start_date && day.end_date ? Math.round((new Date(day.end_date) - new Date(day.start_date)) / 86400000) : (day.nights || 1);
   const tips = DAY_TIPS[day.city] || null;
 
   const planItems = useMemo(() => {
@@ -356,7 +367,7 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
     <>
       {/* General details */}
       <div className="itin-general">
-        <div className="itin-general-row"><span className="itin-general-label">Dates</span><span>{day.date}{nights > 1 ? ` (${nights} nights)` : ''}</span></div>
+        <div className="itin-general-row"><span className="itin-general-label">Dates</span><span>{formatStopDate(day)}{nights > 1 ? ` (${nights} nights)` : ''}</span></div>
         {stay && (
           <>
             <div className="itin-general-row"><span className="itin-general-label">Stay</span><span>{stay.name}</span></div>
@@ -427,10 +438,10 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
 }
 
 // ═══ MAIN ═══
-export default function TodayPage({ active, items, updateItem, setStatus, files, setFile, removeFile, places, getPlaceData }) {
+export default function TodayPage({ active, items, stops, updateItem, setStatus, files, setFile, removeFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
-  const todayIdx = getTodayDayIndex();
+  const todayIdx = getTodayDayIndex(stops);
   const isDuringTrip = todayIdx !== null;
   const [view, setView] = useState(isDuringTrip ? todayIdx : 'overview');
   const selectorRef = useRef(null);
@@ -447,10 +458,10 @@ export default function TodayPage({ active, items, updateItem, setStatus, files,
       <div className="today-selector" ref={selectorRef}>
         <button className={`today-sel-pill ${view === 'overview' ? 'active' : ''}`} onClick={() => setView('overview')}>Overview</button>
         {isDuringTrip && view !== todayIdx && <button className="today-sel-pill today-pill-accent" onClick={() => setView(todayIdx)}>Today</button>}
-        {ALL_DAYS.map((d, i) => (
+        {stops.map((d, i) => (
           <button key={d.n} data-day={i} className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`} onClick={() => setView(i)} style={{ borderLeftColor: PHASE_COLOR[d.phase] }}>
             <span className="pill-stop-name">{d.sleep}</span>
-            <span className="pill-stop-date">{d.date}</span>
+            <span className="pill-stop-date">{formatStopDate(d)}</span>
           </button>
         ))}
       </div>
@@ -460,7 +471,7 @@ export default function TodayPage({ active, items, updateItem, setStatus, files,
       {view === 'overview' ? (
         <OverviewView items={items} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={setView} />
       ) : (
-        <DayDetailView day={ALL_DAYS[view]} items={items} onItemTap={setSelectedItem} places={places} visible={active && view !== 'overview'} statusFilter={statusFilter} />
+        <DayDetailView day={stops[view]} items={items} onItemTap={setSelectedItem} places={places} visible={active && view !== 'overview'} statusFilter={statusFilter} />
       )}
 
       {selectedItem && (
