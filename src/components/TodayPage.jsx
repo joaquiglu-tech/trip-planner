@@ -237,17 +237,17 @@ function getDestStats(dest, items) {
 }
 
 // ═══ OVERVIEW ═══
-function OverviewView({ items, onItemTap, visible, onDaySelect }) {
+function OverviewView({ items, stops, onItemTap, visible, onDaySelect }) {
   const daysLeft = getDaysUntilTrip();
   const stats = useMemo(() => {
-    let selected = 0, booked = 0, estimated = 0, confirmed = 0;
+    let selected = 0, booked = 0, estimated = 0;
     items.forEach(it => {
       if (it.status === 'sel' || it.status === 'conf') {
         selected++; estimated += itemCost(it);
-        if (it.status === 'conf') { booked++; confirmed += it.paid_price || itemCost(it); }
+        if (it.status === 'conf') booked++;
       }
     });
-    return { selected, booked, estimated, confirmed };
+    return { selected, booked, estimated };
   }, [items]);
   const pct = stats.selected ? Math.round((stats.booked / stats.selected) * 100) : 0;
   const needsAttention = useMemo(() => items.filter(it => it.status === 'sel' && it.urgent), [items]);
@@ -469,7 +469,7 @@ export default function TodayPage({ active, items, stops, updateItem, setStatus,
       {view !== 'overview' && <StatusFilter value={statusFilter} onChange={setStatusFilter} />}
 
       {view === 'overview' ? (
-        <OverviewView items={items} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={setView} />
+        <OverviewView items={items} stops={stops} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={setView} />
       ) : (
         <DayDetailView day={stops[view]} items={items} onItemTap={setSelectedItem} places={places} visible={active && view !== 'overview'} statusFilter={statusFilter} />
       )}

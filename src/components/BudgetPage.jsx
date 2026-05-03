@@ -20,13 +20,10 @@ export default function BudgetPage({ active, items, updateItem, setStatus, files
   const planned = useMemo(() => items.filter(it => it.status === 'sel' || it.status === 'conf'), [items]);
 
   const totals = useMemo(() => {
-    let estimated = 0, actual = 0, quickSpend = 0;
-    planned.forEach(it => {
-      estimated += itemCost(it);
-      if (it.paid_price) actual += it.paid_price;
-    });
-    (expenses || []).forEach(e => { quickSpend += Number(e.amount || 0); });
-    return { estimated, actual, quickSpend, total: actual + quickSpend };
+    let estimated = 0, spent = 0;
+    planned.forEach(it => { estimated += itemCost(it); });
+    (expenses || []).forEach(e => { spent += Number(e.amount || 0); });
+    return { estimated, spent };
   }, [planned, expenses]);
 
   async function handleAddExpense() {
@@ -43,11 +40,8 @@ export default function BudgetPage({ active, items, updateItem, setStatus, files
       <div className="budget-summary">
         <div className="budget-row-main">
           <div><div className="budget-label">Estimated</div><div className="budget-amount">{$f(totals.estimated)}</div></div>
-          <div><div className="budget-label">Actual Spent</div><div className="budget-amount green">{totals.total > 0 ? $f(totals.total) : '—'}</div></div>
+          <div><div className="budget-label">Spent</div><div className="budget-amount green">{totals.spent > 0 ? $f(totals.spent) : '—'}</div></div>
         </div>
-        {totals.quickSpend > 0 && (
-          <div className="budget-meta" style={{ marginTop: 8 }}>Bookings: {$f(totals.actual)} · Daily expenses: {$f(totals.quickSpend)}</div>
-        )}
       </div>
 
       {expenses && expenses.length > 0 && (
@@ -77,7 +71,7 @@ export default function BudgetPage({ active, items, updateItem, setStatus, files
       <div className="budget-list">
         {planned.map(it => {
           const est = itemCost(it);
-          const hasFiles = files?.[it.id]?.length > 0;
+          const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
           return (
             <div key={it.id} className="budget-item" onClick={() => setSelectedItem(it)} style={{ cursor: 'pointer' }}>
               <div className="bi-left">
@@ -85,12 +79,11 @@ export default function BudgetPage({ active, items, updateItem, setStatus, files
                 <div className="bi-meta">{it.city} · {it.status === 'conf' ? 'Booked' : 'Planned'}</div>
               </div>
               <div className="bi-right">
-                {it.paid_price ? (
-                  <><div className="bi-est">{est > 0 ? $f(est) : ''}</div><div className="bi-paid">{$f(it.paid_price)}</div></>
+                {exp > 0 ? (
+                  <><div className="bi-est">{est > 0 ? $f(est) : ''}</div><div className="bi-paid">{$f(exp)}</div></>
                 ) : (
                   <div style={{ fontSize: 13, fontWeight: 700 }}>{est > 0 ? $f(est) : '—'}</div>
                 )}
-                {hasFiles && <span style={{ fontSize: 10 }}>Attached</span>}
               </div>
             </div>
           );

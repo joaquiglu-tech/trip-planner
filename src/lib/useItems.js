@@ -6,44 +6,43 @@ import { listFiles } from './storage';
 import { fetchHotelPrice } from './hotelPrices';
 import { enrichItem } from './enrichItem';
 
-const EUR = 1.17;
-export const usd = (e) => Math.round(e * EUR);
-export const $f = (n) => '$' + n.toLocaleString();
+export const $f = (n) => '$' + (n || 0).toLocaleString();
 
-// Returns the best available cost estimate for budget calculations
+// Estimated cost — single source of truth
 export function itemCost(it) {
-  // 1. If user confirmed a paid price, use that
-  if (it.paid_price > 0) return it.paid_price;
-  // 2. If live price available (Xotelo for hotels), use that
-  if (it.live_price > 0 && it.type === 'stay') return it.live_price * (it.nights || 1);
-  // 3. Use the researched estimated_cost (pre-calculated USD)
-  if (it.estimated_cost > 0) return it.estimated_cost;
-  // 4. Fallback to EUR conversion
-  if (it.type === 'stay') return usd((it.pn || 0) * (it.nights || 1));
-  if (it.type === 'activity') return usd((it.eur || 0) * 2);
-  if (it.type === 'special') return usd((it.pp_eur || 0) * 2);
-  if (it.type === 'dining') return usd((it.eur || 0) * 2);
-  return 0;
+  return it.estimated_cost || 0;
 }
 
-// Price display label for cards
-export function priceLabel(it) {
-  if (it.paid_price > 0) return { text: $f(it.paid_price), type: 'confirmed' };
-  if (it.live_price > 0 && it.type === 'stay') return { text: `${$f(it.live_price)}/n`, type: 'live', source: it.live_price_source };
+// Price display for cards
+export function priceLabel(it, livePrice, expenseAmount) {
+  if (expenseAmount > 0) return { text: $f(expenseAmount), type: 'confirmed' };
+  if (livePrice > 0 && it.type === 'stay') return { text: `${$f(livePrice)}/n`, type: 'live' };
   if (it.estimated_cost > 0) return { text: $f(it.estimated_cost), type: 'estimate' };
-  if (it.price_label) return { text: it.price_label, type: 'estimate' };
-  if (it.type === 'stay' && it.pn > 0) return { text: $f(usd(it.pn * (it.nights || 1))), type: 'estimate' };
-  if (it.type === 'activity' && it.eur === 0) return { text: 'Free', type: 'estimate' };
-  if (it.type === 'activity' && it.eur > 0) return { text: $f(usd(it.eur * 2)), type: 'estimate' };
-  if (it.type === 'special' && it.pp_eur > 0) return { text: $f(usd(it.pp_eur * 2)), type: 'estimate' };
-  if (it.type === 'dining' && it.eur > 0) return { text: $f(usd(it.eur * 2)), type: 'estimate' };
+  if (it.type === 'activity' && it.estimated_cost === 0) return { text: 'Free', type: 'estimate' };
   return { text: '', type: 'none' };
+}
+
+// Merge DB row with enrichment fallbacks
+function mergeItem(row) {
+  const extra = ENRICHMENT[row.id] || {};
+  const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : ITEM_COORDS[row.id] || null;
+  return {
+    ...row,
+    ...extra,
+    coord,
+    // DB columns override enrichment.js when populated
+    ...(row.reserve_note ? { reserveNote: row.reserve_note } : {}),
+    ...(row.depart_time ? { departTime: row.depart_time } : {}),
+    ...(row.arrive_time ? { arriveTime: row.arrive_time } : {}),
+    ...(row.route ? { route: row.route } : {}),
+  };
 }
 
 export function useItems(currentUserEmail) {
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [files, setFilesState] = useState({});
+  const [livePrices, setLivePrices] = useState({}); // in-memory only, keyed by item id
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -53,57 +52,33 @@ export function useItems(currentUserEmail) {
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }
 
-  // Load all items + merge enrichment + load files
+  // Load all items
   useEffect(() => {
     async function load() {
       const { data, error } = await supabase.from('items').select('*').order('sort_order');
       if (error) { console.warn('Failed to load items:', error); setLoaded(true); return; }
-      // Merge enrichment data (read-only reference: quotes, whatToExpect, highlights, options, etc.)
-      const merged = (data || []).map(row => {
-        const extra = ENRICHMENT[row.id] || {};
-        const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : ITEM_COORDS[row.id] || null;
-        // DB JSONB fields take priority over enrichment.js fallback
-        const enriched = {
-          ...row,
-          ...extra,
-          coord,
-          // Override with DB columns if populated
-          ...(row.reserve_note ? { reserveNote: row.reserve_note } : {}),
-          ...(row.depart_time ? { departTime: row.depart_time } : {}),
-          ...(row.arrive_time ? { arriveTime: row.arrive_time } : {}),
-          ...(row.route ? { route: row.route } : {}),
-          ...(row.quotes?.length ? { quote: row.quotes[0]?.text, quoteSource: row.quotes[0]?.source } : {}),
-          ...(row.what_to_expect?.length ? { whatToExpect: row.what_to_expect } : {}),
-          ...(row.pro_tips?.length ? { proTips: row.pro_tips } : {}),
-          ...(row.item_highlights?.length ? { highlights: row.item_highlights } : {}),
-          ...(row.booking_options?.length ? { options: row.booking_options } : {}),
-        };
-        return enriched;
-      });
+      const merged = (data || []).map(mergeItem);
       setItems(merged);
       setLoaded(true);
 
-      // Fetch live hotel prices in background (non-blocking)
+      // Fetch live hotel prices in background (in-memory only)
       const staysWithKeys = merged.filter(it => it.type === 'stay' && it.xotelo_key);
       if (staysWithKeys.length > 0) {
         (async () => {
           for (const stay of staysWithKeys) {
-            // Skip if live price was fetched recently (within 24h)
-            if (stay.live_price_updated && (Date.now() - new Date(stay.live_price_updated).getTime()) < 86400000) continue;
-            const { checkIn, checkOut } = getStayDates(stay);
             try {
-              const price = await fetchHotelPrice(stay.xotelo_key, checkIn, checkOut);
+              const dates = getStayDates(stay);
+              const price = await fetchHotelPrice(stay.xotelo_key, dates.checkIn, dates.checkOut);
               if (price) {
-                setItems(prev => prev.map(it => it.id === stay.id ? { ...it, live_price: price.per_night, live_price_source: price.source, live_price_updated: new Date().toISOString() } : it));
-                await supabase.from('items').update({ live_price: price.per_night, live_price_source: price.source, live_price_updated: new Date().toISOString() }).eq('id', stay.id);
+                setLivePrices(prev => ({ ...prev, [stay.id]: { perNight: price.per_night, source: price.source, allRates: price.all_rates } }));
               }
-            } catch { /* skip failures */ }
+            } catch { /* skip */ }
             await new Promise(r => setTimeout(r, 500));
           }
         })();
       }
 
-      // Load files for confirmed items in parallel (non-blocking)
+      // Load files for confirmed items
       const confItems = merged.filter(it => it.status === 'conf');
       if (confItems.length > 0) {
         Promise.allSettled(confItems.map(it => listFiles(it.id).then(f => ({ id: it.id, files: f }))))
@@ -123,27 +98,18 @@ export function useItems(currentUserEmail) {
       .channel('items-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, (payload) => {
         if (payload.eventType === 'DELETE') {
-          const oldId = payload.old.id;
-          setItems(prev => prev.filter(it => it.id !== oldId));
+          setItems(prev => prev.filter(it => it.id !== payload.old.id));
         } else {
-          const row = payload.new;
-          const extra = ENRICHMENT[row.id];
-          const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : ITEM_COORDS[row.id] || null;
-          const merged = { ...row, ...(extra || {}), coord };
+          const merged = mergeItem(payload.new);
           setItems(prev => {
-            const idx = prev.findIndex(it => it.id === row.id);
-            if (idx >= 0) {
-              const next = [...prev];
-              next[idx] = merged;
-              return next;
-            }
+            const idx = prev.findIndex(it => it.id === merged.id);
+            if (idx >= 0) { const next = [...prev]; next[idx] = merged; return next; }
             return [...prev, merged];
           });
-          // Toast for other user's changes
-          if (row.updated_by && row.updated_by !== currentUserEmail) {
-            const who = row.updated_by.split('@')[0];
-            const action = row.status === 'conf' ? 'booked' : row.status === 'sel' ? 'added' : 'updated';
-            showToast(`${who} ${action} ${row.name}`);
+          if (payload.new.updated_by && payload.new.updated_by !== currentUserEmail) {
+            const who = payload.new.updated_by.split('@')[0];
+            const action = payload.new.status === 'conf' ? 'booked' : payload.new.status === 'sel' ? 'added' : 'updated';
+            showToast(`${who} ${action} ${payload.new.name}`);
           }
         }
       })
@@ -151,25 +117,20 @@ export function useItems(currentUserEmail) {
     return () => { supabase.removeChannel(channel); };
   }, [currentUserEmail]);
 
-  // Update any fields on an item
   const updateItem = useCallback(async (id, changes) => {
-    // Optimistic update
     setItems(prev => prev.map(it => it.id === id ? { ...it, ...changes } : it));
     const { error } = await supabase.from('items').update({
-      ...changes,
-      updated_at: new Date().toISOString(),
-      updated_by: currentUserEmail,
+      ...changes, updated_at: new Date().toISOString(), updated_by: currentUserEmail,
     }).eq('id', id);
     if (error) console.warn('Failed to update item:', error);
   }, [currentUserEmail]);
 
-  // Set status (with stay mutual exclusion)
   const setStatus = useCallback(async (id, status) => {
     if (navigator.vibrate) navigator.vibrate(15);
     const item = items.find(it => it.id === id);
-    // Stay mutual exclusion: if selecting a stay, deselect other stays in same city
-    if (item?.stay_city && (status === 'sel' || status === 'conf')) {
-      const others = items.filter(it => it.stay_city === item.stay_city && it.id !== id && (it.status === 'sel' || it.status === 'conf'));
+    // Stay mutual exclusion
+    if (item?.type === 'stay' && item?.city && (status === 'sel' || status === 'conf')) {
+      const others = items.filter(it => it.type === 'stay' && it.city === item.city && it.id !== id && (it.status === 'sel' || it.status === 'conf'));
       if (others.length > 0) {
         setItems(prev => prev.map(it => others.some(o => o.id === it.id) ? { ...it, status: '' } : it));
         await Promise.all(others.map(o => supabase.from('items').update({ status: '', updated_at: new Date().toISOString(), updated_by: currentUserEmail }).eq('id', o.id)));
@@ -178,7 +139,6 @@ export function useItems(currentUserEmail) {
     await updateItem(id, { status });
   }, [items, currentUserEmail, updateItem]);
 
-  // Add a new item
   const addItem = useCallback(async (itemData) => {
     const newItem = {
       id: crypto.randomUUID(),
@@ -188,8 +148,7 @@ export function useItems(currentUserEmail) {
       description: itemData.desc_text || itemData.description || '',
       dish: itemData.dish || '',
       link: itemData.link || '',
-      image_url: itemData.image_url || '',
-      price_label: itemData.price_label || '',
+      estimated_cost: itemData.estimated_cost || 0,
       status: 'sel',
       created_by: currentUserEmail,
       updated_by: currentUserEmail,
@@ -198,9 +157,8 @@ export function useItems(currentUserEmail) {
     };
     const { data, error } = await supabase.from('items').insert(newItem).select().single();
     if (error) throw error;
-    const merged = { ...data, ...(ENRICHMENT[data.id] || {}), coord: ITEM_COORDS[data.id] || null };
+    const merged = mergeItem(data);
     setItems(prev => [...prev, merged]);
-    // Auto-enrich in background (Google Places photos/rating, Xotelo price for stays)
     enrichItem(data).then(changes => {
       if (Object.keys(changes).length > 0) {
         setItems(prev => prev.map(it => it.id === data.id ? { ...it, ...changes } : it));
@@ -209,13 +167,11 @@ export function useItems(currentUserEmail) {
     return data;
   }, [currentUserEmail]);
 
-  // Delete an item
   const deleteItem = useCallback(async (id) => {
     setItems(prev => prev.filter(it => it.id !== id));
     await supabase.from('items').delete().eq('id', id);
   }, []);
 
-  // File management
   const setFile = useCallback((id, fileData) => {
     setFilesState(prev => {
       const existing = prev[id] || [];
@@ -226,50 +182,32 @@ export function useItems(currentUserEmail) {
   }, []);
 
   const removeFile = useCallback((id, filePath) => {
-    setFilesState(prev => {
-      const existing = prev[id] || [];
-      return { ...prev, [id]: existing.filter(f => f.path !== filePath) };
-    });
+    setFilesState(prev => ({ ...prev, [id]: (prev[id] || []).filter(f => f.path !== filePath) }));
   }, []);
 
-  return { items, loaded, files, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile, itemCost: itemCost };
+  return { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile };
 }
 
-// Date helpers for Xotelo check-in/out calculation
-// City → check-in date + nights (from allDays trip structure)
-const CITY_DATES = {
-  'Rome': { checkIn: '2026-07-20', nights: 4 },
-  'Florence': { checkIn: '2026-07-24', nights: 2 },
-  'Montepulciano': { checkIn: '2026-07-25', nights: 1 },
-  "Val d'Orcia": { checkIn: '2026-07-26', nights: 1 },
-  'Lerici': { checkIn: '2026-07-27', nights: 1 },
-  'Bergamo Alta': { checkIn: '2026-07-28', nights: 1 },
-  'Bellagio': { checkIn: '2026-07-29', nights: 1 },
-  'Sirmione': { checkIn: '2026-07-30', nights: 1 },
-  'Verona': { checkIn: '2026-07-31', nights: 1 },
-  'Venice': { checkIn: '2026-08-01', nights: 1 },
-};
-
+// Stay date lookup from stops (loaded separately)
 function getStayDates(stay) {
-  // Use city to determine check-in/out dates
-  const cityKey = stay.stay_city || stay.city;
-  const cityDates = CITY_DATES[cityKey];
+  // City-based date lookup for Xotelo
+  const CITY_DATES = {
+    'Rome': { checkIn: '2026-07-20', nights: 4 },
+    'Florence': { checkIn: '2026-07-24', nights: 2 },
+    'Montepulciano': { checkIn: '2026-07-25', nights: 1 },
+    "Val d'Orcia": { checkIn: '2026-07-26', nights: 1 },
+    'Lerici': { checkIn: '2026-07-27', nights: 1 },
+    'Bergamo Alta': { checkIn: '2026-07-28', nights: 1 },
+    'Bellagio': { checkIn: '2026-07-29', nights: 1 },
+    'Sirmione': { checkIn: '2026-07-30', nights: 1 },
+    'Verona': { checkIn: '2026-07-31', nights: 1 },
+    'Venice': { checkIn: '2026-08-01', nights: 1 },
+  };
+  const cityDates = CITY_DATES[stay.city];
   if (cityDates) {
-    const checkOut = addDays(cityDates.checkIn, stay.nights || cityDates.nights);
-    return { checkIn: cityDates.checkIn, checkOut };
-  }
-  // Fallback: use day_n to estimate
-  if (stay.day_n) {
-    const base = new Date('2026-07-12');
-    base.setDate(base.getDate() + (stay.day_n - 1));
-    const checkIn = base.toISOString().split('T')[0];
-    return { checkIn, checkOut: addDays(checkIn, stay.nights || 1) };
+    const d = new Date(cityDates.checkIn);
+    d.setDate(d.getDate() + cityDates.nights);
+    return { checkIn: cityDates.checkIn, checkOut: d.toISOString().split('T')[0] };
   }
   return { checkIn: '2026-07-20', checkOut: '2026-07-24' };
-}
-
-function addDays(dateStr, days) {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
 }

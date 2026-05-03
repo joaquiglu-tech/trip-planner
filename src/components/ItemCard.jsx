@@ -1,13 +1,13 @@
 import { memo } from 'react';
-import { priceLabel } from '../lib/useItems';
+import { $f, priceLabel } from '../lib/useItems';
 
-function ItemCard({ it, status, onTap }) {
+function ItemCard({ it, status, onTap, livePrice, expenseAmount }) {
   const st = status || it.status || '';
-  const price = priceLabel(it);
+  const price = priceLabel(it, livePrice, expenseAmount);
 
   let timeInfo = '';
-  if (it.type === 'stay' && it.check_in) timeInfo = `In ${it.check_in} · ${it.nights}n`;
-  else if (it.type === 'stay') timeInfo = `${it.nights}n · ${it.tier || it.city}`;
+  if (it.type === 'stay' && it.check_in) timeInfo = `In ${it.check_in} · ${it.city}`;
+  else if (it.type === 'stay') timeInfo = `${it.tier || it.city}`;
   else if (it.type === 'transport' && it.departTime && it.departTime !== 'TBD') timeInfo = `${it.departTime} · ${it.route || ''}`;
   else if (it.type === 'transport' && it.route) timeInfo = it.route;
   else if (it.type === 'activity' && it.hrs) timeInfo = `${it.hrs}h · ${it.city}`;

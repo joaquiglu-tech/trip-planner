@@ -20,7 +20,7 @@ export default function App() {
   const [showFab, setShowFab] = useState(null);
   const [showAddItem, setShowAddItem] = useState(false);
   const email = session?.user?.email || '';
-  const { items, loaded, files, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
+  const { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
   const { stops, loaded: stopsLoaded } = useStops();
   const { places, getPlaceData } = usePlaceData();
   const { expenses, addExpense, deleteExpense } = useExpenses();
@@ -51,7 +51,8 @@ export default function App() {
       <div className="page-container">
         <SelectPage
           active={activeTab === 'plan'}
-          items={items} updateItem={updateItem} setStatus={setStatus}
+          items={items} livePrices={livePrices} expenses={expenses}
+          updateItem={updateItem} setStatus={setStatus}
           addItem={addItem} deleteItem={deleteItem}
           userEmail={email} files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
@@ -67,7 +68,8 @@ export default function App() {
         />
         <TodayPage
           active={activeTab === 'itinerary'}
-          items={items} stops={stops} updateItem={updateItem} setStatus={setStatus}
+          items={items} stops={stops} livePrices={livePrices} expenses={expenses}
+          updateItem={updateItem} setStatus={setStatus} addExpense={addExpense}
           files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
         />

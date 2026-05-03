@@ -8,7 +8,7 @@ import AddItemModal from './AddItemModal';
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', special: 'Special Meal', dining: 'Dining' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
 
-export default function SelectPage({ active, items, updateItem, setStatus, addItem, deleteItem, userEmail, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
+export default function SelectPage({ active, items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, userEmail, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
 
   useEffect(() => {
@@ -115,24 +115,27 @@ export default function SelectPage({ active, items, updateItem, setStatus, addIt
           <div key={key}>
             <div className="sect-title">{groupByCity ? `${label} (${sectionItems.length})` : label}</div>
             <div className="items-grid">
-              {sectionItems.map((it) => (
-                <ItemCard key={it.id} it={it} status={it.status || ''} onTap={setSelectedItem} />
-              ))}
+              {sectionItems.map((it) => {
+                const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+                return <ItemCard key={it.id} it={it} status={it.status || ''} onTap={setSelectedItem} livePrice={livePrices?.[it.id]?.perNight} expenseAmount={exp} />;
+              })}
             </div>
           </div>
         ))}
       </div>
 
-      {selectedItem && (
-        <DetailModal
+      {selectedItem && (() => {
+        const exp = (expenses || []).filter(e => e.item_id === selectedItem.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+        return <DetailModal
           it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
           updateItem={updateItem}
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
+          livePrice={livePrices?.[selectedItem.id]?.perNight} expenseAmount={exp}
           onClose={() => setSelectedItem(null)}
           onDelete={selectedItem.created_by ? () => { deleteItem(selectedItem.id); setSelectedItem(null); } : null}
-        />
-      )}
+        />;
+      })()}
       {showAddModal && <AddItemModal onClose={() => setShowAddModal(false)} onAdd={addItem} userEmail={userEmail} />}
     </div>
   );

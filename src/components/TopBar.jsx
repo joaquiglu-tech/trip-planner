@@ -1,9 +1,9 @@
 import { TRIP } from '../data/trip';
 
 export default function TopBar({ items, session, onProfileClick }) {
-  const stays = items.filter(it => it.type === 'stay' && it.stay_city);
-  const cities = [...new Set(stays.map(it => it.stay_city))];
-  const booked = cities.filter(city => stays.some(it => it.stay_city === city && it.status === 'conf')).length;
+  const stays = items.filter(it => it.type === 'stay');
+  const cities = [...new Set(stays.map(it => it.city))];
+  const booked = cities.filter(city => stays.some(it => it.city === city && it.status === 'conf')).length;
   const total = cities.length;
   const pct = total ? Math.round((booked / total) * 100) : 0;
   const email = session?.user?.email || '';

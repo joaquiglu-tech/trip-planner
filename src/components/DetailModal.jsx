@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { $f, usd, priceLabel } from '../lib/useItems';
+import { $f, priceLabel } from '../lib/useItems';
 import { uploadFile, deleteFile } from '../lib/storage';
 
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', special: 'Special Meal', dining: 'Dining' };
@@ -12,11 +12,12 @@ const SUBCAT_BADGE = {
 };
 const PRICE_LEVEL_LABEL = { PRICE_LEVEL_FREE: 'Free', PRICE_LEVEL_INEXPENSIVE: '$', PRICE_LEVEL_MODERATE: '$$', PRICE_LEVEL_EXPENSIVE: '$$$', PRICE_LEVEL_VERY_EXPENSIVE: '$$$$' };
 
-export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData }) {
+export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, expenseAmount, addExpense }) {
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
   const [uploading, setUploading] = useState(false);
+  const [costInput, setCostInput] = useState('');
   const [place, setPlace] = useState(placeData || null);
   const [loadingPlace, setLoadingPlace] = useState(false);
   const [saved, setSaved] = useState('');
@@ -28,8 +29,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
     setDraft({
       name: it.name || '', type: it.type || 'dining', city: it.city || '',
       description: it.description || '', dish: it.dish || '', link: it.link || '',
-      price_label: it.price_label || '', notes: it.notes || '',
-      paid_price: it.paid_price ? String(it.paid_price) : '',
+      notes: it.notes || '',
+      estimated_cost: it.estimated_cost ? String(it.estimated_cost) : '',
       day_n: it.day_n ? String(it.day_n) : '', start_time: it.start_time || '', end_time: it.end_time || '',
       check_in: it.check_in || '', check_out: it.check_out || '',
       urgent: !!it.urgent, src: it.src || '',
@@ -45,10 +46,9 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
     if (draft.description !== (it.description || '')) changes.description = draft.description;
     if (draft.dish !== (it.dish || '')) changes.dish = draft.dish;
     if (draft.link !== (it.link || '')) changes.link = draft.link;
-    if (draft.price_label !== (it.price_label || '')) changes.price_label = draft.price_label;
     if (draft.notes !== (it.notes || '')) changes.notes = draft.notes;
-    const pp = parseFloat(draft.paid_price);
-    if (!isNaN(pp) && pp !== (it.paid_price || 0)) changes.paid_price = pp;
+    const ec = parseFloat(draft.estimated_cost);
+    if (!isNaN(ec) && ec !== (it.estimated_cost || 0)) changes.estimated_cost = ec;
     const dn = draft.day_n ? parseInt(draft.day_n) : null;
     if (dn !== it.day_n) changes.day_n = dn;
     if (draft.start_time !== (it.start_time || '')) changes.start_time = draft.start_time || null;
@@ -80,7 +80,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
   if (!it) return null;
 
-  const heroImage = place?.photo_url || it.image_url || it.imageUrl || null;
+  const heroImage = place?.photo_url || it.imageUrl || null;
   const photoUrls = place?.photo_urls?.length > 0 ? place.photo_urls : (heroImage ? [heroImage] : []);
   const googleRating = place?.rating || null;
   const googleAddress = place?.address || it.address || null;
@@ -186,12 +186,10 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             {/* Pricing */}
             <div className="edit-section-title">Pricing</div>
             <div className="edit-row-2">
-              <div><label className="edit-label">Price estimate</label>
-                <input className="edit-input" value={draft.price_label} onChange={e => u('price_label', e.target.value)} placeholder="~$50/pp" />
+              <div><label className="edit-label">Estimated cost (USD)</label>
+                <input className="edit-input" value={draft.estimated_cost} onChange={e => u('estimated_cost', e.target.value)} type="number" placeholder="0" />
               </div>
-              <div><label className="edit-label">Paid (USD)</label>
-                <input className="edit-input" value={draft.paid_price} onChange={e => u('paid_price', e.target.value)} type="number" placeholder="0" />
-              </div>
+              <div></div>
             </div>
 
             {/* Notes */}
@@ -269,13 +267,12 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           )}
 
           {/* Price display */}
-          {(price.text || it.live_price > 0) && (
+          {(it.estimated_cost > 0 || livePrice > 0 || expenseAmount > 0) && (
             <div className="detail-price-display">
-              {it.live_price > 0 && it.type === 'stay' && (
+              {livePrice > 0 && it.type === 'stay' && (
                 <div className="detail-live-price">
                   <span className="detail-live-label">Live price</span>
-                  <span className="detail-live-value">{$f(it.live_price)}/night</span>
-                  <span className="detail-live-source">via {it.live_price_source}</span>
+                  <span className="detail-live-value">{$f(livePrice)}/night</span>
                 </div>
               )}
               {it.estimated_cost > 0 && (
@@ -283,9 +280,9 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                   <span>Estimate: {$f(it.estimated_cost)}</span>
                 </div>
               )}
-              {it.paid_price > 0 && (
+              {expenseAmount > 0 && (
                 <div className="detail-paid-price">
-                  <span>Paid: {$f(it.paid_price)}</span>
+                  <span>Paid: {$f(expenseAmount)}</span>
                 </div>
               )}
             </div>
@@ -313,11 +310,10 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
           {it.type === 'stay' && (
             <>
-              {(it.check_in || it.check_out || it.nights > 0) && (
+              {(it.check_in || it.check_out) && (
                 <div className="detail-times-bar">
-                  {it.nights > 0 && <span className="detail-time">{it.nights} nights</span>}
-                  {it.check_in && <span className="detail-time">In: {it.check_in}</span>}
-                  {it.check_out && <span className="detail-time">Out: {it.check_out}</span>}
+                  {it.check_in && <span className="detail-time">Check-in: {it.check_in}</span>}
+                  {it.check_out && <span className="detail-time">Check-out: {it.check_out}</span>}
                 </div>
               )}
               {desc && <p className="detail-desc-full">{desc}</p>}
@@ -385,6 +381,24 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                 {uploading ? 'Uploading...' : `Upload ${itemFiles.length > 0 ? 'another ' : ''}file`}
                 <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleUpload} />
               </label>
+            </div>
+          )}
+
+          {/* Log payment — when confirmed and no expense yet */}
+          {st === 'conf' && expenseAmount === 0 && addExpense && (
+            <div className="detail-booking-prompt">
+              <div className="detail-section-title" style={{ marginBottom: 8 }}>How much did you pay?</div>
+              <div className="cost-input-row" style={{ marginBottom: 8 }}>
+                <span className="cost-input-prefix">$</span>
+                <input type="number" className="cost-input" placeholder="0" value={costInput} onChange={e => setCostInput(e.target.value)} />
+              </div>
+              <button className="detail-btn sel" onClick={async () => {
+                const val = parseFloat(costInput);
+                if (!val || val <= 0) return;
+                await addExpense({ amount: val, category: it.type, note: it.name, item_id: it.id, stop_id: it.stop_id, created_by: '' });
+                setCostInput('');
+                showSaved('Payment logged');
+              }}>Log payment</button>
             </div>
           )}
 
