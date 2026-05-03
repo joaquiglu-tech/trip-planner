@@ -100,8 +100,12 @@ function DayMap({ day, mapItems, visible }) {
     bounds.extend({ lat: day.lat, lng: day.lng });
     let hasExtra = false;
 
-    const cm = new window.google.maps.Marker({ position: { lat: day.lat, lng: day.lng }, map: m, title: day.sleep,
-      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: PHASE_COLOR[day.phase], fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+    // Stay/home marker — always visible, distinct from numbered items
+    const cm = new window.google.maps.Marker({ position: { lat: day.lat, lng: day.lng }, map: m, title: `Stay: ${day.sleep}`,
+      label: { text: 'H', color: '#fff', fontSize: '11px', fontWeight: '700' },
+      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 14, fillColor: '#7C3AED', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 },
+      zIndex: 1000,
+    });
     markersRef.current.push(cm);
 
     if (day.drive_from) {
@@ -112,10 +116,12 @@ function DayMap({ day, mapItems, visible }) {
       hasExtra = true;
     }
 
+    // Item markers — numbered in time order, color-coded by type
+    const TYPE_MAP_COLOR = { stay: '#7C3AED', dining: '#D97706', special: '#D97706', activity: '#16A34A', transport: '#2563EB' };
     const withCoords = mapItems.filter(it => it.coord);
     withCoords.forEach((it, idx) => {
-      const color = it.type === 'stay' ? '#7C3AED' : it.type === 'dining' || it.type === 'special' ? '#D97706' : '#16A34A';
-      const marker = new window.google.maps.Marker({ position: it.coord, map: m, title: it.name,
+      const color = TYPE_MAP_COLOR[it.type] || '#666';
+      const marker = new window.google.maps.Marker({ position: it.coord, map: m, title: `${idx + 1}. ${it.name}`,
         label: { text: String(idx + 1), color: '#fff', fontSize: '10px', fontWeight: '700' },
         icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
       markersRef.current.push(marker);
@@ -153,6 +159,11 @@ function DayMap({ day, mapItems, visible }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div ref={mapRef} className="map-wrap" style={{ height: 240 }}></div>
+      <div className="map-legend">
+        <span><span className="ml-dot" style={{ background: '#7C3AED' }} /> Stay</span>
+        <span><span className="ml-dot" style={{ background: '#16A34A' }} /> Activity</span>
+        <span><span className="ml-dot" style={{ background: '#D97706' }} /> Food</span>
+      </div>
       {mapsRouteUrl && <a href={mapsRouteUrl} target="_blank" rel="noopener" className="itin-maps-btn">Open in Google Maps</a>}
     </div>
   );
@@ -414,33 +425,79 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
   );
 }
 
+// Generate calendar dates from stops
+function getCalendarDates(stops) {
+  if (!stops.length) return [];
+  const start = new Date(stops[0].start_date);
+  const end = new Date(stops[stops.length - 1].end_date);
+  const dates = [];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toISOString().split('T')[0];
+    // Find which stop this date falls in
+    const stop = stops.find(s => dateStr >= s.start_date && dateStr < s.end_date);
+    dates.push({
+      date: dateStr,
+      label: `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}`,
+      shortLabel: `${months[d.getMonth()]} ${d.getDate()}`,
+      stop,
+      stopIdx: stop ? stops.indexOf(stop) : -1,
+    });
+  }
+  return dates;
+}
+
 // ═══ MAIN ═══
 export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, setStatus, addExpense, files, setFile, removeFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectorMode, setSelectorMode] = useState('stops'); // 'stops' | 'dates'
   const todayIdx = getTodayDayIndex(stops);
   const isDuringTrip = todayIdx !== null;
   const [view, setView] = useState(isDuringTrip ? todayIdx : 'overview');
   const selectorRef = useRef(null);
 
+  const calendarDates = useMemo(() => getCalendarDates(stops), [stops]);
+
   useEffect(() => {
     if (selectorRef.current && view !== 'overview') {
-      const btn = selectorRef.current.querySelector(`[data-day="${view}"]`);
-      if (btn) btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      const sel = selectorRef.current.querySelector('[data-active="true"]');
+      if (sel) sel.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
-  }, [view]);
+  }, [view, selectorMode]);
+
+  // Find today's calendar date index
+  const todayDateStr = new Date().toISOString().split('T')[0];
 
   return (
     <div className={`page ${active ? 'active' : ''}`}>
+      {/* Mode toggle */}
+      <div className="itin-mode-toggle">
+        <button className={`fp ${selectorMode === 'stops' ? 'fp-active' : ''}`} onClick={() => setSelectorMode('stops')}>Stops</button>
+        <button className={`fp ${selectorMode === 'dates' ? 'fp-active' : ''}`} onClick={() => setSelectorMode('dates')}>Dates</button>
+      </div>
+
+      {/* Selector pills */}
       <div className="today-selector" ref={selectorRef}>
         <button className={`today-sel-pill ${view === 'overview' ? 'active' : ''}`} onClick={() => setView('overview')}>Overview</button>
         {isDuringTrip && view !== todayIdx && <button className="today-sel-pill today-pill-accent" onClick={() => setView(todayIdx)}>Today</button>}
-        {stops.map((d, i) => (
-          <button key={d.n} data-day={i} className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`} onClick={() => setView(i)} style={{ borderLeftColor: PHASE_COLOR[d.phase] }}>
-            <span className="pill-stop-name">{d.sleep}</span>
-            <span className="pill-stop-date">{formatStopDate(d)}</span>
-          </button>
-        ))}
+
+        {selectorMode === 'stops' ? (
+          stops.map((d, i) => (
+            <button key={d.id} data-active={view === i ? 'true' : 'false'} className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`} onClick={() => setView(i)} style={{ borderLeftColor: PHASE_COLOR[d.phase] }}>
+              <span className="pill-stop-name">{d.sleep}</span>
+              <span className="pill-stop-date">{formatStopDate(d)}</span>
+            </button>
+          ))
+        ) : (
+          calendarDates.map(cd => (
+            <button key={cd.date} data-active={cd.stopIdx === view ? 'true' : 'false'} className={`today-sel-pill ${cd.stopIdx === view ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`} onClick={() => cd.stopIdx >= 0 && setView(cd.stopIdx)} style={{ opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
+              <span className="pill-stop-name">{cd.shortLabel}</span>
+              <span className="pill-stop-date" style={{ fontSize: 9 }}>{cd.stop?.sleep || ''}</span>
+            </button>
+          ))
+        )}
       </div>
 
       {view !== 'overview' && <StatusFilter value={statusFilter} onChange={setStatusFilter} />}

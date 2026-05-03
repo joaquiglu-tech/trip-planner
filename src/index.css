@@ -597,6 +597,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .today-action-btn-sm { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-card-hd); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 14px }
 
 /* ═══ ITINERARY — NEW COMPONENTS ═══ */
+.itin-mode-toggle { display: flex; gap: 4px; margin-bottom: 8px }
 .itin-filter { display: flex; gap: 4px; margin-bottom: 12px }
 .itin-general { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 12px }
 .itin-general-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-lighter); font-size: 13px }
