@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './lib/useAuth';
-import { useSelections } from './lib/useSelections';
-import { useCustomItems } from './lib/useCustomItems';
+import { useItems } from './lib/useItems';
 import { usePlaceData } from './lib/usePlaceData';
 import { useExpenses } from './lib/useExpenses';
 import Login from './components/Login';
@@ -17,11 +16,10 @@ import Toast from './components/Toast';
 export default function App() {
   const session = useAuth();
   const [activeTab, setActiveTab] = useState('itinerary');
-  const [showFab, setShowFab] = useState(null); // null=closed, 'menu'=menu open
+  const [showFab, setShowFab] = useState(null);
   const [showAddItem, setShowAddItem] = useState(false);
   const email = session?.user?.email || '';
-  const { S, setStatus, loaded, paidPrices, setPaidPrice, notes, setNote, files, setFile, toast, refresh } = useSelections(email);
-  const { customItems, addItem, deleteItem } = useCustomItems();
+  const { items, loaded, files, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
   const { places, getPlaceData } = usePlaceData();
   const { expenses, addExpense, deleteExpense } = useExpenses();
 
@@ -44,35 +42,37 @@ export default function App() {
   if (!loaded) return <div className="loading-screen">Loading...</div>;
 
   const isProfile = activeTab === 'profile';
-  const detailProps = { S, setStatus, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData };
 
   return (
     <div className="app-shell">
-      <TopBar S={S} session={session} onProfileClick={() => navigateTab('profile')} />
+      <TopBar items={items} session={session} onProfileClick={() => navigateTab('profile')} />
       <div className="page-container">
         <SelectPage
           active={activeTab === 'plan'}
-          S={S} setStatus={setStatus} onRefresh={refresh}
-          customItems={customItems} addItem={addItem} deleteItem={deleteItem}
-          userEmail={email} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
-          notes={notes} setNote={setNote} files={files} setFile={setFile}
+          items={items} updateItem={updateItem} setStatus={setStatus}
+          addItem={addItem} deleteItem={deleteItem}
+          userEmail={email} files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
           filterCity={filterCity} clearFilterCity={() => setFilterCity(null)}
         />
         <BudgetPage
           active={activeTab === 'expenses'}
-          S={S} setStatus={setStatus} paidPrices={paidPrices} setPaidPrice={setPaidPrice}
-          notes={notes} setNote={setNote} files={files} setFile={setFile}
+          items={items} updateItem={updateItem} setStatus={setStatus}
+          files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
           expenses={expenses} addExpense={addExpense} deleteExpense={deleteExpense}
           userEmail={email}
         />
-        <TodayPage active={activeTab === 'itinerary'} {...detailProps} />
+        <TodayPage
+          active={activeTab === 'itinerary'}
+          items={items} updateItem={updateItem} setStatus={setStatus}
+          files={files} setFile={setFile} removeFile={removeFile}
+          places={places} getPlaceData={getPlaceData}
+        />
         <ProfilePage active={isProfile} session={session} />
       </div>
       <Toast message={toast} />
 
-      {/* Global FAB */}
       {!isProfile && (
         <>
           {showFab === 'menu' && (

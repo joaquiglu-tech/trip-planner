@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { ITEMS } from '../data/items';
 
 const TYPES = [
   { value: 'all', label: 'All' },
@@ -18,8 +17,11 @@ const STATUSES = [
   { value: 'none', label: 'Not added' },
 ];
 
-export default function FilterBar({ filters, setFilters }) {
-  const cities = useMemo(() => ['all', ...new Set(ITEMS.map((i) => i.city))], []);
+export default function FilterBar({ filters, setFilters, items }) {
+  const cities = useMemo(() => {
+    const set = new Set((items || []).map(i => i.city).filter(Boolean));
+    return ['all', ...Array.from(set).sort()];
+  }, [items]);
 
   const update = (key, val) => setFilters((f) => ({ ...f, [key]: val }));
 

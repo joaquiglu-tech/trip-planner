@@ -1,113 +1,79 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { ITEMS, itemCost, $f } from '../data/items';
+import { useState, useMemo, useEffect } from 'react';
+import { $f, itemCost } from '../lib/useItems';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
 import DetailModal from './DetailModal';
 import AddItemModal from './AddItemModal';
 
-const TYPE_LABEL = { transport: '🚗 Transport', stay: '🏨 Stay', activity: '🎟️ Activity', special: '⭐ Special Meal', dining: '🍝 Dining', custom: '📌 Added by You' };
+const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', special: 'Special Meal', dining: 'Dining' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
 
-export default function SelectPage({ active, S, setStatus, onRefresh, customItems, addItem, deleteItem, userEmail, paidPrices, setPaidPrice, notes, setNote, files, setFile, places, getPlaceData, filterCity, clearFilterCity }) {
+export default function SelectPage({ active, items, updateItem, setStatus, addItem, deleteItem, userEmail, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
 
-  // Apply city filter from Home destination cards
   useEffect(() => {
     if (filterCity && active) {
       setFilters(f => ({ ...f, city: filterCity }));
       clearFilterCity();
     }
   }, [filterCity, active]);
+
   const [summaryCollapsed, setSummaryCollapsed] = useState(true);
-  const [pulling, setPulling] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const customAsItems = useMemo(() => {
-    return (customItems || []).map((c) => ({
-      id: `custom-${c.id}`, customId: c.id, type: c.type || 'dining', city: c.city || '', name: c.name || '',
-      desc: c.desc_text || '', dish: c.dish || '', link: c.link || '', imageUrl: c.image_url || '',
-      priceLabel: c.price_label || '', src: 'Added by ' + (c.created_by || '').split('@')[0], isCustom: true, def: 'sel',
-    }));
-  }, [customItems]);
-
-  const allItems = useMemo(() => [...ITEMS, ...customAsItems], [customAsItems]);
-
-  // Cost breakdown by type
   const breakdown = useMemo(() => {
     const bd = { transport: 0, stay: 0, activity: 0, special: 0, dining: 0, total: 0, confTotal: 0, count: 0, confCount: 0 };
-    ITEMS.forEach((it) => {
-      const st = S[it.id] || '';
-      if (st !== 'sel' && st !== 'conf') return;
+    items.forEach((it) => {
+      if (it.status !== 'sel' && it.status !== 'conf') return;
       const v = itemCost(it);
       bd[it.type] = (bd[it.type] || 0) + v;
       bd.total += v;
       bd.count++;
-      if (st === 'conf') { bd.confTotal += v; bd.confCount++; }
+      if (it.status === 'conf') { bd.confTotal += v; bd.confCount++; }
     });
     return bd;
-  }, [S]);
+  }, [items]);
 
   const pct = breakdown.count ? Math.round(breakdown.confCount / breakdown.count * 100) : 0;
 
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase();
-    return allItems.filter((it) => {
-      if (filters.type !== 'all' && it.type !== filters.type && !(it.isCustom && filters.type === 'custom')) return false;
+    return items.filter((it) => {
+      if (filters.type !== 'all' && it.type !== filters.type) return false;
       if (filters.city !== 'all' && it.city !== filters.city) return false;
       if (filters.urgent && !it.urgent) return false;
-      const st = S[it.id] || it.def || '';
+      const st = it.status || '';
       if (filters.status === 'unbooked' && st !== 'sel') return false;
       if (filters.status === 'sel' && st !== 'sel') return false;
       if (filters.status === 'conf' && st !== 'conf') return false;
       if (filters.status === 'none' && st !== '') return false;
       if (q) {
-        const txt = (it.name + (it.desc || '') + (it.dish || '') + (it.city || '')).toLowerCase();
+        const txt = (it.name + (it.description || '') + (it.dish || '') + (it.city || '')).toLowerCase();
         if (!txt.includes(q)) return false;
       }
       return true;
     });
-  }, [S, filters, allItems]);
+  }, [items, filters]);
 
-  // Group items: if filtering by a specific type, sub-group by city. Otherwise group by type.
   const { sections, groupByCity } = useMemo(() => {
     const isTypeFilter = filters.type !== 'all';
     if (isTypeFilter) {
-      // Group by city
       const byCity = {};
-      filtered.forEach((it) => {
-        const c = it.city || 'Other';
-        if (!byCity[c]) byCity[c] = [];
-        byCity[c].push(it);
-      });
+      filtered.forEach((it) => { const c = it.city || 'Other'; if (!byCity[c]) byCity[c] = []; byCity[c].push(it); });
       const cities = Object.keys(byCity).sort();
       return { sections: cities.map(c => ({ key: c, label: c, items: byCity[c] })), groupByCity: true };
     }
-    // Group by type
     const byType = {};
-    filtered.forEach((it) => {
-      const k = it.isCustom ? 'custom' : it.type;
-      if (!byType[k]) byType[k] = [];
-      byType[k].push(it);
-    });
-    const order = [...TYPE_ORDER, 'custom'];
+    filtered.forEach((it) => { const k = it.type; if (!byType[k]) byType[k] = []; byType[k].push(it); });
     return {
-      sections: order.filter(k => byType[k]?.length).map(k => ({ key: k, label: TYPE_LABEL[k] + ' (' + byType[k].length + ')', items: byType[k] })),
+      sections: TYPE_ORDER.filter(k => byType[k]?.length).map(k => ({ key: k, label: (TYPE_LABEL[k] || k) + ' (' + byType[k].length + ')', items: byType[k] })),
       groupByCity: false,
     };
   }, [filtered, filters.type]);
 
-  const onCityClick = useCallback((city) => { setFilters((f) => ({ ...f, city })); }, []);
-
-  const handlePullRefresh = useCallback(async () => {
-    setPulling(true);
-    if (onRefresh) await onRefresh();
-    setPulling(false);
-  }, [onRefresh]);
-
   return (
     <div id="page-select" className={`page ${active ? "active" : ""}`}>
-      {/* Summary card */}
       <div className="card summary-card" onClick={() => setSummaryCollapsed(!summaryCollapsed)}>
         <div className="card-bd" style={{ padding: summaryCollapsed ? '8px 12px' : 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -122,10 +88,10 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
               <div className="prog-bar" style={{ marginTop: 8 }}><div className="prog-fill" style={{ width: pct + '%' }}></div></div>
               <div style={{ fontSize: 10, color: '#a8a29e', marginTop: 3 }}>{breakdown.confCount} confirmed / {breakdown.count} selected</div>
               <div className="breakdown-grid">
-                {breakdown.stay > 0 && <div className="bd-row"><span>🏨 Stays</span><span>{$f(breakdown.stay)}</span></div>}
-                {breakdown.activity > 0 && <div className="bd-row"><span>🎟️ Activities</span><span>{$f(breakdown.activity)}</span></div>}
-                {breakdown.special > 0 && <div className="bd-row"><span>⭐ Special Meals</span><span>{$f(breakdown.special)}</span></div>}
-                {breakdown.dining > 0 && <div className="bd-row"><span>🍝 Dining</span><span>{$f(breakdown.dining)}</span></div>}
+                {breakdown.stay > 0 && <div className="bd-row"><span>Stays</span><span>{$f(breakdown.stay)}</span></div>}
+                {breakdown.activity > 0 && <div className="bd-row"><span>Activities</span><span>{$f(breakdown.activity)}</span></div>}
+                {breakdown.special > 0 && <div className="bd-row"><span>Special Meals</span><span>{$f(breakdown.special)}</span></div>}
+                {breakdown.dining > 0 && <div className="bd-row"><span>Dining</span><span>{$f(breakdown.dining)}</span></div>}
                 <div className="bd-row bd-total"><span>Total Selected</span><span>{$f(breakdown.total)}</span></div>
               </div>
             </>
@@ -133,26 +99,24 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
         </div>
       </div>
 
-      {/* Sticky filter bar — no Timeline, no refresh button */}
       <div className="planner-sticky-bar">
-        <FilterBar filters={filters} setFilters={setFilters} />
+        <FilterBar filters={filters} setFilters={setFilters} items={items} />
       </div>
       <button className="add-item-btn" onClick={() => setShowAddModal(true)}>+ Add something new</button>
 
       <div id="items-container">
         {filtered.length === 0 && (
           <div className="empty-state">
-            <div className="empty-state-icon">🔍</div>
             <div className="empty-state-title">No items found</div>
-            <div className="empty-state-text">Try adjusting your filters or search to find what you're looking for.</div>
+            <div className="empty-state-text">Try adjusting your filters or search.</div>
           </div>
         )}
-        {sections.map(({ key, label, items }) => (
+        {sections.map(({ key, label, items: sectionItems }) => (
           <div key={key}>
-            <div className="sect-title">{groupByCity ? `📍 ${label} (${items.length})` : label}</div>
+            <div className="sect-title">{groupByCity ? `${label} (${sectionItems.length})` : label}</div>
             <div className="items-grid">
-              {items.map((it) => (
-                <ItemCard key={it.id} it={it} status={S[it.id] || ''} onTap={setSelectedItem} />
+              {sectionItems.map((it) => (
+                <ItemCard key={it.id} it={it} status={it.status || ''} onTap={setSelectedItem} />
               ))}
             </div>
           </div>
@@ -161,19 +125,12 @@ export default function SelectPage({ active, S, setStatus, onRefresh, customItem
 
       {selectedItem && (
         <DetailModal
-          it={selectedItem}
-          status={S[selectedItem.id] || ''}
-          setStatus={setStatus}
-          paidPrice={paidPrices?.[selectedItem.id]}
-          setPaidPrice={setPaidPrice}
-          note={notes?.[selectedItem.id]}
-          setNote={setNote}
-          existingFile={files?.[selectedItem.id]}
-          onFileChange={setFile}
-          placeData={places?.[selectedItem.id]}
-          getPlaceData={getPlaceData}
+          it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
+          updateItem={updateItem}
+          files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
+          placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           onClose={() => setSelectedItem(null)}
-          onDelete={selectedItem.isCustom ? () => { deleteItem(selectedItem.customId); setSelectedItem(null); } : null}
+          onDelete={selectedItem.created_by ? () => { deleteItem(selectedItem.id); setSelectedItem(null); } : null}
         />
       )}
       {showAddModal && <AddItemModal onClose={() => setShowAddModal(false)} onAdd={addItem} userEmail={userEmail} />}
