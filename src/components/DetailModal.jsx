@@ -12,7 +12,18 @@ const SUBCAT_BADGE = {
 };
 const PRICE_LEVEL_LABEL = { PRICE_LEVEL_FREE: 'Free', PRICE_LEVEL_INEXPENSIVE: '$', PRICE_LEVEL_MODERATE: '$$', PRICE_LEVEL_EXPENSIVE: '$$$', PRICE_LEVEL_VERY_EXPENSIVE: '$$$$' };
 
-export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, expenseAmount, addExpense }) {
+function getBookingUrl(source, hotelName, city) {
+  const q = encodeURIComponent(`${hotelName} ${city}`);
+  if (source === 'Booking.com') return `https://www.booking.com/searchresults.html?ss=${q}`;
+  if (source === 'Agoda.com') return `https://www.agoda.com/search?q=${q}`;
+  if (source === 'Trip.com') return `https://www.trip.com/hotels/?keyword=${q}`;
+  if (source === 'Vio.com') return `https://www.vio.com/hotels?q=${q}`;
+  if (source === 'Hotels.com') return `https://www.hotels.com/search.do?q-destination=${q}`;
+  if (source === 'Expedia') return `https://www.expedia.com/Hotel-Search?destination=${q}`;
+  return `https://www.google.com/travel/hotels?q=${q}`;
+}
+
+export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, addExpense }) {
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
@@ -318,12 +329,28 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
               )}
               {desc && <p className="detail-desc-full">{desc}</p>}
               {it.highlights && <ul className="detail-tips">{it.highlights.map((h, i) => <li key={i}>{h}</li>)}</ul>}
-              {it.options?.map((opt, i) => (
-                <a key={i} href={opt.url} target="_blank" rel="noopener" className="transport-option">
-                  <div className="transport-option-info"><span className="transport-option-name">{opt.name}</span>{opt.detail && <span className="transport-option-detail">{opt.detail}</span>}</div>
-                  <span className="transport-option-price">{opt.price}</span>
-                </a>
-              ))}
+              {/* Live booking rates from Xotelo — standardized for all stays */}
+              {livePriceRates && livePriceRates.length > 0 ? (
+                <div className="detail-section">
+                  <div className="detail-section-title">Book — live prices per night</div>
+                  {livePriceRates.map((rate, i) => (
+                    <a key={i} href={getBookingUrl(rate.source, it.name, it.city)} target="_blank" rel="noopener" className="transport-option">
+                      <div className="transport-option-info"><span className="transport-option-name">{rate.source}</span><span className="transport-option-detail">Per night incl. tax</span></div>
+                      <span className="transport-option-price">{$f(rate.per_night)}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : it.options?.length > 0 ? (
+                <div className="detail-section">
+                  <div className="detail-section-title">Compare & Book</div>
+                  {it.options.map((opt, i) => (
+                    <a key={i} href={opt.url} target="_blank" rel="noopener" className="transport-option">
+                      <div className="transport-option-info"><span className="transport-option-name">{opt.name}</span>{opt.detail && <span className="transport-option-detail">{opt.detail}</span>}</div>
+                      <span className="transport-option-price">{opt.price}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : null}
             </>
           )}
 

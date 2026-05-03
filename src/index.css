@@ -57,6 +57,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 /* ═══ APP SHELL ═══ */
 .app-shell { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden }
 .page-container { flex: 1; position: relative; overflow: hidden; padding-bottom: 56px }
+@media(min-width:960px) { .page-container { overflow-y: auto; overflow-x: hidden } }
 .loading-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); font-size: 14px; color: var(--text-muted) }
 
 /* ═══ TOP BAR ═══ */
@@ -79,8 +80,9 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .btab-label { font-size: 11px; font-weight: 600 }
 
 /* ═══ PAGES ═══ */
-.page { display: none; padding: 16px; padding-bottom: 24px; max-width: 960px; margin: 0 auto; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
+.page { display: none; padding: 16px; padding-bottom: 24px; max-width: 1200px; margin: 0 auto; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
 .page.active { display: block }
+@media(min-width:960px) { .page { padding: 24px 32px; } }
 
 /* ═══ CARDS ═══ */
 .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 12px }
@@ -108,6 +110,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px }
 @media(max-width:620px) { .g3 { grid-template-columns: 1fr } }
 .items-grid { display: flex; flex-direction: column; gap: 6px }
+@media(min-width:768px) { .items-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px } }
+@media(min-width:1200px) { .items-grid { grid-template-columns: 1fr 1fr 1fr } }
 
 /* ═══ ITEM CARD — compact row ═══ */
 .item-card-compact { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: background var(--duration) }
@@ -418,7 +422,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .home-trip-name { font-size: 20px; font-weight: 700; letter-spacing: -.02em }
 .home-countdown { font-size: 13px; color: var(--accent); font-weight: 600; margin-top: 2px }
 
-.home-stats { display: flex; justify-content: space-around; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 14px; text-align: center }
+.home-stats { display: flex; justify-content: space-around; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 14px; text-align: center; flex-wrap: wrap; gap: 8px }
 .home-stat-num { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums }
 .home-stat-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px }
 
@@ -437,6 +441,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .home-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 10px }
 
 .home-destinations { display: flex; flex-direction: column; gap: 8px }
+@media(min-width:768px) { .home-destinations { display: grid; grid-template-columns: 1fr 1fr; gap: 10px } }
 .home-dest-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; cursor: pointer; transition: background var(--duration) }
 .home-dest-card:hover { background: var(--surface-hover) }
 .home-dest-top { display: flex; justify-content: space-between; align-items: flex-start }
@@ -609,6 +614,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 /* Plan section in itinerary */
 .itin-plan-section { margin-top: 4px; margin-bottom: 12px }
 .itin-plan-section .item-card-compact { margin-bottom: 4px }
+@media(min-width:768px) { .itin-plan-section { display: grid; grid-template-columns: 1fr 1fr; gap: 6px } .itin-plan-section .itin-section-title { grid-column: 1 / -1 } }
 
 .itin-empty { text-align: center; padding: 24px 16px; color: var(--text-muted); font-size: 13px }
 .itin-empty-text { color: var(--text-muted) }

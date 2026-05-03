@@ -237,18 +237,22 @@ function getDestStats(dest, items) {
 }
 
 // ═══ OVERVIEW ═══
-function OverviewView({ items, stops, onItemTap, visible, onDaySelect }) {
+function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect }) {
   const daysLeft = getDaysUntilTrip();
   const stats = useMemo(() => {
-    let selected = 0, booked = 0, estimated = 0;
+    let selected = 0, booked = 0, estimated = 0, confirmed = 0;
     items.forEach(it => {
       if (it.status === 'sel' || it.status === 'conf') {
         selected++; estimated += itemCost(it);
-        if (it.status === 'conf') booked++;
+        if (it.status === 'conf') {
+          booked++;
+          const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+          confirmed += exp > 0 ? exp : itemCost(it);
+        }
       }
     });
-    return { selected, booked, estimated };
-  }, [items]);
+    return { selected, booked, estimated, confirmed };
+  }, [items, expenses]);
   const pct = stats.selected ? Math.round((stats.booked / stats.selected) * 100) : 0;
   const needsAttention = useMemo(() => items.filter(it => it.status === 'sel' && it.urgent), [items]);
   const recentItems = useMemo(() => items.filter(it => it.status && it.updated_by).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 8), [items]);
@@ -265,6 +269,7 @@ function OverviewView({ items, stops, onItemTap, visible, onDaySelect }) {
         <div className="home-stat"><div className="home-stat-num">{stats.booked}</div><div className="home-stat-label">Booked</div></div>
         <div className="home-stat"><div className="home-stat-num">{stats.selected - stats.booked}</div><div className="home-stat-label">To book</div></div>
         <div className="home-stat"><div className="home-stat-num">{$f(stats.estimated)}</div><div className="home-stat-label">Estimated</div></div>
+        {stats.confirmed > 0 && <div className="home-stat"><div className="home-stat-num" style={{ color: 'var(--green)' }}>{$f(stats.confirmed)}</div><div className="home-stat-label">Confirmed</div></div>}
       </div>
 
       {needsAttention.length > 0 && (
@@ -438,7 +443,7 @@ function DayDetailView({ day, items, onItemTap, places, visible, statusFilter })
 }
 
 // ═══ MAIN ═══
-export default function TodayPage({ active, items, stops, updateItem, setStatus, files, setFile, removeFile, places, getPlaceData }) {
+export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, setStatus, addExpense, files, setFile, removeFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const todayIdx = getTodayDayIndex(stops);
@@ -469,20 +474,24 @@ export default function TodayPage({ active, items, stops, updateItem, setStatus,
       {view !== 'overview' && <StatusFilter value={statusFilter} onChange={setStatusFilter} />}
 
       {view === 'overview' ? (
-        <OverviewView items={items} stops={stops} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={setView} />
+        <OverviewView items={items} stops={stops} expenses={expenses} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={setView} />
       ) : (
         <DayDetailView day={stops[view]} items={items} onItemTap={setSelectedItem} places={places} visible={active && view !== 'overview'} statusFilter={statusFilter} />
       )}
 
-      {selectedItem && (
-        <DetailModal
+      {selectedItem && (() => {
+        const exp = (expenses || []).filter(e => e.item_id === selectedItem.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+        return <DetailModal
           it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
           updateItem={updateItem}
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
+          livePrice={livePrices?.[selectedItem.id]?.perNight}
+          livePriceRates={livePrices?.[selectedItem.id]?.allRates}
+          expenseAmount={exp} addExpense={addExpense}
           onClose={() => setSelectedItem(null)}
-        />
-      )}
+        />;
+      })()}
     </div>
   );
 }

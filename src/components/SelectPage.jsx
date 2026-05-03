@@ -30,10 +30,15 @@ export default function SelectPage({ active, items, livePrices, expenses, update
       bd[it.type] = (bd[it.type] || 0) + v;
       bd.total += v;
       bd.count++;
-      if (it.status === 'conf') { bd.confTotal += v; bd.confCount++; }
+      if (it.status === 'conf') {
+        bd.confCount++;
+        // Use expense amount if available, otherwise estimated
+        const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+        bd.confTotal += exp > 0 ? exp : v;
+      }
     });
     return bd;
-  }, [items]);
+  }, [items, expenses]);
 
   const pct = breakdown.count ? Math.round(breakdown.confCount / breakdown.count * 100) : 0;
 
@@ -131,7 +136,7 @@ export default function SelectPage({ active, items, livePrices, expenses, update
           updateItem={updateItem}
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
-          livePrice={livePrices?.[selectedItem.id]?.perNight} expenseAmount={exp}
+          livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates} expenseAmount={exp}
           onClose={() => setSelectedItem(null)}
           onDelete={selectedItem.created_by ? () => { deleteItem(selectedItem.id); setSelectedItem(null); } : null}
         />;
