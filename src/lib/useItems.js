@@ -10,7 +10,7 @@ export const $f = (n) => '$' + (n || 0).toLocaleString();
 
 // Estimated cost — single source of truth
 export function itemCost(it) {
-  return it.estimated_cost || 0;
+  return Number(it.estimated_cost) || 0;
 }
 
 // Price display for cards

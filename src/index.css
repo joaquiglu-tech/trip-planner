@@ -80,9 +80,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .btab-label { font-size: 11px; font-weight: 600 }
 
 /* ═══ PAGES ═══ */
-.page { display: none; padding: 16px; padding-bottom: 24px; max-width: 1200px; margin: 0 auto; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
+.page { display: none; padding: 16px; padding-bottom: 24px; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
 .page.active { display: block }
-@media(min-width:960px) { .page { padding: 24px 32px; } }
+@media(min-width:768px) { .page { padding: 24px 32px } }
+@media(min-width:1200px) { .page { padding: 24px 48px } }
 
 /* ═══ CARDS ═══ */
 .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 12px }
@@ -392,7 +393,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .ml-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 3px }
 
 /* ═══ BUDGET ═══ */
-.budget-summary { background: var(--summary-bg); color: #fff; border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px }
+.budget-summary { background: var(--summary-bg); color: #fff; border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; width: 100% }
 .budget-row-main { display: flex; justify-content: space-around; text-align: center }
 .budget-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #888 }
 .budget-amount { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px }
@@ -401,6 +402,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .budget-filters { display: flex; gap: 4px; margin-bottom: 10px; overflow-x: auto; scrollbar-width: none }
 .budget-filters::-webkit-scrollbar { display: none }
 .budget-list { display: flex; flex-direction: column; gap: 4px }
+@media(min-width:768px) { .budget-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px } }
 .budget-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer }
 .budget-item:hover { background: var(--surface-hover) }
 .bi-left { flex: 1; min-width: 0 }

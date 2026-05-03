@@ -5,8 +5,7 @@ const TYPES = [
   { value: 'transport', label: 'Transport' },
   { value: 'stay', label: 'Stays' },
   { value: 'activity', label: 'Activities' },
-  { value: 'special', label: 'Special' },
-  { value: 'dining', label: 'Dining' },
+  { value: 'food', label: 'Food' },
 ];
 
 const STATUSES = [

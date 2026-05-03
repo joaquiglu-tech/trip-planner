@@ -5,8 +5,8 @@ import ItemCard from './ItemCard';
 import DetailModal from './DetailModal';
 import AddItemModal from './AddItemModal';
 
-const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', special: 'Special Meal', dining: 'Dining' };
-const TYPE_ORDER = ['transport', 'stay', 'activity', 'special', 'dining'];
+const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
+const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];
 
 export default function SelectPage({ active, items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, userEmail, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
@@ -23,29 +23,32 @@ export default function SelectPage({ active, items, livePrices, expenses, update
   const [showAddModal, setShowAddModal] = useState(false);
 
   const breakdown = useMemo(() => {
-    const bd = { transport: 0, stay: 0, activity: 0, special: 0, dining: 0, total: 0, confTotal: 0, count: 0, confCount: 0 };
+    const bd = { transport: 0, stay: 0, activity: 0, food: 0, total: 0, count: 0, confCount: 0 };
+    let estimated = 0, spent = 0;
     items.forEach((it) => {
       if (it.status !== 'sel' && it.status !== 'conf') return;
       const v = itemCost(it);
-      bd[it.type] = (bd[it.type] || 0) + v;
+      // Group special + dining into "food"
+      const typeKey = (it.type === 'dining' || it.type === 'special') ? 'food' : it.type;
+      bd[typeKey] = (bd[typeKey] || 0) + v;
       bd.total += v;
       bd.count++;
-      if (it.status === 'conf') {
-        bd.confCount++;
-        // Use expense amount if available, otherwise estimated
-        const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
-        bd.confTotal += exp > 0 ? exp : v;
-      }
+      estimated += v;
+      if (it.status === 'conf') bd.confCount++;
     });
-    return bd;
+    (expenses || []).forEach(e => { spent += Number(e.amount || 0); });
+    return { ...bd, estimated, spent };
   }, [items, expenses]);
 
-  const pct = breakdown.count ? Math.round(breakdown.confCount / breakdown.count * 100) : 0;
+  const pct = breakdown.count ? Math.round((breakdown.confCount / breakdown.count) * 100) : 0;
 
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase();
     return items.filter((it) => {
-      if (filters.type !== 'all' && it.type !== filters.type) return false;
+      if (filters.type !== 'all') {
+        if (filters.type === 'food') { if (it.type !== 'dining' && it.type !== 'special') return false; }
+        else if (it.type !== filters.type) return false;
+      }
       if (filters.city !== 'all' && it.city !== filters.city) return false;
       if (filters.urgent && !it.urgent) return false;
       const st = it.status || '';
@@ -70,7 +73,7 @@ export default function SelectPage({ active, items, livePrices, expenses, update
       return { sections: cities.map(c => ({ key: c, label: c, items: byCity[c] })), groupByCity: true };
     }
     const byType = {};
-    filtered.forEach((it) => { const k = it.type; if (!byType[k]) byType[k] = []; byType[k].push(it); });
+    filtered.forEach((it) => { const k = (it.type === 'dining' || it.type === 'special') ? 'food' : it.type; if (!byType[k]) byType[k] = []; byType[k].push(it); });
     return {
       sections: TYPE_ORDER.filter(k => byType[k]?.length).map(k => ({ key: k, label: (TYPE_LABEL[k] || k) + ' (' + byType[k].length + ')', items: byType[k] })),
       groupByCity: false,
@@ -79,29 +82,24 @@ export default function SelectPage({ active, items, livePrices, expenses, update
 
   return (
     <div id="page-select" className={`page ${active ? "active" : ""}`}>
-      <div className="card summary-card" onClick={() => setSummaryCollapsed(!summaryCollapsed)}>
-        <div className="card-bd" style={{ padding: summaryCollapsed ? '8px 12px' : 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'baseline' }}>
-              <div><span className="summary-label">Selected </span><span className="summary-val orange">{$f(breakdown.total)}</span></div>
-              <div><span className="summary-label">Confirmed </span><span className="summary-val green">{$f(breakdown.confTotal)}</span></div>
-            </div>
-            <span style={{ fontSize: 10, color: '#a8a29e' }}>{summaryCollapsed ? '▼' : '▲'}</span>
-          </div>
-          {!summaryCollapsed && (
-            <>
-              <div className="prog-bar" style={{ marginTop: 8 }}><div className="prog-fill" style={{ width: pct + '%' }}></div></div>
-              <div style={{ fontSize: 10, color: '#a8a29e', marginTop: 3 }}>{breakdown.confCount} confirmed / {breakdown.count} selected</div>
-              <div className="breakdown-grid">
-                {breakdown.stay > 0 && <div className="bd-row"><span>Stays</span><span>{$f(breakdown.stay)}</span></div>}
-                {breakdown.activity > 0 && <div className="bd-row"><span>Activities</span><span>{$f(breakdown.activity)}</span></div>}
-                {breakdown.special > 0 && <div className="bd-row"><span>Special Meals</span><span>{$f(breakdown.special)}</span></div>}
-                {breakdown.dining > 0 && <div className="bd-row"><span>Dining</span><span>{$f(breakdown.dining)}</span></div>}
-                <div className="bd-row bd-total"><span>Total Selected</span><span>{$f(breakdown.total)}</span></div>
-              </div>
-            </>
-          )}
+      <div className="budget-summary" onClick={() => setSummaryCollapsed(!summaryCollapsed)} style={{ cursor: 'pointer' }}>
+        <div className="budget-row-main">
+          <div><div className="budget-label">Estimated</div><div className="budget-amount">{$f(breakdown.estimated)}</div></div>
+          <div><div className="budget-label">Spent</div><div className="budget-amount green">{breakdown.spent > 0 ? $f(breakdown.spent) : '—'}</div></div>
         </div>
+        {!summaryCollapsed && (
+          <>
+            <div className="prog-bar" style={{ marginTop: 8 }}><div className="prog-fill" style={{ width: pct + '%' }}></div></div>
+            <div style={{ fontSize: 10, color: '#888', marginTop: 3, textAlign: 'center' }}>{breakdown.confCount} booked / {breakdown.count} selected</div>
+            <div className="breakdown-grid">
+              {breakdown.stay > 0 && <div className="bd-row"><span>Stays</span><span>{$f(breakdown.stay)}</span></div>}
+              {breakdown.activity > 0 && <div className="bd-row"><span>Activities</span><span>{$f(breakdown.activity)}</span></div>}
+              {breakdown.food > 0 && <div className="bd-row"><span>Food</span><span>{$f(breakdown.food)}</span></div>}
+              {breakdown.transport > 0 && <div className="bd-row"><span>Transport</span><span>{$f(breakdown.transport)}</span></div>}
+              <div className="bd-row bd-total"><span>Total Estimated</span><span>{$f(breakdown.estimated)}</span></div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="planner-sticky-bar">
