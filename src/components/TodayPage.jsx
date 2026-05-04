@@ -181,7 +181,7 @@ function RouteMap({ visible, stops, items }) {
     points.forEach(p => {
       const nights = calcNights(p.stop);
       new window.google.maps.Marker({ position: p.coord, map: m, title: p.stop.name,
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: nights > 1 ? 6 : 4, fillColor: p.stop.color || '#7C3AED', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } });
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: nights > 1 ? 6 : 4, fillColor: '#7C3AED', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } });
       bounds.extend(p.coord);
     });
     m.fitBounds(bounds, 30);
@@ -436,7 +436,7 @@ function getCalendarDates(stops) {
       title,
       stop,
       stopIdx: stop ? stops.indexOf(stop) : -1,
-      color: stop?.color || '#7C3AED',
+      color: '#7C3AED',
     });
   }
   return dates;
@@ -473,20 +473,24 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
         {isDuringTrip && view !== todayIdx && <button className="today-sel-pill today-pill-accent" onClick={() => setView(todayIdx)}>Today</button>}
 
         {selectorMode === 'stops' ? (
-          stops.map((s, i) => (
-            <button key={s.id} data-active={view === i ? 'true' : 'false'}
-              className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`}
-              onClick={() => setView(i)} style={{ borderLeftColor: s.color || '#7C3AED' }}>
-              <span className="pill-stop-name">{s.name}</span>
-              <span className="pill-stop-date">{formatStopDate(s)}</span>
-            </button>
-          ))
+          stops.map((s, i) => {
+            const nights = calcNights(s);
+            return (
+              <button key={s.id} data-active={view === i ? 'true' : 'false'}
+                className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`}
+                onClick={() => setView(i)}
+                style={{ borderLeftColor: 'var(--accent)', minWidth: Math.max(70, nights * 50), flexShrink: 0 }}>
+                <span className="pill-stop-name" title={s.name}>{s.name}</span>
+                <span className="pill-stop-date">{formatStopDate(s)}{nights > 1 ? ` · ${nights}n` : ''}</span>
+              </button>
+            );
+          })
         ) : (
           calendarDates.map(cd => (
             <button key={cd.date} data-active={cd.stopIdx === view ? 'true' : 'false'}
               className={`today-sel-pill today-sel-pill-stop ${cd.stopIdx === view ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`}
               onClick={() => cd.stopIdx >= 0 && setView(cd.stopIdx)}
-              style={{ borderLeftColor: cd.color, opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
+              style={{ borderLeftColor: 'var(--accent)', opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
               <span className="pill-stop-name">{cd.title}</span>
               <span className="pill-stop-date">{cd.shortLabel}</span>
             </button>
