@@ -69,11 +69,9 @@ function useGoogleMapsReady() {
 
 const directionsCache = {};
 
-// Check if an item belongs to a stop (supports stop_ids array)
+// Check if an item belongs to a stop
 function itemInStop(it, stopId) {
-  if (it.stop_ids?.includes(stopId)) return true;
-  if (it.stop_id === stopId) return true; // fallback
-  return false;
+  return it.stop_ids?.includes(stopId) || false;
 }
 
 // Get stay for a stop (from items)

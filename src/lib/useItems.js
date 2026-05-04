@@ -22,19 +22,28 @@ export function priceLabel(it, livePrice, expenseAmount) {
   return { text: '', type: 'none' };
 }
 
-// Merge DB row with enrichment fallbacks
+// Merge DB row with details JSONB flattened + enrichment fallbacks
 function mergeItem(row) {
   const extra = ENRICHMENT[row.id] || {};
+  const d = row.details || {};
   const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : ITEM_COORDS[row.id] || null;
   return {
     ...row,
     ...extra,
     coord,
-    // DB columns override enrichment.js when populated
-    ...(row.reserve_note ? { reserveNote: row.reserve_note } : {}),
-    ...(row.depart_time ? { departTime: row.depart_time } : {}),
-    ...(row.arrive_time ? { arriveTime: row.arrive_time } : {}),
-    ...(row.route ? { route: row.route } : {}),
+    // Flatten details JSONB for backward compatibility
+    dish: d.dish || extra.dish || '',
+    subcat: d.subcat || extra.subcat || '',
+    tier: d.tier || extra.tier || '',
+    hrs: d.hrs || extra.hrs || 0,
+    check_in: d.check_in || extra.checkIn || '',
+    check_out: d.check_out || extra.checkOut || '',
+    departTime: d.depart_time || extra.departTime || '',
+    arriveTime: d.arrive_time || extra.arriveTime || '',
+    route: d.route || extra.route || '',
+    reserveNote: row.reserve_note || extra.reserveNote || '',
+    // City derived from first stop name (for filtering)
+    city: row._stopName || extra.city || '',
   };
 }
 
@@ -55,18 +64,26 @@ export function useItems(currentUserEmail) {
   // Load all items
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase.from('items').select('*').order('sort_order');
-      if (error) { console.warn('Failed to load items:', error); setLoaded(true); return; }
-      const merged = (data || []).map(mergeItem);
+      const [itemsRes, stopsRes] = await Promise.all([
+        supabase.from('items').select('*').order('sort_order'),
+        supabase.from('stops').select('id, name, start_date, end_date').order('sort_order'),
+      ]);
+      if (itemsRes.error) { console.warn('Failed to load items:', itemsRes.error); setLoaded(true); return; }
+      const stopsMap = {};
+      (stopsRes.data || []).forEach(s => { stopsMap[s.id] = s; });
+      const merged = (itemsRes.data || []).map(row => {
+        // Derive city from first stop
+        const firstStopId = row.stop_ids?.[0];
+        const stop = firstStopId ? stopsMap[firstStopId] : null;
+        return mergeItem({ ...row, _stopName: stop?.name || '' });
+      });
       setItems(merged);
       setLoaded(true);
 
       // Fetch live hotel prices in background (in-memory only)
       const staysWithKeys = merged.filter(it => it.type === 'stay' && it.xotelo_key);
       if (staysWithKeys.length > 0) {
-        // Load stops for date lookup (one query, not hardcoded)
-        const { data: stopsData } = await supabase.from('stops').select('id, city, start_date, end_date, nights').order('sort_order');
-        const stopsLookup = stopsData || [];
+        const stopsLookup = stopsRes.data || [];
         (async () => {
           for (const stay of staysWithKeys) {
             try {
@@ -131,9 +148,10 @@ export function useItems(currentUserEmail) {
   const setStatus = useCallback(async (id, status) => {
     if (navigator.vibrate) navigator.vibrate(15);
     const item = items.find(it => it.id === id);
-    // Stay mutual exclusion
-    if (item?.type === 'stay' && item?.city && (status === 'sel' || status === 'conf')) {
-      const others = items.filter(it => it.type === 'stay' && it.city === item.city && it.id !== id && (it.status === 'sel' || it.status === 'conf'));
+    // Stay mutual exclusion — deselect other stays in the same stop
+    const itemStops = item?.stop_ids || [];
+    if (item?.type === 'stay' && itemStops.length > 0 && (status === 'sel' || status === 'conf')) {
+      const others = items.filter(it => it.type === 'stay' && it.id !== id && (it.status === 'sel' || it.status === 'conf') && it.stop_ids?.some(s => itemStops.includes(s)));
       if (others.length > 0) {
         setItems(prev => prev.map(it => others.some(o => o.id === it.id) ? { ...it, status: '' } : it));
         await Promise.all(others.map(o => supabase.from('items').update({ status: '', updated_at: new Date().toISOString(), updated_by: currentUserEmail }).eq('id', o.id)));
@@ -143,15 +161,18 @@ export function useItems(currentUserEmail) {
   }, [items, currentUserEmail, updateItem]);
 
   const addItem = useCallback(async (itemData) => {
+    const details = {};
+    if (itemData.dish) details.dish = itemData.dish;
+    if (itemData.subcat) details.subcat = itemData.subcat;
     const newItem = {
       id: crypto.randomUUID(),
       name: itemData.name || '',
       type: itemData.type || 'food',
-      city: itemData.city || '',
       description: itemData.desc_text || itemData.description || '',
-      dish: itemData.dish || '',
       link: itemData.link || '',
       estimated_cost: itemData.estimated_cost || 0,
+      details: Object.keys(details).length > 0 ? details : {},
+      stop_ids: itemData.stop_ids || [],
       status: 'sel',
       created_by: currentUserEmail,
       updated_by: currentUserEmail,
@@ -193,8 +214,7 @@ export function useItems(currentUserEmail) {
 
 // Stay date lookup from stops table (dynamic, no hardcoded dates)
 function getStayDates(stay, stops) {
-  // Find by stop_ids or stop_id
-  const firstStopId = stay.stop_ids?.[0] || stay.stop_id;
+  const firstStopId = stay.stop_ids?.[0];
   if (firstStopId) {
     const byId = stops.find(s => s.id === firstStopId);
     if (byId) {

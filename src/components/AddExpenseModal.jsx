@@ -26,7 +26,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
         category: selectedItem.type,
         note: note || selectedItem.name,
         item_id: selectedItem.id,
-        stop_id: selectedItem.stop_ids?.[0] || selectedItem.stop_id || '',
+        stop_id: selectedItem.stop_ids?.[0] || '',
         created_by: userEmail,
       });
       onClose();
