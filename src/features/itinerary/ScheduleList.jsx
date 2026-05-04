@@ -1,10 +1,8 @@
 import { useMemo } from 'react';
-import { toDateStr, calcNights, formatTime } from './utils';
+import { toDateStr, calcNights } from './utils';
+import ItemCard from '../plan/ItemCard';
 
-const TRANSPORT_ICON = { flight: '\u2708', train: '\u{1F686}', bus: '\u{1F68C}', drive: '\u{1F697}', taxi: '\u{1F695}', ferry: '\u26F4', walk: '\u{1F6B6}', bicycle: '\u{1F6B2}', rental: '\u{1F511}' };
-
-// selectedDate: optional YYYY-MM-DD string. When provided, skip date grouping headers (single day view).
-export default function ScheduleList({ items, stop, onItemTap, selectedDate }) {
+export default function ScheduleList({ items, stop, onItemTap, selectedDate, livePrices, expenseMap }) {
   const nights = calcNights(stop);
   const startStr = toDateStr(stop.start_date);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -23,7 +21,6 @@ export default function ScheduleList({ items, stop, onItemTap, selectedDate }) {
   }, [nights, startStr, selectedDate]);
 
   const groupedItems = useMemo(() => {
-    // Single date view or single-night stop — no grouping needed
     if (!dateLabels || nights <= 1) return [{ label: null, items }];
     const dateKeys = Object.keys(dateLabels);
     const byDate = {};
@@ -44,7 +41,6 @@ export default function ScheduleList({ items, stop, onItemTap, selectedDate }) {
       });
       return groups.length > 0 ? groups : [{ label: null, items }];
     }
-    // Fallback: distribute evenly
     const perDay = Math.ceil(items.length / nights);
     return dateKeys.map((dk, i) => {
       const dayItems = items.slice(i * perDay, (i + 1) * perDay);
@@ -57,28 +53,13 @@ export default function ScheduleList({ items, stop, onItemTap, selectedDate }) {
       {groupedItems.map((group, gi) => (
         <div key={gi}>
           {group.label && <div className="itin-sched-date">{group.label}</div>}
-          {group.items.map(it => (
-            <div key={it.id} className={`itin-sched-row ${it.status}`} onClick={() => onItemTap(it)}>
-              <div className="itin-sched-time">
-                {it.start_time ? formatTime(it.start_time) : ''}
-                {it.end_time && <span className="itin-sched-end">{formatTime(it.end_time)}</span>}
-              </div>
-              <div className="itin-sched-dot-col"><div className={`itin-sched-dot ${it.status}`} /><div className="itin-sched-line" /></div>
-              <div className="itin-sched-info">
-                <div className="itin-sched-name">
-                  {it.type === 'transport' && <span style={{ marginRight: 4 }}>{TRANSPORT_ICON[it.transport_mode] || '\u2708'}</span>}
-                  {it.name}
-                </div>
-                <div className="itin-sched-sub">
-                  {it.type === 'transport' ? (it.routeLabel || it.route || '') : it.dish ? it.dish : it.hrs ? `${it.hrs}h` : ''}
-                </div>
-              </div>
-              <div className="itin-sched-actions">
-                {it.status === 'conf' && <span className="itin-sched-check">Booked</span>}
-                {it.coord && <a href={`https://www.google.com/maps/dir/?api=1&destination=${it.coord.lat},${it.coord.lng}`} target="_blank" rel="noopener" className="itin-action-sm" onClick={e => e.stopPropagation()}>Go</a>}
-              </div>
-            </div>
-          ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: group.label ? '8px 0' : 0 }}>
+            {group.items.map(it => (
+              <ItemCard key={it.id} it={it} onTap={onItemTap}
+                livePrice={livePrices?.[it.id]?.perNight}
+                expenseAmount={(expenseMap || {})[it.id] || 0} />
+            ))}
+          </div>
         </div>
       ))}
     </div>

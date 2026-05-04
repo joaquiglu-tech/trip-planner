@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { formatTime, TYPE_LABEL_SHORT } from './utils';
+import { TYPE_LABEL_SHORT } from './utils';
+import ItemCard from '../plan/ItemCard';
 
-export default function PlanSection({ planItems, onItemTap }) {
+export default function PlanSection({ planItems, onItemTap, livePrices, expenseMap }) {
   const [expanded, setExpanded] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all');
   const types = useMemo(() => { const set = new Set(planItems.map(it => it.type)); return ['all', ...Array.from(set)]; }, [planItems]);
@@ -18,21 +19,11 @@ export default function PlanSection({ planItems, onItemTap }) {
       <div className="itin-plan-filters">
         {types.map(t => (<button key={t} className={`fp ${typeFilter === t ? 'fp-active' : ''}`} onClick={() => setTypeFilter(t)}>{t === 'all' ? 'All' : (TYPE_LABEL_SHORT[t] || t)}</button>))}
       </div>
-      <div className="itin-plan-list">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {filtered.map(it => (
-          <div key={it.id} className={`item-card-compact ${it.status === 'conf' ? 'confirmed' : it.status === 'sel' ? 'selected' : ''}`} onClick={() => onItemTap(it)}>
-            <div className="icc-left">
-              <div className="icc-name">{it.name}</div>
-              <div className="icc-sub">
-                <span className="icc-type-badge">{TYPE_LABEL_SHORT[it.type] || it.type}</span>
-                {it.start_time && <span> · {formatTime(it.start_time)}</span>}
-                {it.end_time && <span> – {formatTime(it.end_time)}</span>}
-              </div>
-            </div>
-            <div className="icc-right">
-              <div className={`icc-status ${it.status}`}>{it.status === 'conf' ? 'Booked' : it.status === 'sel' ? 'Added' : ''}</div>
-            </div>
-          </div>
+          <ItemCard key={it.id} it={it} onTap={onItemTap}
+            livePrice={livePrices?.[it.id]?.perNight}
+            expenseAmount={(expenseMap || {})[it.id] || 0} />
         ))}
       </div>
     </details>

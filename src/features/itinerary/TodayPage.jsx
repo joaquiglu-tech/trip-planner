@@ -8,6 +8,11 @@ import { toDateStr, formatStopDate, getTodayDayIndex, getCalendarDates } from '.
 
 export default function TodayPage({ active }) {
   const { items, stops, livePrices, expenses, updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, files, setFile, removeFile, places, getPlaceData } = useTrip();
+  const expenseMap = useMemo(() => {
+    const map = {};
+    (expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
+    return map;
+  }, [expenses]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');
@@ -93,7 +98,8 @@ export default function TodayPage({ active }) {
         activeStops.map(stop => (
           <StopSection key={stop.id} stop={stop} items={items} onItemTap={setSelectedItem} places={places}
             statusFilter={statusFilter} selectedDate={selectedDate}
-            updateStop={updateStop} deleteStop={deleteStop} addItem={addItem} stops={stops} showTitle={activeStops.length > 1} />
+            updateStop={updateStop} deleteStop={deleteStop} addItem={addItem} stops={stops} showTitle={activeStops.length > 1}
+            livePrices={livePrices} expenseMap={expenseMap} />
         ))
       )}
       {activeStops.length === 0 && view !== 'overview' && (<div className="itin-empty"><div className="itin-empty-text">No stops for this date.</div></div>)}

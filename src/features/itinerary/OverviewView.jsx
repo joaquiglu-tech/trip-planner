@@ -47,20 +47,24 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
         <div className="home-stat"><div className="home-stat-num">{$f(stats.estimated)}</div><div className="home-stat-label">Estimated</div></div>
         {stats.confirmed > 0 && <div className="home-stat"><div className="home-stat-num" style={{ color: 'var(--green)' }}>{$f(stats.confirmed)}</div><div className="home-stat-label">Confirmed</div></div>}
       </div>
-      {recentItems.length > 0 && (
-        <div className="itin-recent">
-          <div className="itin-section-title">Recent activity</div>
-          {recentItems.map(r => (
-            <div key={r.id} className="itin-recent-row">
-              <span className="itin-recent-who">{(r.updated_by || '').split('@')[0]}</span>
-              <span className="itin-recent-action">{r.status === 'conf' ? 'booked' : r.status === 'sel' ? 'added' : 'updated'}</span>
-              <span className="itin-recent-name">{r.name}</span>
-              <span className="itin-recent-time">{formatRelativeTime(r.updated_at)}</span>
-            </div>
-          ))}
+      <div className="overview-map-activity">
+        <div className="overview-map-col">
+          <RouteMap stops={stops} items={items} />
         </div>
-      )}
-      <RouteMap stops={stops} items={items} />
+        {recentItems.length > 0 && (
+          <div className="itin-recent">
+            <div className="itin-section-title">Recent activity</div>
+            {recentItems.map(r => (
+              <div key={r.id} className="itin-recent-row">
+                <span className="itin-recent-who">{(r.updated_by || '').split('@')[0]}</span>
+                <span className="itin-recent-action">{r.status === 'conf' ? 'booked' : r.status === 'sel' ? 'added' : 'updated'}</span>
+                <span className="itin-recent-name">{r.name}</span>
+                <span className="itin-recent-time">{formatRelativeTime(r.updated_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="home-section-title">Your destinations</div>
       <div className="home-destinations">
         {stops.map((stop, idx) => {

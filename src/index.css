@@ -112,7 +112,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .item-card-compact.selected { border-color: var(--accent); background: var(--accent-light) }
 .item-card-compact.confirmed { border-color: var(--green); background: var(--green-light) }
 .icc-left { flex: 1; min-width: 0 }
-.icc-type-icon { font-size: 16px; flex-shrink: 0; width: 24px; text-align: center }
+.icc-type-label { font-size: 10px; font-weight: 600; text-transform: capitalize; color: var(--accent) }
 .icc-name { font-size: 13px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .icc-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px }
 .icc-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0 }
@@ -449,16 +449,20 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 
 
 /* ═══ ITINERARY — NEW COMPONENTS ═══ */
+.overview-map-activity { margin-bottom: 14px }
+@media(min-width:960px) { .overview-map-activity { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start } }
+.overview-map-col .map-wrap { margin-bottom: 0 }
 .itin-mode-toggle { display: flex; gap: 4px; margin-bottom: 8px }
 .itin-map-schedule { margin-bottom: 12px }
 .itin-map-col { margin-bottom: 12px }
 .itin-schedule-col { margin-bottom: 12px }
 @media(min-width:960px) {
-  .itin-map-schedule { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start }
+  .itin-map-schedule { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch }
   .itin-schedule-col { margin-bottom: 0 }
-  .itin-schedule-scroll { max-height: 400px; overflow-y: auto }
-  .itin-map-col { margin-bottom: 0 }
-  .itin-map-col .map-wrap { height: 100%; min-height: 300px }
+  .itin-schedule-scroll { max-height: 500px; overflow-y: auto }
+  .itin-map-col { margin-bottom: 0; display: flex; flex-direction: column }
+  .itin-map-col > div { flex: 1; display: flex; flex-direction: column }
+  .itin-map-col .map-wrap { flex: 1; min-height: 300px }
 }
 .itin-sched-date { font-size: 11px; font-weight: 700; color: var(--accent); padding: 8px 12px 4px; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border-light) }
 

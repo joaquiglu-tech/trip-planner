@@ -1,36 +1,41 @@
 import { memo } from 'react';
-import { priceLabel } from '../../shared/hooks/useItems';
+import { $f } from '../../shared/hooks/useItems';
 
-const TYPE_ICON = { stay: '🏨', food: '🍽', activity: '🎟', transport: '✈' };
+const TYPE_LABEL = { stay: 'Stay', food: 'Food', activity: 'Activity', transport: 'Transport' };
 
-function ItemCard({ it, status, onTap, livePrice, expenseAmount }) {
-  const st = status || it.status || '';
-  const price = priceLabel(it, livePrice, expenseAmount);
+function formatCardDatetime(dt) {
+  if (!dt) return '';
+  try {
+    const d = new Date(dt);
+    if (isNaN(d)) return dt;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  } catch { return dt; }
+}
 
-  const detail = (() => {
-    if (it.type === 'stay') return it.tier || '';
-    if (it.type === 'transport') return it.routeLabel || it.route || '';
-    if (it.type === 'food') return it.dish || '';
-    if (it.type === 'activity' && it.hrs) return `${it.hrs}h`;
-    return '';
-  })();
-  const timeInfo = [it.city, detail].filter(Boolean).join(' · ') || '';
+function ItemCard({ it, onTap, livePrice, expenseAmount }) {
+  const st = it.status || '';
+  // Price: confirmed (expense) > estimated > live per-night > nothing
+  const displayPrice = expenseAmount > 0 ? $f(expenseAmount)
+    : Number(it.estimated_cost) > 0 ? $f(it.estimated_cost)
+    : livePrice > 0 ? `${$f(livePrice)}/n`
+    : '';
+  const priceIsConfirmed = expenseAmount > 0;
+
+  const timeStr = [formatCardDatetime(it.start_time), formatCardDatetime(it.end_time)].filter(Boolean).join(' — ');
 
   return (
     <div className={`item-card-compact ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onTap(it)}>
-      <div className="icc-type-icon">{TYPE_ICON[it.type] || '•'}</div>
       <div className="icc-left">
         <div className="icc-name">{it.name}</div>
-        <div className="icc-sub">{timeInfo}</div>
+        <div className="icc-sub">
+          <span className="icc-type-label">{TYPE_LABEL[it.type] || it.type}</span>
+          {timeStr && <span> · {timeStr}</span>}
+        </div>
       </div>
       <div className="icc-right">
-        {price.text && (
-          <div className={`icc-price ${price.type === 'live' ? 'icc-price-live' : price.type === 'confirmed' ? 'icc-price-conf' : ''}`}>
-            {price.text}
-            {price.type === 'live' && <span className="icc-live-dot" />}
-          </div>
+        {displayPrice && (
+          <div className={`icc-price ${priceIsConfirmed ? 'icc-price-conf' : ''}`}>{displayPrice}</div>
         )}
-        <div className={`icc-status ${st}`}>{st === 'conf' ? '✓' : st === 'sel' ? '●' : ''}</div>
       </div>
     </div>
   );

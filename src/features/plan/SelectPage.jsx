@@ -105,7 +105,7 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
             <div className="sect-title">{groupByCity ? `${label} (${sectionItems.length})` : label}</div>
             <div className="items-grid">
               {sectionItems.map((it) => (
-                <ItemCard key={it.id} it={it} status={it.status || ''} onTap={setSelectedItem} livePrice={livePrices?.[it.id]?.perNight} expenseAmount={expenseMap[it.id] || 0} />
+                <ItemCard key={it.id} it={it} onTap={setSelectedItem} livePrice={livePrices?.[it.id]?.perNight} expenseAmount={expenseMap[it.id] || 0} />
               ))}
             </div>
           </div>
