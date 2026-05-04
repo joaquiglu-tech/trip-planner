@@ -56,6 +56,15 @@ describe('formatTime', () => {
   it('returns empty for null', () => {
     expect(formatTime(null)).toBe('');
   });
+  it('handles datetime-local format', () => {
+    expect(formatTime('2026-07-24T09:00')).toBe('9:00 AM');
+  });
+  it('handles datetime-local PM', () => {
+    expect(formatTime('2026-07-24T14:30')).toBe('2:30 PM');
+  });
+  it('handles midnight datetime-local', () => {
+    expect(formatTime('2026-07-24T00:00')).toBe('12:00 AM');
+  });
 });
 
 describe('itemInStop', () => {

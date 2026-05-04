@@ -1,7 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../../services/supabase';
-import { listFiles } from '../../services/storage';
-import { fetchHotelPrice } from '../../services/hotelPrices';
 import { enrichItem } from '../../services/enrichItem';
 
 export const $f = (n) => '$' + (n || 0).toLocaleString();
@@ -18,60 +16,48 @@ export function priceLabel(it, livePrice, expenseAmount) {
   return { text: '', type: 'none' };
 }
 
-// Merge DB row — add computed fields
 function mergeItem(row, stopName) {
   const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : null;
   const originCoord = (row.origin_lat && row.origin_lng) ? { lat: Number(row.origin_lat), lng: Number(row.origin_lng) } : null;
   const destCoord = (row.dest_lat && row.dest_lng) ? { lat: Number(row.dest_lat), lng: Number(row.dest_lng) } : null;
-  // Derive route label from origin/dest names, fallback to existing route field
   const routeLabel = (row.origin_name && row.dest_name)
-    ? `${row.origin_name} → ${row.dest_name}`
+    ? `${row.origin_name} \u2192 ${row.dest_name}`
     : row.route || '';
   return {
     ...row,
-    coord,
-    originCoord,
-    destCoord,
-    routeLabel,
+    coord, originCoord, destCoord, routeLabel,
     city: stopName || '',
-    // Parse pipe-delimited text fields into arrays for display
     whatToExpect: row.what_to_expect ? row.what_to_expect.split('|').map(s => s.trim()).filter(Boolean) : null,
     proTips: row.pro_tips ? row.pro_tips.split('|').map(s => s.trim()).filter(Boolean) : null,
     highlights: row.highlights ? row.highlights.split('|').map(s => s.trim()).filter(Boolean) : null,
     quoteSource: row.quote_source || '',
     options: row.booking_options?.length > 0 ? row.booking_options : null,
     reserveNote: row.reserve_note || '',
-    // Fallback: old depart/arrive/check_in/check_out → start_time/end_time
     start_time: row.start_time || row.depart_time || '',
     end_time: row.end_time || row.arrive_time || '',
   };
 }
 
-export function useItems(currentUserEmail) {
+export function useItems(currentUserEmail, showToast) {
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
-  const [files, setFilesState] = useState({});
-  const [livePrices, setLivePrices] = useState({});
-  const [toast, setToast] = useState(null);
-  const toastTimer = useRef(null);
   const stopsMapRef = useRef({});
+  const stopsDataRef = useRef([]);
 
-  function showToast(msg) {
-    setToast(msg);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 3000);
-  }
-
+  // Load items + stops for city derivation
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       const [itemsRes, stopsRes] = await Promise.all([
         supabase.from('items').select('*').order('sort_order'),
         supabase.from('stops').select('id, name, start_date, end_date').order('sort_order'),
       ]);
+      if (cancelled) return;
       if (itemsRes.error) { console.warn('Failed to load items:', itemsRes.error); setLoaded(true); return; }
       const stopsMap = {};
       (stopsRes.data || []).forEach(s => { stopsMap[s.id] = s; });
       stopsMapRef.current = stopsMap;
+      stopsDataRef.current = stopsRes.data || [];
       const merged = (itemsRes.data || []).map(row => {
         const firstStopId = row.stop_ids?.[0];
         const stop = firstStopId ? stopsMap[firstStopId] : null;
@@ -79,40 +65,12 @@ export function useItems(currentUserEmail) {
       });
       setItems(merged);
       setLoaded(true);
-
-      // Fetch live hotel prices in background
-      const staysWithKeys = merged.filter(it => it.type === 'stay' && it.xotelo_key);
-      if (staysWithKeys.length > 0) {
-        const stopsLookup = stopsRes.data || [];
-        (async () => {
-          for (const stay of staysWithKeys) {
-            try {
-              const dates = getStayDates(stay, stopsLookup);
-              const price = await fetchHotelPrice(stay.xotelo_key, dates.checkIn, dates.checkOut);
-              if (price) {
-                setLivePrices(prev => ({ ...prev, [stay.id]: { perNight: price.per_night, source: price.source, allRates: price.all_rates } }));
-              }
-            } catch { /* skip */ }
-            await new Promise(r => setTimeout(r, 500));
-          }
-        })();
-      }
-
-      // Load files for confirmed items
-      const confItems = merged.filter(it => it.status === 'conf');
-      if (confItems.length > 0) {
-        Promise.allSettled(confItems.map(it => listFiles(it.id).then(f => ({ id: it.id, files: f }))))
-          .then(results => {
-            const fm = {};
-            results.forEach(r => { if (r.status === 'fulfilled' && r.value.files.length > 0) fm[r.value.id] = r.value.files; });
-            setFilesState(fm);
-          });
-      }
     }
     load();
+    return () => { cancelled = true; };
   }, []);
 
-  // Real-time sync
+  // Realtime sync
   useEffect(() => {
     const channel = supabase
       .channel('items-realtime')
@@ -128,7 +86,7 @@ export function useItems(currentUserEmail) {
             if (idx >= 0) { const next = [...prev]; next[idx] = { ...prev[idx], ...merged }; return next; }
             return [...prev, merged];
           });
-          if (payload.new.updated_by && payload.new.updated_by !== currentUserEmail) {
+          if (showToast && payload.new.updated_by && payload.new.updated_by !== currentUserEmail) {
             const who = payload.new.updated_by.split('@')[0];
             const action = payload.new.status === 'conf' ? 'booked' : payload.new.status === 'sel' ? 'added' : 'updated';
             showToast(`${who} ${action} ${payload.new.name}`);
@@ -137,7 +95,7 @@ export function useItems(currentUserEmail) {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [currentUserEmail]);
+  }, [currentUserEmail, showToast]);
 
   const updateItem = useCallback(async (id, changes) => {
     setItems(prev => prev.map(it => it.id === id ? { ...it, ...changes } : it));
@@ -169,28 +127,17 @@ export function useItems(currentUserEmail) {
       description: itemData.desc_text || itemData.description || '',
       link: itemData.link || '',
       estimated_cost: itemData.estimated_cost || 0,
-      dish: itemData.dish || '',
-      subcat: itemData.subcat || '',
-      tier: itemData.tier || '',
-      route: itemData.route || '',
-      transport_mode: itemData.transport_mode || '',
+      dish: itemData.dish || '', subcat: itemData.subcat || '', tier: itemData.tier || '',
+      route: itemData.route || '', transport_mode: itemData.transport_mode || '',
       is_rental: itemData.is_rental || false,
-      origin_name: itemData.origin_name || '',
-      origin_lat: itemData.origin_lat || null,
-      origin_lng: itemData.origin_lng || null,
-      dest_name: itemData.dest_name || '',
-      dest_lat: itemData.dest_lat || null,
-      dest_lng: itemData.dest_lng || null,
-      hrs: itemData.hrs || null,
-      notes: itemData.notes || '',
-      start_time: itemData.start_time || null,
-      end_time: itemData.end_time || null,
+      origin_name: itemData.origin_name || '', origin_lat: itemData.origin_lat || null, origin_lng: itemData.origin_lng || null,
+      dest_name: itemData.dest_name || '', dest_lat: itemData.dest_lat || null, dest_lng: itemData.dest_lng || null,
+      hrs: itemData.hrs || null, notes: itemData.notes || '',
+      start_time: itemData.start_time || null, end_time: itemData.end_time || null,
       stop_ids: itemData.stop_ids || [],
       status: 'sel',
-      created_by: currentUserEmail,
-      updated_by: currentUserEmail,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_by: currentUserEmail, updated_by: currentUserEmail,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     };
     const { data, error } = await supabase.from('items').insert(newItem).select().single();
     if (error) throw error;
@@ -206,7 +153,6 @@ export function useItems(currentUserEmail) {
 
   const deleteItem = useCallback(async (id) => {
     setItems(prev => prev.filter(it => it.id !== id));
-    // Cascade: delete linked data
     await supabase.from('expenses').delete().eq('item_id', id);
     await supabase.from('place_cache').delete().eq('item_id', id);
     try {
@@ -216,34 +162,11 @@ export function useItems(currentUserEmail) {
       }
     } catch { /* skip storage cleanup errors */ }
     await supabase.from('items').delete().eq('id', id);
-    setFilesState(prev => { const n = { ...prev }; delete n[id]; return n; });
   }, []);
 
-  const setFile = useCallback((id, fileData) => {
-    setFilesState(prev => {
-      const existing = prev[id] || [];
-      if (fileData === null) return { ...prev, [id]: [] };
-      if (Array.isArray(fileData)) return { ...prev, [id]: fileData };
-      return { ...prev, [id]: [...existing, fileData] };
-    });
-  }, []);
+  // Memoized derived data for live prices hook
+  const staysWithKeys = useMemo(() => items.filter(it => it.type === 'stay' && it.xotelo_key), [items]);
+  const stopsData = stopsDataRef.current;
 
-  const removeFile = useCallback((id, filePath) => {
-    setFilesState(prev => ({ ...prev, [id]: (prev[id] || []).filter(f => f.path !== filePath) }));
-  }, []);
-
-  return { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile };
-}
-
-// Stay date lookup from stops table
-function getStayDates(stay, stops) {
-  const firstStopId = stay.stop_ids?.[0];
-  if (firstStopId) {
-    const byId = stops.find(s => s.id === firstStopId);
-    if (byId) return { checkIn: String(byId.start_date).substring(0, 10), checkOut: String(byId.end_date).substring(0, 10) };
-  }
-  const stop = stops.find(s => s.name === stay.city || s.name?.includes(stay.city));
-  if (stop) return { checkIn: String(stop.start_date).substring(0, 10), checkOut: String(stop.end_date).substring(0, 10) };
-  if (stops.length > 0) return { checkIn: String(stops[0].start_date).substring(0, 10), checkOut: String(stops[stops.length - 1].end_date).substring(0, 10) };
-  return { checkIn: '2026-07-20', checkOut: '2026-07-24' };
+  return { items, loaded, updateItem, setStatus, addItem, deleteItem, staysWithKeys, stopsData };
 }
