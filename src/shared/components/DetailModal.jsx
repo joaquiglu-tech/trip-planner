@@ -207,27 +207,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           {it.reserveNote && <div className="detail-reserve-note">{it.reserveNote}</div>}
 
           {/* ═══ PRICING ═══ */}
-          <div className="detail-section" style={{ marginTop: 12 }}>
-            <div className="detail-section-title">Pricing</div>
-            {it.estimated_cost > 0 && (
-              <div className="detail-price-display">
-                <div className="detail-est-price"><span>Estimated total: {$f(it.estimated_cost)}</span></div>
-              </div>
-            )}
-            {livePrice > 0 && it.type === 'stay' && (
-              <div className="detail-price-display" style={{ marginTop: 4 }}>
-                <div className="detail-live-price"><span className="detail-live-label">Live price</span><span className="detail-live-value">{$f(livePrice)}/night</span></div>
-              </div>
-            )}
-            {expenseAmount > 0 && (
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)', marginTop: 4 }}>Paid: {$f(expenseAmount)}</div>
-            )}
-            {!it.estimated_cost && !livePrice && !expenseAmount && (
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No pricing information yet</div>
-            )}
-            <label className="edit-label" style={{ marginTop: 10 }}>Confirmed cost (paid)</label>
-            <div className="cost-input-row" style={{ marginBottom: 12 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} /></div>
-          </div>
+          <PricingBlock it={it} livePrice={livePrice} expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} />
 
           {/* ═══ BOOKING ═══ */}
           {it.type === 'stay' && livePriceRates?.length > 0 && (
@@ -284,7 +264,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
     hrs: it.hrs ? String(it.hrs) : '',
     xotelo_key: it.xotelo_key || '',
   });
-  const [tripadvisorUrl, setTripadvisorUrl] = useState('');
+  const [tripadvisorUrl, setTripadvisorUrl] = useState(it.xotelo_key ? `tripadvisor.com/Hotel_Review-${it.xotelo_key}-Reviews` : '');
   const [xoteloStatus, setXoteloStatus] = useState(it.xotelo_key ? 'found' : '');
 
   async function handleTripAdvisorUrl(url) {
@@ -440,13 +420,8 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
             <div><label className="edit-label">End</label><input className="edit-input" value={draft.end_time} onChange={e => u('end_time', e.target.value)} type="datetime-local" /></div>
           </div>
 
-          {/* Pricing */}
-          <div className="edit-section-title">Pricing</div>
-          {draft.estimated_cost && (
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>Estimated total: <strong>${Number(draft.estimated_cost).toLocaleString()}</strong></div>
-          )}
-          <label className="edit-label">Confirmed cost (paid)</label>
-          <div className="cost-input-row" style={{ marginBottom: 8 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} /></div>
+          {/* Pricing — same component as summary for consistency */}
+          <PricingBlock it={{ ...it, estimated_cost: draft.estimated_cost ? Number(draft.estimated_cost) : it.estimated_cost }} livePrice={livePrice} expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} />
 
           {/* Links */}
           <div className="edit-section-title">Links</div>
@@ -468,6 +443,41 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
           <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ═══ SHARED PRICING BLOCK — used in both Summary and Edit modes ═══
+function PricingBlock({ it, livePrice, expenseAmount, paidInput, setPaidInput, handlePaidBlur }) {
+  return (
+    <div className="detail-section" style={{ marginTop: 12 }}>
+      <div className="detail-section-title">Pricing</div>
+      <div className="detail-price-display">
+        {Number(it.estimated_cost) > 0 ? (
+          <div className="detail-est-price">
+            <span>Estimated total: <strong>{$f(it.estimated_cost)}</strong></span>
+            {it.xotelo_key && <span style={{ fontSize: 10, color: 'var(--accent)', marginLeft: 6 }}>via Xotelo</span>}
+          </div>
+        ) : it.xotelo_key ? (
+          <div style={{ fontSize: 12, color: 'var(--accent)' }}>Xotelo connected — price updating...</div>
+        ) : (
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No estimated price</div>
+        )}
+        {livePrice > 0 && it.type === 'stay' && (
+          <div className="detail-live-price" style={{ marginTop: 4 }}>
+            <span className="detail-live-label">Live price</span>
+            <span className="detail-live-value">{$f(livePrice)}/night</span>
+          </div>
+        )}
+      </div>
+      <label className="edit-label" style={{ marginTop: 10 }}>Confirmed cost (paid)</label>
+      <div className="cost-input-row" style={{ marginBottom: 0 }}>
+        <span className="cost-input-prefix">$</span>
+        <input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} />
+      </div>
+      {expenseAmount > 0 && (
+        <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600, marginTop: 4 }}>Paid: {$f(expenseAmount)}</div>
+      )}
     </div>
   );
 }
