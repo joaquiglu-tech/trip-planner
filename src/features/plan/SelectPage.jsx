@@ -116,7 +116,7 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
         const liveItem = items.find(i => i.id === selectedItem.id) || selectedItem;
         const itemExpenses = (expenses || []).filter(e => e.item_id === liveItem.id);
         const exp = itemExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-        return <DetailModal key={liveItem.id + (liveItem.updated_at || '')}
+        return <DetailModal
           it={liveItem} status={liveItem.status || ''} setStatus={setStatus}
           updateItem={updateItem} stops={stops}
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
