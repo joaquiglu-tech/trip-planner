@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",
+    "@vis.gl/react-google-maps": "^1.8.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "vite-plugin-pwa": "^1.2.0"

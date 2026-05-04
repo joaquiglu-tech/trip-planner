@@ -3,11 +3,14 @@ import { $f, itemCost } from '../../shared/hooks/useItems';
 import { useTrip } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
 import AddItemModal from '../../shared/modals/AddItemModal';
+import { DayMap, RouteMap } from './MapComponents';
 import {
   toDateStr, formatStopDate, calcNights, formatTime, formatRelativeTime,
   itemInStop, getStay, getTodayDayIndex, getDaysUntilTrip, getStopStats,
   getCalendarDates, TYPE_LABEL_SHORT,
 } from './utils';
+
+const TRANSPORT_ICON = { flight: '\u2708', train: '\u{1F686}', bus: '\u{1F68C}', drive: '\u{1F697}', taxi: '\u{1F695}', ferry: '\u26F4', walk: '\u{1F6B6}', bicycle: '\u{1F6B2}', rental: '\u{1F511}' };
 
 // ═══ SCHEDULE LIST ═══
 function ScheduleList({ items, stop, onItemTap }) {
@@ -30,16 +33,33 @@ function ScheduleList({ items, stop, onItemTap }) {
 
   const groupedItems = useMemo(() => {
     if (!dateLabels || nights <= 1) return [{ label: null, items }];
-    const perDay = Math.ceil(items.length / nights);
-    const groups = [];
     const dateKeys = Object.keys(dateLabels);
-    dateKeys.forEach((dk, dayIdx) => {
-      const dayItems = items.slice(dayIdx * perDay, (dayIdx + 1) * perDay);
-      if (dayItems.length > 0) groups.push({ label: dateLabels[dk], items: dayItems });
+    // Group by actual start_time date if items have datetime-local values
+    const byDate = {};
+    const unassigned = [];
+    items.forEach(it => {
+      if (it.start_time && it.start_time.includes('T')) {
+        const itemDate = it.start_time.split('T')[0];
+        if (dateLabels[itemDate]) { (byDate[itemDate] = byDate[itemDate] || []).push(it); return; }
+      }
+      unassigned.push(it);
     });
-    const assigned = groups.reduce((s, g) => s + g.items.length, 0);
-    if (assigned < items.length && groups.length > 0) groups[groups.length - 1].items.push(...items.slice(assigned));
-    return groups;
+    // If we have date-assigned items, use them; put unassigned in first day
+    if (Object.keys(byDate).length > 0) {
+      const groups = [];
+      dateKeys.forEach(dk => {
+        const dayItems = byDate[dk] || [];
+        if (dk === dateKeys[0]) dayItems.push(...unassigned);
+        if (dayItems.length > 0) groups.push({ label: dateLabels[dk], items: dayItems });
+      });
+      return groups.length > 0 ? groups : [{ label: null, items }];
+    }
+    // Fallback: distribute evenly if no items have dates
+    const perDay = Math.ceil(items.length / nights);
+    return dateKeys.map((dk, i) => {
+      const dayItems = items.slice(i * perDay, (i + 1) * perDay);
+      return dayItems.length > 0 ? { label: dateLabels[dk], items: dayItems } : null;
+    }).filter(Boolean);
   }, [items, dateLabels, nights]);
 
   return (
@@ -55,8 +75,13 @@ function ScheduleList({ items, stop, onItemTap }) {
               </div>
               <div className="itin-sched-dot-col"><div className={`itin-sched-dot ${it.status}`} /><div className="itin-sched-line" /></div>
               <div className="itin-sched-info">
-                <div className="itin-sched-name">{it.name}</div>
-                <div className="itin-sched-sub">{it.dish ? it.dish : it.hrs ? `${it.hrs}h` : ''}</div>
+                <div className="itin-sched-name">
+                  {it.type === 'transport' && <span style={{ marginRight: 4 }}>{TRANSPORT_ICON[it.transport_mode] || '\u2708'}</span>}
+                  {it.name}
+                </div>
+                <div className="itin-sched-sub">
+                  {it.type === 'transport' ? (it.routeLabel || it.route || '') : it.dish ? it.dish : it.hrs ? `${it.hrs}h` : ''}
+                </div>
               </div>
               <div className="itin-sched-actions">
                 {it.status === 'conf' && <span className="itin-sched-check">Booked</span>}
@@ -107,174 +132,7 @@ function PlanSection({ planItems, onItemTap }) {
   );
 }
 
-// ═══ GOOGLE MAPS READY HOOK ═══
-function useGoogleMapsReady() {
-  const [ready, setReady] = useState(!!window.google?.maps);
-  useEffect(() => {
-    if (ready) return;
-    const interval = setInterval(() => { if (window.google?.maps) { setReady(true); clearInterval(interval); } }, 300);
-    return () => clearInterval(interval);
-  }, [ready]);
-  return ready;
-}
 
-const directionsCache = {};
-
-// ═══ DAY MAP ═══
-function DayMap({ stop, mapItems, stayCoord, visible }) {
-  const mapRef = useRef(null);
-  const mapInstance = useRef(null);
-  const markersRef = useRef([]);
-  const polylinesRef = useRef([]);
-  const prevKey = useRef(null);
-  const mapsReady = useGoogleMapsReady();
-  const stopCoord = (stop.lat && stop.lng) ? { lat: Number(stop.lat), lng: Number(stop.lng) } : null;
-  const center = stayCoord || stopCoord || (mapItems.find(it => it.coord)?.coord) || null;
-  const key = `${stop.id}-${mapItems.map(e => e.id).join(',')}`;
-  const coords = mapItems.filter(it => it.coord).map(it => it.coord);
-  const mapsRouteUrl = coords.length > 1
-    ? `https://www.google.com/maps/dir/${coords.map(c => `${c.lat},${c.lng}`).join('/')}`
-    : coords.length === 1 ? `https://www.google.com/maps/dir/?api=1&destination=${coords[0].lat},${coords[0].lng}` : null;
-
-  useEffect(() => {
-    if (!visible || !mapsReady || !mapRef.current || !center) return;
-    if (prevKey.current !== key) {
-      markersRef.current.forEach(m => m.setMap(null)); markersRef.current = [];
-      polylinesRef.current.forEach(p => { if (p.setMap) p.setMap(null); else if (p.setDirections) p.setDirections({ routes: [] }); }); polylinesRef.current = [];
-      mapInstance.current = null; prevKey.current = key;
-    }
-    if (mapInstance.current) { window.google.maps.event.trigger(mapInstance.current, 'resize'); return; }
-    const m = new window.google.maps.Map(mapRef.current, {
-      center, zoom: 14, mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-      streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
-    });
-    const bounds = new window.google.maps.LatLngBounds();
-    if (stayCoord) {
-      const cm = new window.google.maps.Marker({ position: stayCoord, map: m, title: `Stay: ${stop.name}`,
-        label: { text: 'H', color: '#fff', fontSize: '11px', fontWeight: '700' },
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 14, fillColor: '#7C3AED', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 }, zIndex: 1000 });
-      markersRef.current.push(cm); bounds.extend(stayCoord);
-    }
-    const TYPE_MAP_COLOR = { stay: '#7C3AED', food: '#D97706', activity: '#16A34A', transport: '#2563EB' };
-    const withCoords = mapItems.filter(it => it.coord);
-    withCoords.forEach((it, idx) => {
-      const color = TYPE_MAP_COLOR[it.type] || '#666';
-      const marker = new window.google.maps.Marker({ position: it.coord, map: m, title: `${idx + 1}. ${it.name}`,
-        label: { text: String(idx + 1), color: '#fff', fontSize: '10px', fontWeight: '700' },
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
-      markersRef.current.push(marker); bounds.extend(it.coord);
-    });
-    if (withCoords.length >= 2) {
-      const routeKey = withCoords.map(e => `${e.coord.lat},${e.coord.lng}`).join('|');
-      const render = (result) => { polylinesRef.current.push(new window.google.maps.DirectionsRenderer({ map: m, directions: result, suppressMarkers: true, polylineOptions: { strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3 } })); };
-      if (directionsCache[routeKey]) { render(directionsCache[routeKey]); }
-      else {
-        new window.google.maps.DirectionsService().route({
-          origin: withCoords[0].coord, destination: withCoords[withCoords.length - 1].coord,
-          waypoints: withCoords.slice(1, -1).map(e => ({ location: e.coord, stopover: true })).slice(0, 8),
-          travelMode: window.google.maps.TravelMode.DRIVING, optimizeWaypoints: false,
-        }, (result, status) => { if (status === 'OK') { directionsCache[routeKey] = result; render(result); } });
-      }
-    }
-    if (markersRef.current.length > 1 || withCoords.length > 0) m.fitBounds(bounds, 40);
-    mapInstance.current = m;
-  }, [visible, key, mapsReady]);
-
-  if (!center) return null;
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div ref={mapRef} className="map-wrap" style={{ height: 240 }}></div>
-      <div className="map-legend">
-        <span><span className="ml-dot" style={{ background: '#7C3AED' }} /> Stay</span>
-        <span><span className="ml-dot" style={{ background: '#16A34A' }} /> Activity</span>
-        <span><span className="ml-dot" style={{ background: '#D97706' }} /> Food</span>
-      </div>
-      {mapsRouteUrl && <a href={mapsRouteUrl} target="_blank" rel="noopener" className="itin-maps-btn">Open in Google Maps</a>}
-    </div>
-  );
-}
-
-// ═══ ROUTE MAP — with transport routes ═══
-const TRANSPORT_TRAVEL_MODE = {
-  drive: 'DRIVING', taxi: 'DRIVING', rental: 'DRIVING',
-  train: 'TRANSIT', bus: 'TRANSIT', ferry: 'TRANSIT',
-  walk: 'WALKING', bicycle: 'BICYCLING',
-};
-const TRANSPORT_ROUTE_COLOR = {
-  flight: '#2563EB', drive: '#7C3AED', train: '#0891B2', bus: '#0891B2',
-  rental: '#78716C', walk: '#16A34A', bicycle: '#D97706', ferry: '#0891B2', taxi: '#D97706',
-};
-
-function RouteMap({ visible, stops, items }) {
-  const mapRef = useRef(null);
-  const mapInstance = useRef(null);
-  const mapsReady = useGoogleMapsReady();
-  useEffect(() => {
-    if (!visible || !mapsReady || !mapRef.current || mapInstance.current) return;
-    const points = stops.map(s => {
-      if (s.lat && s.lng) return { stop: s, coord: { lat: Number(s.lat), lng: Number(s.lng) } };
-      const stay = getStay(items, s.id);
-      if (stay?.coord) return { stop: s, coord: stay.coord };
-      const anyItem = items.find(it => itemInStop(it, s.id) && it.coord);
-      if (anyItem?.coord) return { stop: s, coord: anyItem.coord };
-      return { stop: s, coord: null };
-    }).filter(p => p.coord);
-    if (!points.length) return;
-    const tripPoints = points.filter(p => p.stop.name !== 'Lima');
-    const mapPoints = tripPoints.length > 0 ? tripPoints : points;
-    const cLat = mapPoints.reduce((s, p) => s + p.coord.lat, 0) / mapPoints.length;
-    const cLng = mapPoints.reduce((s, p) => s + p.coord.lng, 0) / mapPoints.length;
-    const m = new window.google.maps.Map(mapRef.current, {
-      center: { lat: cLat, lng: cLng }, zoom: 6, minZoom: 3, maxZoom: 15,
-      mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
-      styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }],
-    });
-    const bounds = new window.google.maps.LatLngBounds();
-    points.forEach(p => {
-      const nights = calcNights(p.stop);
-      const isTrip = p.stop.name !== 'Lima';
-      new window.google.maps.Marker({ position: p.coord, map: m, title: p.stop.name,
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: nights > 1 ? 6 : 4, fillColor: isTrip ? '#7C3AED' : '#78716C', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } });
-      if (isTrip) bounds.extend(p.coord);
-    });
-    // Transport routes
-    const transportItems = items.filter(it => it.type === 'transport' && !it.is_rental && (it.status === 'sel' || it.status === 'conf'));
-    let hasRoutes = false;
-    transportItems.forEach(ti => {
-      const origin = ti.originCoord;
-      const dest = ti.destCoord;
-      if (!origin || !dest) return;
-      hasRoutes = true;
-      const color = TRANSPORT_ROUTE_COLOR[ti.transport_mode] || '#7C3AED';
-      bounds.extend(origin); bounds.extend(dest);
-      if (ti.transport_mode === 'flight') {
-        new window.google.maps.Polyline({
-          path: [origin, dest], geodesic: true, strokeColor: color, strokeOpacity: 0, strokeWeight: 3, map: m,
-          icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.8, strokeColor: color, scale: 3 }, offset: '0', repeat: '12px' }],
-        });
-      } else {
-        const travelMode = TRANSPORT_TRAVEL_MODE[ti.transport_mode] || 'DRIVING';
-        new window.google.maps.DirectionsService().route({
-          origin, destination: dest, travelMode: window.google.maps.TravelMode[travelMode],
-        }, (result, status) => {
-          if (status === 'OK') {
-            new window.google.maps.DirectionsRenderer({ map: m, directions: result, suppressMarkers: true,
-              polylineOptions: { strokeColor: color, strokeOpacity: 0.8, strokeWeight: 3 } });
-          } else {
-            new window.google.maps.Polyline({ path: [origin, dest], strokeColor: color, strokeOpacity: 0.5, strokeWeight: 2, map: m });
-          }
-        });
-      }
-    });
-    if (!hasRoutes && mapPoints.length > 1) {
-      new window.google.maps.Polyline({ path: mapPoints.map(p => p.coord), geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.4, strokeWeight: 2, map: m,
-        icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.6, scale: 2 }, offset: '0', repeat: '10px' }] });
-    }
-    m.fitBounds(bounds, 30);
-    mapInstance.current = m;
-  }, [visible, mapsReady, stops, items]);
-  return <div ref={mapRef} className="map-wrap" style={{ height: 200, marginBottom: 12 }}></div>;
-}
 
 // ═══ STATUS FILTER ═══
 function StatusFilter({ value, onChange }) {
@@ -337,7 +195,7 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
           ))}
         </div>
       )}
-      <RouteMap visible={visible} stops={stops} items={items} />
+      <RouteMap stops={stops} items={items} />
       <div className="home-section-title">Your destinations</div>
       <div className="home-destinations">
         {stops.map((stop, idx) => {
@@ -387,11 +245,21 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
     setEditing(false);
   }
 
+  // Include transport items only in their departure stop (first stop_id)
   const scheduled = useMemo(() => {
-    return items.filter(it => itemInStop(it, stop.id) && it.type !== 'transport')
+    return items.filter(it => {
+      if (!itemInStop(it, stop.id)) return false;
+      if (it.type === 'transport' && it.stop_ids?.[0] !== stop.id) return false;
+      return true;
+    })
       .filter(it => { if (statusFilter === 'all') return it.status === 'sel' || it.status === 'conf'; return it.status === statusFilter; })
       .sort((a, b) => (a.start_time || 'zz').localeCompare(b.start_time || 'zz') || (a.sort_order || 0) - (b.sort_order || 0));
   }, [items, stop.id, statusFilter]);
+
+  // Transport items for DayMap (departure from this stop)
+  const transportForMap = useMemo(() => {
+    return scheduled.filter(it => it.type === 'transport' && !it.is_rental && it.originCoord && it.destCoord);
+  }, [scheduled]);
 
   const allStopItems = useMemo(() => items.filter(it => itemInStop(it, stop.id)), [items, stop.id]);
   const stay = getStay(items, stop.id);
@@ -441,7 +309,7 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
         )}
       </div>
       <div className="itin-map-schedule">
-        <div className="itin-map-col"><DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} /></div>
+        <div className="itin-map-col"><DayMap stop={stop} mapItems={scheduled.filter(it => it.type !== 'transport')} transportItems={transportForMap} stayCoord={stayCoord} /></div>
         <div className="itin-schedule-col">
           <div className="itin-section-title">Schedule</div>
           <div className="itin-schedule-scroll">
