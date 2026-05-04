@@ -1,6 +1,4 @@
-import { supabase } from './supabase';
-
-const API_KEY = 'AIzaSyD7cRriZQE319Gx9x84_HUSD_M9YNbHDWA';
+import { supabase, GOOGLE_MAPS_API_KEY as API_KEY } from './supabase';
 
 // Search for a place by name + city, return place details
 export async function fetchPlaceData(itemId, name, city) {
@@ -70,40 +68,3 @@ export async function fetchPlaceData(itemId, name, city) {
   }
 }
 
-// Fetch drive time between two points using Routes API
-export async function fetchDriveTime(originLat, originLng, destLat, destLng) {
-  try {
-    const res = await fetch(
-      'https://routes.googleapis.com/directions/v2:computeRoutes',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': API_KEY,
-          'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters',
-        },
-        body: JSON.stringify({
-          origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
-          destination: { location: { latLng: { latitude: destLat, longitude: destLng } } },
-          travelMode: 'DRIVE',
-        }),
-      }
-    );
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    const route = data.routes?.[0];
-    if (!route) return null;
-
-    const durationSec = parseInt(route.duration?.replace('s', '') || '0');
-    const distanceKm = Math.round((route.distanceMeters || 0) / 1000);
-    const hours = Math.floor(durationSec / 3600);
-    const mins = Math.round((durationSec % 3600) / 60);
-    const durationText = hours > 0 ? `${hours}h ${mins}min` : `${mins}min`;
-
-    return { durationText, distanceKm, durationSec };
-  } catch (err) {
-    console.warn('Routes API error:', err);
-    return null;
-  }
-}

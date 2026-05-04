@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '../../services/supabase';
-
-const API_KEY = 'AIzaSyD7cRriZQE319Gx9x84_HUSD_M9YNbHDWA';
+import { supabase, GOOGLE_MAPS_API_KEY as API_KEY } from '../../services/supabase';
 
 // Fetch Google Place ID for a city name
 async function fetchPlaceId(name) {

@@ -1,5 +1,3 @@
-import { supabase } from './supabase';
-
 const XOTELO_BASE = 'https://data.xotelo.com/api/rates';
 
 // Fetch live hotel prices from Xotelo (pulls from Booking.com, Expedia, Agoda, etc.)
@@ -32,29 +30,3 @@ export async function fetchHotelPrice(xoteloKey, checkIn, checkOut) {
   }
 }
 
-// Fetch and update live prices for all stays that have xotelo_key
-export async function refreshHotelPrices(items) {
-  const stays = items.filter(it => it.type === 'stay' && it.xotelo_key);
-  const results = {};
-
-  for (const stay of stays) {
-    // Determine check-in/out from day assignment or use trip dates
-    const checkIn = stay.check_in_date || '2026-07-20'; // fallback
-    const checkOut = stay.check_out_date || '2026-07-24';
-
-    const price = await fetchHotelPrice(stay.xotelo_key, checkIn, checkOut);
-    if (price) {
-      results[stay.id] = price;
-      // Update the items table with live price
-      await supabase.from('items').update({
-        live_price: price.per_night,
-        live_price_source: price.source,
-        live_price_updated: new Date().toISOString(),
-      }).eq('id', stay.id);
-    }
-    // Small delay to be polite to the API
-    await new Promise(r => setTimeout(r, 300));
-  }
-
-  return results;
-}

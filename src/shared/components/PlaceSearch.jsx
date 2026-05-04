@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-
-const API_KEY = 'AIzaSyD7cRriZQE319Gx9x84_HUSD_M9YNbHDWA';
+import { GOOGLE_MAPS_API_KEY as API_KEY } from '../../services/supabase';
 
 // Reusable place search with Google Places + optional stops list
 // Returns: { name, lat, lng, placeId, address }
@@ -105,7 +104,7 @@ export default function PlaceSearch({ value, onChange, stops, placeholder, label
       {allResults.length > 0 && focused && (
         <div className="place-results">
           {allResults.map((r, i) => (
-            <div key={r.placeId + i} className="place-result" onMouseDown={() => selectPlace(r)}>
+            <div key={r.placeId + i} className="place-result" onMouseDown={e => { e.preventDefault(); selectPlace(r); }}>
               <div className="place-result-name">{r.isStop ? '📍 ' : ''}{r.name}</div>
               <div className="place-result-addr">{r.address}</div>
             </div>

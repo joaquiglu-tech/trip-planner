@@ -534,10 +534,11 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
       )}
       {activeStops.length === 0 && view !== 'overview' && (<div className="itin-empty"><div className="itin-empty-text">No stops for this date.</div></div>)}
       {selectedItem && (() => {
-        const itemExpenses = (expenses || []).filter(e => e.item_id === selectedItem.id);
+        const liveItem = items.find(i => i.id === selectedItem.id) || selectedItem;
+        const itemExpenses = (expenses || []).filter(e => e.item_id === liveItem.id);
         const exp = itemExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-        return <DetailModal
-          it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
+        return <DetailModal key={liveItem.id + (liveItem.updated_at || '')}
+          it={liveItem} status={liveItem.status || ''} setStatus={setStatus}
           updateItem={updateItem} stops={stops}
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}

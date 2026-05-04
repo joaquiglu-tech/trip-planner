@@ -206,16 +206,15 @@ export function useItems(currentUserEmail) {
 
   const deleteItem = useCallback(async (id) => {
     setItems(prev => prev.filter(it => it.id !== id));
-    // Cascade: delete linked expenses
+    // Cascade: delete linked data
     await supabase.from('expenses').delete().eq('item_id', id);
-    // Cascade: delete files from storage
+    await supabase.from('place_cache').delete().eq('item_id', id);
     try {
       const { data: storageFiles } = await supabase.storage.from('reservations').list(id);
       if (storageFiles?.length > 0) {
         await supabase.storage.from('reservations').remove(storageFiles.map(f => `${id}/${f.name}`));
       }
     } catch { /* skip storage cleanup errors */ }
-    // Delete the item
     await supabase.from('items').delete().eq('id', id);
     setFilesState(prev => { const n = { ...prev }; delete n[id]; return n; });
   }, []);

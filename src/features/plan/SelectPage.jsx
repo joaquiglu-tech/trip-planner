@@ -23,6 +23,12 @@ export default function SelectPage({ active, items, livePrices, expenses, update
   const [showAddModal, setShowAddModal] = useState(false);
   const [sortBy, setSortBy] = useState('default');
 
+  const expenseMap = useMemo(() => {
+    const map = {};
+    (expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
+    return map;
+  }, [expenses]);
+
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase();
     return items.filter((it) => {
@@ -96,20 +102,20 @@ export default function SelectPage({ active, items, livePrices, expenses, update
           <div key={key}>
             <div className="sect-title">{groupByCity ? `${label} (${sectionItems.length})` : label}</div>
             <div className="items-grid">
-              {sectionItems.map((it) => {
-                const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
-                return <ItemCard key={it.id} it={it} status={it.status || ''} onTap={setSelectedItem} livePrice={livePrices?.[it.id]?.perNight} expenseAmount={exp} />;
-              })}
+              {sectionItems.map((it) => (
+                <ItemCard key={it.id} it={it} status={it.status || ''} onTap={setSelectedItem} livePrice={livePrices?.[it.id]?.perNight} expenseAmount={expenseMap[it.id] || 0} />
+              ))}
             </div>
           </div>
         ))}
       </div>
 
       {selectedItem && (() => {
-        const itemExpenses = (expenses || []).filter(e => e.item_id === selectedItem.id);
+        const liveItem = items.find(i => i.id === selectedItem.id) || selectedItem;
+        const itemExpenses = (expenses || []).filter(e => e.item_id === liveItem.id);
         const exp = itemExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-        return <DetailModal
-          it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
+        return <DetailModal key={liveItem.id + (liveItem.updated_at || '')}
+          it={liveItem} status={liveItem.status || ''} setStatus={setStatus}
           updateItem={updateItem} stops={stops}
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}

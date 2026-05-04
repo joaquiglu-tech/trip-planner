@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-
-const API_KEY = 'AIzaSyD7cRriZQE319Gx9x84_HUSD_M9YNbHDWA';
+import { GOOGLE_MAPS_API_KEY as API_KEY } from '../../services/supabase';
 
 export default function AddStopModal({ onAdd, onClose }) {
   const [query, setQuery] = useState('');
