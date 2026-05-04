@@ -82,6 +82,13 @@ export default function TodayPage({ active }) {
       {/* Content: overview or stop sections */}
       {view === 'overview' ? (
         <OverviewView items={items} stops={stops} expenses={expenses} onItemTap={setSelectedItem} onDaySelect={(idx) => setView({ type: 'stop', idx })} />
+      ) : selectedDate && activeStops.length > 1 ? (
+        /* Date mode with overlapping stops: single combined view */
+        <StopSection
+          stop={activeStops[0]} items={items} onItemTap={setSelectedItem} places={places}
+          statusFilter={statusFilter} selectedDate={selectedDate}
+          combinedStopIds={activeStops.map(s => s.id)}
+          updateStop={updateStop} deleteStop={deleteStop} addItem={addItem} stops={stops} showTitle={false} />
       ) : (
         activeStops.map(stop => (
           <StopSection key={stop.id} stop={stop} items={items} onItemTap={setSelectedItem} places={places}

@@ -16,7 +16,7 @@ export function TripProvider({ email, children }) {
   const stopsHook = useStops();
   const { places, getPlaceData } = usePlaceData();
   const expensesHook = useExpenses();
-  const livePrices = useLivePrices(itemsHook.staysWithKeys, itemsHook.stopsData);
+  const livePrices = useLivePrices(itemsHook.staysWithKeys, stopsHook.stops);
   const { files, setFile, removeFile, clearFiles } = useItemFiles(itemsHook.items);
 
   // Data changes frequently — items, expenses, prices update via realtime

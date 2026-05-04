@@ -1,21 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { fetchHotelPrice } from '../../services/hotelPrices';
 
-// Fetch live hotel prices for stays with xotelo_key
-// staysWithKeys: items filtered to type=stay with xotelo_key
-// stopsData: stops array for date lookup
-export function useLivePrices(staysWithKeys, stopsData) {
+export function useLivePrices(staysWithKeys, stops) {
   const [livePrices, setLivePrices] = useState({});
 
+  // Create a stable key that changes when stop dates change
+  const stopsDateKey = useMemo(() =>
+    (stops || []).map(s => `${s.id}:${s.start_date}:${s.end_date}`).join(','),
+  [stops]);
+
   useEffect(() => {
-    if (!staysWithKeys.length || !stopsData.length) return;
+    if (!staysWithKeys.length || !stops.length) return;
     let cancelled = false;
 
     (async () => {
       for (const stay of staysWithKeys) {
         if (cancelled) break;
         try {
-          const dates = getStayDates(stay, stopsData);
+          const dates = getStayDates(stay, stops);
           const price = await fetchHotelPrice(stay.xotelo_key, dates.checkIn, dates.checkOut);
           if (!cancelled && price) {
             setLivePrices(prev => ({ ...prev, [stay.id]: { perNight: price.per_night, source: price.source, allRates: price.all_rates } }));
@@ -26,7 +28,7 @@ export function useLivePrices(staysWithKeys, stopsData) {
     })();
 
     return () => { cancelled = true; };
-  }, [staysWithKeys.length, stopsData.length]);
+  }, [staysWithKeys.length, stopsDateKey]);
 
   return livePrices;
 }

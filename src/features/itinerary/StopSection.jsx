@@ -12,7 +12,8 @@ function getItemDate(startTime) {
 }
 
 // selectedDate: optional YYYY-MM-DD for date-mode filtering
-export default function StopSection({ stop, items, onItemTap, places, statusFilter, updateStop, deleteStop, addItem, stops, showTitle, selectedDate }) {
+// combinedStopIds: optional array of stop IDs for date-mode combined view
+export default function StopSection({ stop, items, onItemTap, places, statusFilter, updateStop, deleteStop, addItem, stops, showTitle, selectedDate, combinedStopIds }) {
   const [editing, setEditing] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [draft, setDraft] = useState({});
@@ -28,28 +29,32 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
   }
 
   // Filter items: by stop, by status, by selected date (in date mode), transport in departure stop only
+  // When combinedStopIds is provided, include items from all those stops
+  const stopIdsToMatch = combinedStopIds || [stop.id];
+
   const scheduled = useMemo(() => {
     return items.filter(it => {
-      if (!itemInStop(it, stop.id)) return false;
-      if (it.type === 'transport' && it.stop_ids?.[0] !== stop.id) return false;
-      // Date mode: filter by selected date
+      if (!stopIdsToMatch.some(sid => itemInStop(it, sid))) return false;
+      if (it.type === 'transport') {
+        const depStop = it.stop_ids?.[0];
+        if (!stopIdsToMatch.includes(depStop)) return false;
+      }
       if (selectedDate) {
         const itemDate = getItemDate(it.start_time);
-        // Items with a date must match; items without a date are included (unscheduled)
         if (itemDate && itemDate !== selectedDate) return false;
       }
       return true;
     })
       .filter(it => { if (statusFilter === 'all') return it.status === 'sel' || it.status === 'conf'; return it.status === statusFilter; })
       .sort((a, b) => (a.start_time || 'zz').localeCompare(b.start_time || 'zz') || (a.sort_order || 0) - (b.sort_order || 0));
-  }, [items, stop.id, statusFilter, selectedDate]);
+  }, [items, stop.id, combinedStopIds, statusFilter, selectedDate]);
 
   const transportForMap = useMemo(() => {
     return scheduled.filter(it => it.type === 'transport' && !it.is_rental && it.originCoord && it.destCoord);
   }, [scheduled]);
 
   const allStopItems = useMemo(() => {
-    let filtered = items.filter(it => itemInStop(it, stop.id));
+    let filtered = items.filter(it => stopIdsToMatch.some(sid => itemInStop(it, sid)));
     if (selectedDate) {
       filtered = filtered.filter(it => {
         const itemDate = getItemDate(it.start_time);

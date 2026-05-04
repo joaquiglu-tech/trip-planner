@@ -314,10 +314,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
       <div className="detail-sheet">
         <div className="detail-handle" />
         <div className="detail-action-top">
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="detail-btn" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
-            <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>Edit {it.name}</div>
         </div>
         <div className="detail-content">
           {saved && <div className="detail-saved">{saved}</div>}
@@ -420,11 +417,11 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
           <div className="edit-section-title">Notes</div>
           <textarea className="edit-textarea" value={draft.notes} onChange={e => u('notes', e.target.value)} rows={3} placeholder="Any notes..." />
 
-          {/* Save button at bottom */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingBottom: 16 }}>
-            <button className="detail-btn" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
-            <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
-          </div>
+        </div>
+        {/* Sticky Save/Cancel at bottom */}
+        <div className="detail-edit-actions">
+          <button className="detail-btn" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
+          <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
         </div>
       </div>
     </div>
