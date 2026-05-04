@@ -43,13 +43,14 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
 
   // Handle TripAdvisor URL paste — extract key and fetch rates
   async function handleTripAdvisorUrl(url) {
-    updateForm('tripadvisor_url', url);
+    setForm(f => ({ ...f, tripadvisor_url: url }));
     const key = extractXoteloKey(url);
     if (!key) {
       if (url.length > 10) setXoteloStatus('not_found');
+      else setXoteloStatus('');
       return;
     }
-    updateForm('xotelo_key', key);
+    setForm(f => ({ ...f, xotelo_key: key }));
     setXoteloStatus('searching');
     // Get check-in/check-out from selected stop dates
     const firstStop = (stops || []).find(s => form.stop_ids.includes(s.id));
@@ -58,13 +59,13 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
     if (checkIn && checkOut) {
       const estimate = await fetchStayEstimate(key, checkIn, checkOut);
       if (estimate) {
-        updateForm('estimated_cost', String(estimate.estimated_cost));
+        setForm(f => ({ ...f, estimated_cost: String(estimate.estimated_cost) }));
         setXoteloStatus('found');
       } else {
-        setXoteloStatus('not_found');
+        setXoteloStatus('found'); // key found but no rates for these dates
       }
     } else {
-      setXoteloStatus('found');
+      setXoteloStatus('found'); // key found, select a stop to get rates
     }
   }
 

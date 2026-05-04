@@ -277,7 +277,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
   async function handleTripAdvisorUrl(url) {
     setTripadvisorUrl(url);
     const key = extractXoteloKey(url);
-    if (!key) { if (url.length > 10) setXoteloStatus('not_found'); return; }
+    if (!key) { if (url.length > 10) setXoteloStatus('not_found'); else setXoteloStatus(''); return; }
     u('xotelo_key', key);
     setXoteloStatus('searching');
     const firstStop = (stops || []).find(s => draft.stop_ids.includes(s.id));
@@ -286,8 +286,8 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
     if (checkIn && checkOut) {
       const estimate = await fetchStayEstimate(key, checkIn, checkOut);
       if (estimate) { u('estimated_cost', String(estimate.estimated_cost)); setXoteloStatus('found'); }
-      else setXoteloStatus('not_found');
-    } else setXoteloStatus('found');
+      else setXoteloStatus('found'); // key valid but no rates for these dates
+    } else setXoteloStatus('found'); // key valid, assign stop to get rates
   }
   const [saving, setSaving] = useState(false);
 
@@ -304,6 +304,8 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
     if (draft.notes !== (it.notes || '')) changes.notes = draft.notes;
     if (draft.src !== (it.src || '')) changes.src = draft.src;
     if (draft.reserve_note !== (it.reserve_note || '')) changes.reserve_note = draft.reserve_note;
+    const ec = parseFloat(draft.estimated_cost);
+    if (!isNaN(ec) && ec !== (Number(it.estimated_cost) || 0)) changes.estimated_cost = ec;
     if (draft.start_time !== (it.start_time || '')) changes.start_time = draft.start_time || null;
     if (draft.end_time !== (it.end_time || '')) changes.end_time = draft.end_time || null;
     if (JSON.stringify(draft.stop_ids) !== JSON.stringify(it.stop_ids || [])) changes.stop_ids = draft.stop_ids;

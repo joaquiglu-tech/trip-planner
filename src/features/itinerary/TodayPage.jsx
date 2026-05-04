@@ -7,7 +7,7 @@ import StatusFilter from './StatusFilter';
 import { toDateStr, formatStopDate, getTodayDayIndex, getCalendarDates } from './utils';
 
 export default function TodayPage({ active }) {
-  const { items, stops, livePrices, expenses, updateItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, files, setFile, removeFile, places, getPlaceData } = useTrip();
+  const { items, stops, livePrices, expenses, updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, files, setFile, removeFile, places, getPlaceData } = useTrip();
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');
@@ -111,6 +111,7 @@ export default function TodayPage({ active }) {
           livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
           expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
           onClose={() => setSelectedItem(null)}
+          onDelete={liveItem.created_by ? () => { deleteItem(liveItem.id); setSelectedItem(null); } : null}
         />;
       })()}
     </div>
