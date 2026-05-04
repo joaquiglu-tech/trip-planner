@@ -12,7 +12,7 @@ function formatCardDatetime(dt) {
   } catch { return dt; }
 }
 
-function ItemCard({ it, onTap, livePrice, expenseAmount }) {
+function ItemCard({ it, onTap, livePrice, expenseAmount, number }) {
   const st = it.status || '';
   // Price: confirmed (expense) > estimated > live per-night > nothing
   const displayPrice = expenseAmount > 0 ? $f(expenseAmount)
@@ -25,6 +25,7 @@ function ItemCard({ it, onTap, livePrice, expenseAmount }) {
 
   return (
     <div className={`item-card-compact ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onTap(it)}>
+      {number && <div className="icc-number">{number}</div>}
       <div className="icc-left">
         <div className="icc-name">{it.name}</div>
         <div className="icc-sub">

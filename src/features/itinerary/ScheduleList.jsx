@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { toDateStr, calcNights } from './utils';
 import ItemCard from '../plan/ItemCard';
 
-export default function ScheduleList({ items, stop, onItemTap, selectedDate, livePrices, expenseMap }) {
+export default function ScheduleList({ items, stop, onItemTap, selectedDate, livePrices, expenseMap, itemNumberMap }) {
   const nights = calcNights(stop);
   const startStr = toDateStr(stop.start_date);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -57,7 +57,8 @@ export default function ScheduleList({ items, stop, onItemTap, selectedDate, liv
             {group.items.map(it => (
               <ItemCard key={it.id} it={it} onTap={onItemTap}
                 livePrice={livePrices?.[it.id]?.perNight}
-                expenseAmount={(expenseMap || {})[it.id] || 0} />
+                expenseAmount={(expenseMap || {})[it.id] || 0}
+                number={itemNumberMap?.[it.id]} />
             ))}
           </div>
         </div>

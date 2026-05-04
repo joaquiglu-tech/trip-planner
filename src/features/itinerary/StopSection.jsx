@@ -49,6 +49,13 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
       .sort((a, b) => (a.start_time || 'zz').localeCompare(b.start_time || 'zz') || (a.sort_order || 0) - (b.sort_order || 0));
   }, [items, stop.id, combinedStopIds, statusFilter, selectedDate]);
 
+  // Number map: sorted item index for map markers and card numbers
+  const itemNumberMap = useMemo(() => {
+    const map = {};
+    scheduled.forEach((it, i) => { map[it.id] = i + 1; });
+    return map;
+  }, [scheduled]);
+
   const transportForMap = useMemo(() => {
     return scheduled.filter(it => it.type === 'transport' && !it.is_rental && it.originCoord && it.destCoord);
   }, [scheduled]);
@@ -123,14 +130,14 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
               return mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener" className="itin-maps-btn itin-maps-btn-sm">Open in Google Maps</a> : null;
             })()}
           </div>
-          <DayMap stop={stop} mapItems={scheduled.filter(it => it.type !== 'transport')} transportItems={transportForMap} stayCoord={stayCoord} />
+          <DayMap stop={stop} mapItems={scheduled.filter(it => it.type !== 'transport')} transportItems={transportForMap} stayCoord={stayCoord} itemNumberMap={itemNumberMap} />
         </div>
         <div className="itin-schedule-col">
           <div className="itin-col-header">
             <div className="itin-section-title" style={{ margin: 0 }}>Schedule</div>
           </div>
           <div className="itin-schedule-scroll">
-            {scheduled.length > 0 ? (<ScheduleList items={scheduled} stop={stop} onItemTap={onItemTap} selectedDate={selectedDate} livePrices={livePrices} expenseMap={expenseMap} />) : (
+            {scheduled.length > 0 ? (<ScheduleList items={scheduled} stop={stop} onItemTap={onItemTap} selectedDate={selectedDate} livePrices={livePrices} expenseMap={expenseMap} itemNumberMap={itemNumberMap} />) : (
               <div className="itin-empty">
                 <div className="itin-empty-text">No items scheduled{selectedDate ? ' for this date' : ` for ${stop.name}`}.</div>
                 {addItem && <button className="itin-empty-action" onClick={() => setShowAddItem(true)}>Add an activity</button>}

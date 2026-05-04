@@ -17,7 +17,7 @@ const TRANSPORT_ROUTE_COLOR = {
 const directionsCache = {};
 
 // ═══ DAY MAP — per-stop map with item markers + routes + transport ═══
-export function DayMap({ stop, mapItems, transportItems, stayCoord }) {
+export function DayMap({ stop, mapItems, transportItems, stayCoord, itemNumberMap }) {
   const stopCoord = (stop.lat && stop.lng) ? { lat: Number(stop.lat), lng: Number(stop.lng) } : null;
   const center = stayCoord || stopCoord || (mapItems.find(it => it.coord)?.coord) || null;
   if (!center) return null;
@@ -33,13 +33,13 @@ export function DayMap({ stop, mapItems, transportItems, stayCoord }) {
         fullscreenControl
         style={{ width: '100%', height: '100%' }}
       >
-        <DayMapContent mapItems={mapItems} transportItems={transportItems} stayCoord={stayCoord} stopName={stop.name} />
+        <DayMapContent mapItems={mapItems} transportItems={transportItems} stayCoord={stayCoord} stopName={stop.name} itemNumberMap={itemNumberMap} />
       </Map>
     </div>
   );
 }
 
-function DayMapContent({ mapItems, transportItems, stayCoord, stopName }) {
+function DayMapContent({ mapItems, transportItems, stayCoord, stopName, itemNumberMap }) {
   const map = useMap();
   const routesLib = useMapsLibrary('routes');
   const renderersRef = useRef([]);
@@ -116,13 +116,17 @@ function DayMapContent({ mapItems, transportItems, stayCoord, stopName }) {
   const withCoords = mapItems.filter(it => it.coord);
   return (
     <>
-      {stayCoord && <Marker position={stayCoord} title={`Stay: ${stopName}`} />}
-      {withCoords.map((it, idx) => (
-        <Marker key={it.id} position={it.coord} title={`${idx + 1}. ${it.name}`} />
-      ))}
-      {(transportItems || []).map(ti => (
-        ti.originCoord && <Marker key={`t-${ti.id}`} position={ti.originCoord} title={ti.routeLabel || ti.name} />
-      ))}
+      {stayCoord && <Marker position={stayCoord} title={`Stay: ${stopName}`} label={{ text: 'H', color: '#fff', fontSize: '10px', fontWeight: '700' }} />}
+      {withCoords.map(it => {
+        const num = itemNumberMap?.[it.id];
+        return <Marker key={it.id} position={it.coord} title={`${num || ''}. ${it.name}`}
+          label={num ? { text: String(num), color: '#fff', fontSize: '10px', fontWeight: '700' } : undefined} />;
+      })}
+      {(transportItems || []).map(ti => {
+        const num = itemNumberMap?.[ti.id];
+        return ti.originCoord && <Marker key={`t-${ti.id}`} position={ti.originCoord} title={ti.routeLabel || ti.name}
+          label={num ? { text: String(num), color: '#fff', fontSize: '10px', fontWeight: '700' } : undefined} />;
+      })}
     </>
   );
 }
