@@ -187,20 +187,26 @@ function RouteMap({ visible, stops, items }) {
     if (!points.length) return;
     const avgLat = points.reduce((s, p) => s + p.coord.lat, 0) / points.length;
     const avgLng = points.reduce((s, p) => s + p.coord.lng, 0) / points.length;
+    // Filter to trip stops only (exclude Lima departure/return to avoid world zoom)
+    const tripPoints = points.filter(p => p.stop.name !== 'Lima');
+    const mapPoints = tripPoints.length > 0 ? tripPoints : points;
+    const cLat = mapPoints.reduce((s, p) => s + p.coord.lat, 0) / mapPoints.length;
+    const cLng = mapPoints.reduce((s, p) => s + p.coord.lng, 0) / mapPoints.length;
     const m = new window.google.maps.Map(mapRef.current, {
-      center: { lat: avgLat, lng: avgLng }, zoom: 6,
+      center: { lat: cLat, lng: cLng }, zoom: 6, minZoom: 3, maxZoom: 15,
       mapTypeId: window.google.maps.MapTypeId.ROADMAP, streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
       styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }],
     });
     const bounds = new window.google.maps.LatLngBounds();
-    // Polyline
-    new window.google.maps.Polyline({ path: points.map(p => p.coord), geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3, map: m });
-    // Markers
+    // Polyline connecting trip stops
+    new window.google.maps.Polyline({ path: mapPoints.map(p => p.coord), geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3, map: m });
+    // Markers for all points (including Lima, but bounds only from trip)
     points.forEach(p => {
       const nights = calcNights(p.stop);
+      const isTrip = p.stop.name !== 'Lima';
       new window.google.maps.Marker({ position: p.coord, map: m, title: p.stop.name,
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: nights > 1 ? 6 : 4, fillColor: '#7C3AED', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } });
-      bounds.extend(p.coord);
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: nights > 1 ? 6 : 4, fillColor: isTrip ? '#7C3AED' : '#78716C', fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 2 } });
+      if (isTrip) bounds.extend(p.coord);
     });
     m.fitBounds(bounds, 30);
     mapInstance.current = m;
@@ -429,11 +435,13 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
         )}
       </div>
 
-      {/* Map */}
-      <DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} />
-
-      {/* Schedule */}
-      <div className="itin-section-title">Schedule</div>
+      {/* Map + Schedule — side by side on desktop */}
+      <div className="itin-map-schedule">
+        <div className="itin-map-col">
+          <DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} />
+        </div>
+        <div className="itin-schedule-col">
+          <div className="itin-section-title">Schedule</div>
       {scheduled.length > 0 ? (
         <div className="itin-schedule">
           {scheduled.map(it => (
@@ -457,6 +465,8 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
       ) : (
         <div className="itin-empty"><div className="itin-empty-text">No items scheduled.</div></div>
       )}
+        </div>
+      </div>
 
       {/* Travel tips */}
       {tips && (
