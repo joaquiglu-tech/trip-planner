@@ -9,19 +9,20 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
     return Math.ceil((new Date(stops[0].start_date) - new Date()) / 86400000);
   }, [stops]);
 
+  // Same calculation as BudgetSummary for consistency
   const stats = useMemo(() => {
-    let selected = 0, booked = 0, estimated = 0, confirmed = 0;
+    let selTotal = 0, confTotal = 0;
     items.forEach(it => {
-      if (it.status === 'sel' || it.status === 'conf') {
-        selected++; estimated += itemCost(it);
-        if (it.status === 'conf') {
-          booked++;
-          const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
-          confirmed += exp > 0 ? exp : itemCost(it);
-        }
+      if (it.status !== 'sel' && it.status !== 'conf') return;
+      if (it.status === 'conf') {
+        const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+        selTotal += exp > 0 ? exp : itemCost(it);
+      } else {
+        selTotal += itemCost(it);
       }
     });
-    return { selected, booked, estimated, confirmed };
+    (expenses || []).forEach(e => { confTotal += Number(e.amount || 0); });
+    return { estimated: selTotal, confirmed: confTotal };
   }, [items, expenses]);
 
   const recentItems = useMemo(() =>
@@ -42,10 +43,8 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
         </div>
       )}
       <div className="home-stats">
-        <div className="home-stat"><div className="home-stat-num">{stats.booked}</div><div className="home-stat-label">Booked</div></div>
-        <div className="home-stat"><div className="home-stat-num">{stats.selected - stats.booked}</div><div className="home-stat-label">To book</div></div>
         <div className="home-stat"><div className="home-stat-num">{$f(stats.estimated)}</div><div className="home-stat-label">Estimated</div></div>
-        {stats.confirmed > 0 && <div className="home-stat"><div className="home-stat-num" style={{ color: 'var(--green)' }}>{$f(stats.confirmed)}</div><div className="home-stat-label">Confirmed</div></div>}
+        <div className="home-stat"><div className="home-stat-num" style={{ color: 'var(--green)' }}>{$f(stats.confirmed)}</div><div className="home-stat-label">Confirmed</div></div>
       </div>
       <div className="itin-map-schedule">
         <div className="itin-map-col">
