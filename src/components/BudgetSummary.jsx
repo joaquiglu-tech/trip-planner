@@ -11,32 +11,37 @@ export default function BudgetSummary({ items, expenses }) {
     const byType = {};
     let selTotal = 0, confTotal = 0, selCount = 0, confCount = 0;
 
+    // SELECTED: all items with status sel or conf
+    // For conf items with an expense, use expense amount. Otherwise use estimated cost.
     items.forEach(it => {
       if (it.status !== 'sel' && it.status !== 'conf') return;
-      const est = itemCost(it);
-      const typeKey = (it.type === 'dining' || it.type === 'special') ? 'food' : it.type;
+      const typeKey = it.type === 'food' ? 'food' : it.type;
       if (!byType[typeKey]) byType[typeKey] = { sel: 0, conf: 0 };
-
-      selTotal += est;
       selCount++;
-      byType[typeKey].sel += est;
 
       if (it.status === 'conf') {
         confCount++;
         const exp = (expenses || []).filter(e => e.item_id === it.id).reduce((s, e) => s + Number(e.amount || 0), 0);
-        const confVal = exp > 0 ? exp : est;
-        confTotal += confVal;
-        byType[typeKey].conf += confVal;
+        const val = exp > 0 ? exp : itemCost(it);
+        selTotal += val;
+        byType[typeKey].sel += val;
+      } else {
+        const est = itemCost(it);
+        selTotal += est;
+        byType[typeKey].sel += est;
       }
     });
 
-    // Also add unlinked expenses (daily expenses without item_id)
-    const unlinkedExpenses = (expenses || []).filter(e => !e.item_id).reduce((s, e) => s + Number(e.amount || 0), 0);
-    if (unlinkedExpenses > 0) {
-      confTotal += unlinkedExpenses;
-      if (!byType['other']) byType['other'] = { sel: 0, conf: 0 };
-      byType['other'].conf += unlinkedExpenses;
-    }
+    // CONFIRMED: sum ALL expenses, grouped by their linked item's type
+    (expenses || []).forEach(e => {
+      const amt = Number(e.amount || 0);
+      if (amt <= 0) return;
+      const item = items.find(it => it.id === e.item_id);
+      const typeKey = item ? (item.type === 'food' ? 'food' : item.type) : 'other';
+      if (!byType[typeKey]) byType[typeKey] = { sel: 0, conf: 0 };
+      confTotal += amt;
+      byType[typeKey].conf += amt;
+    });
 
     return { byType, selTotal, confTotal, selCount, confCount };
   }, [items, expenses]);
@@ -65,7 +70,6 @@ export default function BudgetSummary({ items, expenses }) {
             {data.confCount} booked / {data.selCount} selected
           </div>
 
-          {/* 2-column breakdown by type */}
           <div className="summary-breakdown">
             <div className="summary-bd-header">
               <span></span>

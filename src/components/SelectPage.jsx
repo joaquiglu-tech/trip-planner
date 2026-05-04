@@ -26,7 +26,7 @@ export default function SelectPage({ active, items, livePrices, expenses, update
     const q = filters.search.toLowerCase();
     return items.filter((it) => {
       if (filters.type !== 'all') {
-        if (filters.type === 'food') { if (it.type !== 'dining' && it.type !== 'special') return false; }
+        if (filters.type === 'food') { if (it.type !== 'food') return false; }
         else if (it.type !== filters.type) return false;
       }
       if (filters.city !== 'all' && it.city !== filters.city) return false;
@@ -53,7 +53,7 @@ export default function SelectPage({ active, items, livePrices, expenses, update
       return { sections: cities.map(c => ({ key: c, label: c, items: byCity[c] })), groupByCity: true };
     }
     const byType = {};
-    filtered.forEach((it) => { const k = (it.type === 'dining' || it.type === 'special') ? 'food' : it.type; if (!byType[k]) byType[k] = []; byType[k].push(it); });
+    filtered.forEach((it) => { const k = it.type; if (!byType[k]) byType[k] = []; byType[k].push(it); });
     return {
       sections: TYPE_ORDER.filter(k => byType[k]?.length).map(k => ({ key: k, label: (TYPE_LABEL[k] || k) + ' (' + byType[k].length + ')', items: byType[k] })),
       groupByCity: false,

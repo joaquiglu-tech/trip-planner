@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { fetchUrlMeta } from '../lib/fetchMeta';
 
 const TYPES = [
-  { value: 'dining', label: '🍝 Restaurant / Bar' },
-  { value: 'stay', label: '🏨 Stay' },
-  { value: 'activity', label: '🎟️ Activity' },
-  { value: 'transport', label: '🚗 Transport' },
-  { value: 'special', label: '⭐ Special Meal' },
+  { value: 'food', label: 'Food' },
+  { value: 'stay', label: 'Stay' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'transport', label: 'Transport' },
 ];
 
 export default function AddItemModal({ onClose, onAdd, userEmail }) {
@@ -20,7 +19,7 @@ export default function AddItemModal({ onClose, onAdd, userEmail }) {
     const meta = await fetchUrlMeta(url.trim());
     setForm({
       name: meta.title || '',
-      type: 'dining',
+      type: 'food',
       city: '',
       desc_text: meta.description || '',
       dish: '',
@@ -77,7 +76,7 @@ export default function AddItemModal({ onClose, onAdd, userEmail }) {
               <div style={{ textAlign: 'center', margin: '14px 0 6px', fontSize: 11, color: 'var(--text-muted)' }}>or</div>
               <button
                 className="detail-btn"
-                onClick={() => setForm({ name: '', type: 'dining', city: '', desc_text: '', dish: '', link: '', image_url: '', price_label: '', created_by: userEmail })}
+                onClick={() => setForm({ name: '', type: 'food', city: '', desc_text: '', dish: '', link: '', image_url: '', price_label: '', created_by: userEmail })}
               >
                 Add Manually
               </button>
@@ -107,7 +106,7 @@ export default function AddItemModal({ onClose, onAdd, userEmail }) {
               <label className="add-label">Description</label>
               <textarea className="add-input" rows={3} value={form.desc_text} onChange={(e) => updateForm('desc_text', e.target.value)} placeholder="What is it? Why go?" />
 
-              {(form.type === 'dining' || form.type === 'special') && (
+              {form.type === 'food' && (
                 <>
                   <label className="add-label">What to order</label>
                   <input className="add-input" value={form.dish} onChange={(e) => updateForm('dish', e.target.value)} placeholder="e.g. Carbonara, Bistecca" />

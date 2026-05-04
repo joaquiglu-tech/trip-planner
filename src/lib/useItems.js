@@ -146,7 +146,7 @@ export function useItems(currentUserEmail) {
     const newItem = {
       id: crypto.randomUUID(),
       name: itemData.name || '',
-      type: itemData.type || 'dining',
+      type: itemData.type || 'food',
       city: itemData.city || '',
       description: itemData.desc_text || itemData.description || '',
       dish: itemData.dish || '',

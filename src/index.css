@@ -249,7 +249,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 /* ═══ BADGES ═══ */
 .badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-pill); white-space: nowrap; background: var(--bg-card-hd); color: var(--text-secondary) }
 .b-urgent { background: #FEF2F2; color: #DC2626 }
-.b-stay, .b-activity, .b-dining, .b-special, .b-transport, .b-michelin, .b-bourdain, .b-local, .b-bar, .b-cheap, .b-city { background: var(--bg-card-hd); color: var(--text-secondary) }
+.b-stay, .b-activity, .b-food, .b-transport, .b-michelin, .b-bourdain, .b-local, .b-bar, .b-cheap, .b-city { background: var(--bg-card-hd); color: var(--text-secondary) }
 
 /* ═══ SECTION HEADERS ═══ */
 .sect-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin: 24px 0 10px; padding: 0; background: none; border: none }

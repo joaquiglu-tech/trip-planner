@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { $f, priceLabel } from '../lib/useItems';
 import { uploadFile, deleteFile } from '../lib/storage';
 
-const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', special: 'Special Meal', dining: 'Dining' };
+const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_OPTIONS = [
-  { value: 'dining', label: 'Dining' }, { value: 'stay', label: 'Stay' }, { value: 'activity', label: 'Activity' },
-  { value: 'transport', label: 'Transport' }, { value: 'special', label: 'Special Meal' },
+  { value: 'food', label: 'Food' }, { value: 'stay', label: 'Stay' }, { value: 'activity', label: 'Activity' },
+  { value: 'transport', label: 'Transport' },
 ];
 const SUBCAT_BADGE = {
   bourdain: 'Bourdain', michelin: 'Michelin', local: 'Local pick', bar: 'Bar/Aperitivo', cheap: 'Cheap eats',
@@ -39,7 +39,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
   function startEdit() {
     setDraft({
-      name: it.name || '', type: it.type || 'dining', city: it.city || '',
+      name: it.name || '', type: it.type || 'food', city: it.city || '',
       description: it.description || '', dish: it.dish || '', link: it.link || '',
       notes: it.notes || '',
       estimated_cost: it.estimated_cost ? String(it.estimated_cost) : '',
@@ -53,7 +53,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   function saveEdit() {
     const changes = {};
     if (draft.name !== (it.name || '')) changes.name = draft.name;
-    if (draft.type !== (it.type || 'dining')) changes.type = draft.type;
+    if (draft.type !== (it.type || 'food')) changes.type = draft.type;
     if (draft.city !== (it.city || '')) changes.city = draft.city;
     if (draft.description !== (it.description || '')) changes.description = draft.description;
     if (draft.dish !== (it.dish || '')) changes.dish = draft.dish;
@@ -154,7 +154,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             </div>
             <label className="edit-label">Description</label>
             <textarea className="edit-textarea" value={draft.description} onChange={e => u('description', e.target.value)} rows={3} />
-            {(draft.type === 'dining' || draft.type === 'special') && (
+            {draft.type === 'food' && (
               <><label className="edit-label">What to order</label>
               <input className="edit-input" value={draft.dish} onChange={e => u('dish', e.target.value)} placeholder="Signature dish" /></>
             )}
@@ -261,7 +261,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                     <button className="detail-btn conf" onClick={async () => {
                       const val = parseFloat(costInput);
                       if (!val || val <= 0) return;
-                      await addExpense({ amount: val, category: (it.type === 'dining' || it.type === 'special') ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_id || '', created_by: '' });
+                      await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_id || '', created_by: '' });
                       setStatus(it.id, 'conf');
                       setCostInput(''); setConfirming(false);
                       showSaved('Confirmed');
@@ -389,7 +389,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             </>
           )}
 
-          {(it.type === 'dining' || it.type === 'special') && (
+          {it.type === 'food' && (
             <>
               {it.dish && (<div className="detail-dish-block"><span className="detail-dish-label">What to order</span><span className="detail-dish-text">{it.dish}</span></div>)}
               {desc && <p className="detail-desc-full">{desc}</p>}
@@ -447,7 +447,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                 <button className="detail-btn sel" onClick={async () => {
                   const val = parseFloat(costInput);
                   if (!val || val <= 0) return;
-                  await addExpense({ amount: val, category: (it.type === 'dining' || it.type === 'special') ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_id || '', created_by: '' });
+                  await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_id || '', created_by: '' });
                   setCostInput('');
                   showSaved('Payment added');
                 }}>Add payment</button>

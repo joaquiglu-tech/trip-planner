@@ -111,7 +111,7 @@ function DayMap({ stop, mapItems, stayCoord, visible }) {
     }
 
     // Item markers — numbered, color-coded by type
-    const TYPE_MAP_COLOR = { stay: '#7C3AED', dining: '#D97706', special: '#D97706', activity: '#16A34A', transport: '#2563EB' };
+    const TYPE_MAP_COLOR = { stay: '#7C3AED', food: '#D97706', activity: '#16A34A', transport: '#2563EB' };
     const withCoords = mapItems.filter(it => it.coord);
     withCoords.forEach((it, idx) => {
       const color = TYPE_MAP_COLOR[it.type] || '#666';
@@ -206,7 +206,7 @@ function getStopStats(stop, items) {
   const stays = stopItems.filter(it => it.type === 'stay');
   const transports = stopItems.filter(it => it.type === 'transport');
   const activities = stopItems.filter(it => it.type === 'activity');
-  const food = stopItems.filter(it => it.type === 'dining' || it.type === 'special');
+  const food = stopItems.filter(it => it.type === 'food');
   const stayBooked = stays.some(it => it.status === 'conf');
   const staySelected = stays.some(it => it.status === 'sel' || it.status === 'conf');
   const transportBooked = transports.length === 0 || transports.every(it => it.status === 'conf');

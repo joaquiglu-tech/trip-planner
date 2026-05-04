@@ -23,7 +23,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
     try {
       await onAdd({
         amount: val,
-        category: (selectedItem.type === 'dining' || selectedItem.type === 'special') ? 'food' : selectedItem.type,
+        category: selectedItem.type,
         note: note || selectedItem.name,
         item_id: selectedItem.id,
         stop_id: selectedItem.stop_id || '',
