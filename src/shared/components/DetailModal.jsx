@@ -30,6 +30,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   const [draft, setDraft] = useState({});
   const [uploading, setUploading] = useState(false);
   const [costInput, setCostInput] = useState('');
+  const [noteText, setNoteText] = useState(it.notes || '');
   const [place, setPlace] = useState(placeData || null);
   const [loadingPlace, setLoadingPlace] = useState(false);
   const [saved, setSaved] = useState('');
@@ -451,10 +452,17 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             </details>
           )}
 
-          {it.notes && !editing && (
+          {(st === 'sel' || st === 'conf' || it.notes) && !editing && (
             <div className="detail-section" style={{ marginTop: 8 }}>
               <div className="detail-section-title">Notes</div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{it.notes}</div>
+              <textarea
+                className="note-input"
+                placeholder="Add a note..."
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                onBlur={() => { if (noteText !== (it.notes || '')) { updateItem(it.id, { notes: noteText }); showSaved('Note saved'); } }}
+                rows={2}
+              />
             </div>
           )}
         </div>

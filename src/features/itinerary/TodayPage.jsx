@@ -702,22 +702,19 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
       </div>
 
       <div className="today-selector" ref={selectorRef}>
-        <button className={`today-sel-pill ${view === 'overview' ? 'active' : ''}`} onClick={() => setView('overview')}>Overview</button>
+        <button className={`itin-overview-pill ${view === 'overview' ? 'active' : ''}`} onClick={() => setView('overview')}>Overview</button>
         {isDuringTrip && !isActive(todayIdx) && <button className="today-sel-pill today-pill-accent" onClick={() => setView({ type: 'stop', idx: todayIdx })}>Today</button>}
 
         {selectorMode === 'stops' ? (
-          stops.map((s, i) => {
-            const nights = calcNights(s);
-            return (
+          stops.map((s, i) => (
               <button key={s.id} data-active={isActive(i) ? 'true' : 'false'}
                 className={`today-sel-pill today-sel-pill-stop ${isActive(i) ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`}
                 onClick={() => setView({ type: 'stop', idx: i })}
-                style={{ borderLeftColor: 'var(--accent)', minWidth: Math.max(70, nights * 50), flexShrink: 0 }}>
+                style={{ borderLeftColor: 'var(--accent)' }}>
                 <span className="pill-stop-name" title={s.name}>{s.name}</span>
                 <span className="pill-stop-date">{formatStopDate(s)}</span>
               </button>
-            );
-          })
+          ))
         ) : (
           calendarDates.map(cd => {
             const isMulti = cd.overlapping.length > 1;
