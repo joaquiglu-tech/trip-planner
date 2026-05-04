@@ -458,15 +458,15 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
 }
 
 // ═══ SINGLE STOP SECTION (reusable — shown once per stop) ═══
-function StopSection({ stop, items, onItemTap, places, visible, statusFilter, updateStop, showTitle }) {
+function StopSection({ stop, items, onItemTap, places, visible, statusFilter, updateStop, deleteStop, showTitle }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
 
   function startEdit() {
     setDraft({
       name: stop.name || '',
-      start_date: stop.start_date?.split('T')[0] || '',
-      end_date: stop.end_date?.split('T')[0] || '',
+      start_date: toDateStr(stop.start_date),
+      end_date: toDateStr(stop.end_date),
     });
     setEditing(true);
   }
@@ -474,8 +474,8 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
   function saveEdit() {
     const changes = {};
     if (draft.name !== (stop.name || '')) changes.name = draft.name;
-    if (draft.start_date && draft.start_date !== stop.start_date?.split('T')[0]) changes.start_date = draft.start_date + 'T00:00:00Z';
-    if (draft.end_date && draft.end_date !== stop.end_date?.split('T')[0]) changes.end_date = draft.end_date + 'T00:00:00Z';
+    if (draft.start_date && draft.start_date !== toDateStr(stop.start_date)) changes.start_date = draft.start_date;
+    if (draft.end_date && draft.end_date !== toDateStr(stop.end_date)) changes.end_date = draft.end_date;
     if (Object.keys(changes).length > 0 && updateStop) updateStop(stop.id, changes);
     setEditing(false);
   }
@@ -530,6 +530,15 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
               <button className="detail-btn" onClick={() => setEditing(false)} style={{ flex: 1 }}>Cancel</button>
               <button className="detail-btn sel" onClick={saveEdit} style={{ flex: 1 }}>Save</button>
             </div>
+            {deleteStop && (
+              <button className="detail-btn-delete" style={{ marginTop: 8 }} onClick={() => {
+                const itemCount = items.filter(it => itemInStop(it, stop.id)).length;
+                if (confirm(`Delete ${stop.name}? ${itemCount > 0 ? `This will unlink ${itemCount} items.` : ''} This cannot be undone.`)) {
+                  deleteStop(stop.id);
+                  setEditing(false);
+                }
+              }}>Delete this stop</button>
+            )}
           </>
         ) : (
           <div className="itin-general-compact">
@@ -628,7 +637,7 @@ function getCalendarDates(stops) {
 }
 
 // ═══ MAIN ═══
-export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, updateStop, setStatus, addExpense, files, setFile, removeFile, places, getPlaceData }) {
+export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, updateStop, deleteStop, setStatus, addExpense, files, setFile, removeFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');
@@ -713,7 +722,7 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
           <StopSection
             key={stop.id} stop={stop} items={items} onItemTap={setSelectedItem}
             places={places} visible={active} statusFilter={statusFilter}
-            updateStop={updateStop} showTitle={activeStops.length > 1}
+            updateStop={updateStop} deleteStop={deleteStop} showTitle={activeStops.length > 1}
           />
         ))
       )}

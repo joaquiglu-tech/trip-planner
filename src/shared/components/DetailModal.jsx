@@ -111,7 +111,6 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
     try {
       const result = await uploadFile(it.id, f);
       if (setFile) setFile(it.id, result);
-      if (st !== 'conf') setStatus(it.id, 'conf');
     } catch (err) { alert('Upload failed: ' + err.message); }
     setUploading(false);
   }
@@ -237,7 +236,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
               {!st && <button className="detail-btn sel" onClick={handleSelect}>Add to our trip</button>}
               {st === 'sel' && !confirming && (
                 <>
-                  <div className="status-banner sel-banner"><span>Added to trip</span><button className="status-change-btn" onClick={handleSelect}>Remove</button></div>
+                  <div className="status-banner sel-banner"><span>Added to trip</span><button className="status-change-btn" onClick={handleSelect}>Remove from trip</button></div>
                   <button className="detail-btn conf" onClick={() => setConfirming(true)} style={{ marginTop: 6 }}>Confirm & pay</button>
                 </>
               )}
@@ -264,7 +263,12 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
               {st === 'conf' && (
                 <div className="status-banner conf-banner">
                   <span>Booked{expenseAmount > 0 ? ` · ${$f(expenseAmount)}` : ''}</span>
-                  <button className="status-change-btn" onClick={() => setStatus(it.id, 'sel')}>Change</button>
+                  <button className="status-change-btn" onClick={() => {
+                    if (expenseAmount > 0) {
+                      if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Reverting will keep the expenses but mark the item as unconfirmed. Continue?`)) return;
+                    }
+                    setStatus(it.id, 'sel');
+                  }}>Change</button>
                 </div>
               )}
             </div>
@@ -457,7 +461,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
         {onDelete && (
           <div style={{ padding: '0 16px 16px' }}>
-            <button className="detail-btn-delete" onClick={() => { if (confirm('Remove this item?')) onDelete(); }}>Remove</button>
+            <button className="detail-btn-delete" onClick={() => { if (confirm('Delete this item permanently? This cannot be undone.')) onDelete(); }}>Delete permanently</button>
           </div>
         )}
       </div>
