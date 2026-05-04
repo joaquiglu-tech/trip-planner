@@ -398,10 +398,12 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 /* ═══ BUDGET ═══ */
 .budget-summary { background: var(--summary-bg); color: #fff; border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; width: 100% }
 .summary-breakdown { margin-top: 10px; background: rgba(255,255,255,.06); border-radius: var(--radius); overflow: hidden }
-.summary-bd-header { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; padding: 6px 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666 }
-.summary-bd-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; padding: 6px 10px; font-size: 12px; border-top: 1px solid rgba(255,255,255,.05) }
+.summary-bd-header, .summary-bd-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 4px; padding: 6px 10px; align-items: center }
+.summary-bd-header { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666 }
+.summary-bd-header span:nth-child(2), .summary-bd-header span:nth-child(3) { text-align: right }
+.summary-bd-row { font-size: 12px; border-top: 1px solid rgba(255,255,255,.05) }
 .summary-bd-label { color: #999 }
-.summary-bd-val { text-align: right; font-variant-numeric: tabular-nums }
+.summary-bd-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600 }
 .summary-bd-val.conf { color: var(--green-bright) }
 .summary-bd-total { font-weight: 700; border-top: 1px solid rgba(255,255,255,.15) }
 .summary-bd-total .summary-bd-label { color: #ccc }
