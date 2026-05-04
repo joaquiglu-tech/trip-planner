@@ -1,49 +1,39 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from './supabase';
-import { ENRICHMENT } from '../data/enrichment';
-import { ITEM_COORDS } from '../data/coords';
 import { listFiles } from './storage';
 import { fetchHotelPrice } from './hotelPrices';
 import { enrichItem } from './enrichItem';
 
 export const $f = (n) => '$' + (n || 0).toLocaleString();
 
-// Estimated cost — single source of truth
 export function itemCost(it) {
   return Number(it.estimated_cost) || 0;
 }
 
-// Price display for cards
 export function priceLabel(it, livePrice, expenseAmount) {
   if (expenseAmount > 0) return { text: $f(expenseAmount), type: 'confirmed' };
   if (livePrice > 0 && it.type === 'stay') return { text: `${$f(livePrice)}/n`, type: 'live' };
-  if (it.estimated_cost > 0) return { text: $f(it.estimated_cost), type: 'estimate' };
-  if (it.type === 'activity' && it.estimated_cost === 0) return { text: 'Free', type: 'estimate' };
+  if (it.estimated_cost > 0) return { text: $f(Number(it.estimated_cost)), type: 'estimate' };
+  if (it.type === 'activity' && !it.estimated_cost) return { text: 'Free', type: 'estimate' };
   return { text: '', type: 'none' };
 }
 
-// Merge DB row with details JSONB flattened + enrichment fallbacks
-function mergeItem(row) {
-  const extra = ENRICHMENT[row.id] || {};
-  const d = row.details || {};
-  const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : ITEM_COORDS[row.id] || null;
+// Merge DB row — add computed fields
+function mergeItem(row, stopName) {
+  const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : null;
   return {
     ...row,
-    ...extra,
     coord,
-    // Flatten details JSONB for backward compatibility
-    dish: d.dish || extra.dish || '',
-    subcat: d.subcat || extra.subcat || '',
-    tier: d.tier || extra.tier || '',
-    hrs: d.hrs || extra.hrs || 0,
-    check_in: d.check_in || extra.checkIn || '',
-    check_out: d.check_out || extra.checkOut || '',
-    departTime: d.depart_time || extra.departTime || '',
-    arriveTime: d.arrive_time || extra.arriveTime || '',
-    route: d.route || extra.route || '',
-    reserveNote: row.reserve_note || extra.reserveNote || '',
-    // City derived from first stop name (for filtering)
-    city: row._stopName || extra.city || '',
+    city: stopName || '',
+    // Parse pipe-delimited text fields into arrays for display
+    whatToExpect: row.what_to_expect ? row.what_to_expect.split('|').map(s => s.trim()).filter(Boolean) : null,
+    proTips: row.pro_tips ? row.pro_tips.split('|').map(s => s.trim()).filter(Boolean) : null,
+    highlights: row.highlights ? row.highlights.split('|').map(s => s.trim()).filter(Boolean) : null,
+    quoteSource: row.quote_source || '',
+    options: row.booking_options?.length > 0 ? row.booking_options : null,
+    reserveNote: row.reserve_note || '',
+    departTime: row.depart_time || '',
+    arriveTime: row.arrive_time || '',
   };
 }
 
@@ -51,7 +41,7 @@ export function useItems(currentUserEmail) {
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [files, setFilesState] = useState({});
-  const [livePrices, setLivePrices] = useState({}); // in-memory only, keyed by item id
+  const [livePrices, setLivePrices] = useState({});
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -61,7 +51,6 @@ export function useItems(currentUserEmail) {
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }
 
-  // Load all items
   useEffect(() => {
     async function load() {
       const [itemsRes, stopsRes] = await Promise.all([
@@ -72,15 +61,14 @@ export function useItems(currentUserEmail) {
       const stopsMap = {};
       (stopsRes.data || []).forEach(s => { stopsMap[s.id] = s; });
       const merged = (itemsRes.data || []).map(row => {
-        // Derive city from first stop
         const firstStopId = row.stop_ids?.[0];
         const stop = firstStopId ? stopsMap[firstStopId] : null;
-        return mergeItem({ ...row, _stopName: stop?.name || '' });
+        return mergeItem(row, stop?.name || '');
       });
       setItems(merged);
       setLoaded(true);
 
-      // Fetch live hotel prices in background (in-memory only)
+      // Fetch live hotel prices in background
       const staysWithKeys = merged.filter(it => it.type === 'stay' && it.xotelo_key);
       if (staysWithKeys.length > 0) {
         const stopsLookup = stopsRes.data || [];
@@ -120,10 +108,10 @@ export function useItems(currentUserEmail) {
         if (payload.eventType === 'DELETE') {
           setItems(prev => prev.filter(it => it.id !== payload.old.id));
         } else {
-          const merged = mergeItem(payload.new);
+          const merged = mergeItem(payload.new, '');
           setItems(prev => {
             const idx = prev.findIndex(it => it.id === merged.id);
-            if (idx >= 0) { const next = [...prev]; next[idx] = merged; return next; }
+            if (idx >= 0) { const next = [...prev]; next[idx] = { ...prev[idx], ...merged }; return next; }
             return [...prev, merged];
           });
           if (payload.new.updated_by && payload.new.updated_by !== currentUserEmail) {
@@ -148,7 +136,6 @@ export function useItems(currentUserEmail) {
   const setStatus = useCallback(async (id, status) => {
     if (navigator.vibrate) navigator.vibrate(15);
     const item = items.find(it => it.id === id);
-    // Stay mutual exclusion — deselect other stays in the same stop
     const itemStops = item?.stop_ids || [];
     if (item?.type === 'stay' && itemStops.length > 0 && (status === 'sel' || status === 'conf')) {
       const others = items.filter(it => it.type === 'stay' && it.id !== id && (it.status === 'sel' || it.status === 'conf') && it.stop_ids?.some(s => itemStops.includes(s)));
@@ -161,9 +148,6 @@ export function useItems(currentUserEmail) {
   }, [items, currentUserEmail, updateItem]);
 
   const addItem = useCallback(async (itemData) => {
-    const details = {};
-    if (itemData.dish) details.dish = itemData.dish;
-    if (itemData.subcat) details.subcat = itemData.subcat;
     const newItem = {
       id: crypto.randomUUID(),
       name: itemData.name || '',
@@ -171,7 +155,7 @@ export function useItems(currentUserEmail) {
       description: itemData.desc_text || itemData.description || '',
       link: itemData.link || '',
       estimated_cost: itemData.estimated_cost || 0,
-      details: Object.keys(details).length > 0 ? details : {},
+      dish: itemData.dish || '',
       stop_ids: itemData.stop_ids || [],
       status: 'sel',
       created_by: currentUserEmail,
@@ -181,7 +165,7 @@ export function useItems(currentUserEmail) {
     };
     const { data, error } = await supabase.from('items').insert(newItem).select().single();
     if (error) throw error;
-    const merged = mergeItem(data);
+    const merged = mergeItem(data, '');
     setItems(prev => [...prev, merged]);
     enrichItem(data).then(changes => {
       if (Object.keys(changes).length > 0) {
@@ -212,20 +196,15 @@ export function useItems(currentUserEmail) {
   return { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile };
 }
 
-// Stay date lookup from stops table (dynamic, no hardcoded dates)
+// Stay date lookup from stops table
 function getStayDates(stay, stops) {
   const firstStopId = stay.stop_ids?.[0];
   if (firstStopId) {
     const byId = stops.find(s => s.id === firstStopId);
-    if (byId) {
-      return { checkIn: String(byId.start_date).substring(0, 10), checkOut: String(byId.end_date).substring(0, 10) };
-    }
+    if (byId) return { checkIn: String(byId.start_date).substring(0, 10), checkOut: String(byId.end_date).substring(0, 10) };
   }
-  // Fallback: match by name
-  const stop = stops.find(s => s.name === stay.city || s.name.includes(stay.city));
-  if (stop) {
-    return { checkIn: String(stop.start_date).substring(0, 10), checkOut: String(stop.end_date).substring(0, 10) };
-  }
+  const stop = stops.find(s => s.name === stay.city || s.name?.includes(stay.city));
+  if (stop) return { checkIn: String(stop.start_date).substring(0, 10), checkOut: String(stop.end_date).substring(0, 10) };
   if (stops.length > 0) return { checkIn: String(stops[0].start_date).substring(0, 10), checkOut: String(stops[stops.length - 1].end_date).substring(0, 10) };
   return { checkIn: '2026-07-20', checkOut: '2026-07-24' };
 }
