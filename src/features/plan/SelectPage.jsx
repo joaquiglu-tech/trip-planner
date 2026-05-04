@@ -44,7 +44,6 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
       }
       if (filters.city !== 'all' && it.city !== filters.city) return false;
       const st = it.status || '';
-      if (filters.status === 'unbooked' && st !== 'sel') return false;
       if (filters.status === 'sel' && st !== 'sel') return false;
       if (filters.status === 'conf' && st !== 'conf') return false;
       if (filters.status === 'none' && st !== '') return false;
@@ -94,7 +93,6 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
       <div className="planner-sticky-bar">
         <FilterBar filters={filters} setFilters={setFilters} items={items} sortBy={sortBy} setSortBy={setSortBy} />
       </div>
-      <button className="add-item-btn" onClick={() => setShowAddModal(true)}>+ Add something new</button>
 
       <div id="items-container">
         {filtered.length === 0 && (
