@@ -67,7 +67,50 @@ export function useStops() {
     setStops(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
     const { error } = await supabase.from('stops').update(changes).eq('id', id);
     if (error) console.warn('Failed to update stop:', error);
+    // If name changed, re-fetch google place ID + coords
+    if (changes.name) {
+      const result = await fetchPlaceId(changes.name);
+      if (result) {
+        const updates = { google_place_id: result.placeId };
+        if (result.lat) { updates.lat = result.lat; updates.lng = result.lng; }
+        await supabase.from('stops').update(updates).eq('id', id);
+        setStops(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+      }
+    }
   }, []);
 
-  return { stops, loaded, updateStop };
+  const addStop = useCallback(async (stopData) => {
+    // Calculate sort_order (insert at end or by date)
+    const maxSort = stops.reduce((max, s) => Math.max(max, s.sort_order || 0), 0);
+    const newStop = {
+      id: `stop-${stopData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`,
+      name: stopData.name,
+      start_date: stopData.start_date,
+      end_date: stopData.end_date,
+      trip_id: 'trip-1',
+      sort_order: maxSort + 1,
+      tips: [],
+    };
+    const { data, error } = await supabase.from('stops').insert(newStop).select().single();
+    if (error) throw error;
+    setStops(prev => [...prev, data].sort((a, b) => new Date(a.start_date) - new Date(b.start_date)));
+
+    // Auto-enrich: fetch google_place_id + coords
+    const result = await fetchPlaceId(stopData.name);
+    if (result) {
+      const updates = { google_place_id: result.placeId };
+      if (result.lat) { updates.lat = result.lat; updates.lng = result.lng; }
+      await supabase.from('stops').update(updates).eq('id', data.id);
+      setStops(prev => prev.map(s => s.id === data.id ? { ...s, ...updates } : s));
+    }
+
+    return data;
+  }, [stops]);
+
+  const deleteStop = useCallback(async (id) => {
+    setStops(prev => prev.filter(s => s.id !== id));
+    await supabase.from('stops').delete().eq('id', id);
+  }, []);
+
+  return { stops, loaded, updateStop, addStop, deleteStop };
 }

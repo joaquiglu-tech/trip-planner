@@ -13,9 +13,9 @@ import BudgetPage from './components/BudgetPage';
 import ProfilePage from './components/ProfilePage';
 import AddItemModal from './components/AddItemModal';
 import AddExpenseModal from './components/AddExpenseModal';
+import AddStopModal from './components/AddStopModal';
 import Toast from './components/Toast';
 
-// Read tab from URL hash on load
 function getTabFromHash() {
   const hash = window.location.hash.replace('#/', '').split('/')[0];
   if (['plan', 'expenses', 'itinerary', 'profile'].includes(hash)) return hash;
@@ -28,9 +28,10 @@ export default function App() {
   const [showFab, setShowFab] = useState(null);
   const [showAddItem, setShowAddItem] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [showAddStop, setShowAddStop] = useState(false);
   const email = session?.user?.email || '';
   const { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
-  const { stops, loaded: stopsLoaded, updateStop } = useStops();
+  const { stops, loaded: stopsLoaded, updateStop, addStop } = useStops();
   const { places, getPlaceData } = usePlaceData();
   const { expenses, addExpense, deleteExpense } = useExpenses();
 
@@ -41,7 +42,6 @@ export default function App() {
 
   const [filterCity, setFilterCity] = useState(null);
 
-  // Set initial hash if none, and listen for hash changes
   useEffect(() => {
     if (!window.location.hash) window.location.hash = `#/${activeTab}`;
     function handleHashChange() { setActiveTab(getTabFromHash()); }
@@ -93,6 +93,7 @@ export default function App() {
           {showFab === 'menu' && (
             <div className="fab-overlay" onClick={() => setShowFab(null)}>
               <div className="fab-menu" onClick={(e) => e.stopPropagation()}>
+                <button className="fab-option" onClick={() => { setShowFab(null); setShowAddStop(true); }}>Add stop</button>
                 <button className="fab-option" onClick={() => { setShowFab(null); setShowAddItem(true); }}>Add item</button>
                 <button className="fab-option" onClick={() => { setShowFab(null); setShowAddExpense(true); }}>Add expense</button>
               </div>
@@ -102,6 +103,7 @@ export default function App() {
         </>
       )}
 
+      {showAddStop && <AddStopModal onAdd={addStop} onClose={() => setShowAddStop(false)} />}
       {showAddItem && <AddItemModal onClose={() => setShowAddItem(false)} onAdd={addItem} stops={stops} userEmail={email} />}
       {showAddExpense && <AddExpenseModal items={items} stops={stops} onAdd={addExpense} onClose={() => setShowAddExpense(false)} userEmail={email} />}
 
