@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { $f } from '../hooks/useItems';
 import { uploadFile, deleteFile } from '../../services/storage';
+import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
 import PlaceSearch from './PlaceSearch';
 
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
@@ -268,7 +269,26 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
     origin: it.origin_name ? { name: it.origin_name, lat: it.origin_lat, lng: it.origin_lng } : null,
     dest: it.dest_name ? { name: it.dest_name, lat: it.dest_lat, lng: it.dest_lng } : null,
     hrs: it.hrs ? String(it.hrs) : '',
+    xotelo_key: it.xotelo_key || '',
   });
+  const [tripadvisorUrl, setTripadvisorUrl] = useState('');
+  const [xoteloStatus, setXoteloStatus] = useState(it.xotelo_key ? 'found' : '');
+
+  async function handleTripAdvisorUrl(url) {
+    setTripadvisorUrl(url);
+    const key = extractXoteloKey(url);
+    if (!key) { if (url.length > 10) setXoteloStatus('not_found'); return; }
+    u('xotelo_key', key);
+    setXoteloStatus('searching');
+    const firstStop = (stops || []).find(s => draft.stop_ids.includes(s.id));
+    const checkIn = firstStop ? String(firstStop.start_date).substring(0, 10) : null;
+    const checkOut = firstStop ? String(firstStop.end_date).substring(0, 10) : null;
+    if (checkIn && checkOut) {
+      const estimate = await fetchStayEstimate(key, checkIn, checkOut);
+      if (estimate) { u('estimated_cost', String(estimate.estimated_cost)); setXoteloStatus('found'); }
+      else setXoteloStatus('not_found');
+    } else setXoteloStatus('found');
+  }
   const [saving, setSaving] = useState(false);
 
   const u = (key, val) => setDraft(d => ({ ...d, [key]: val }));
@@ -289,6 +309,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
     if (JSON.stringify(draft.stop_ids) !== JSON.stringify(it.stop_ids || [])) changes.stop_ids = draft.stop_ids;
     if (draft.subcat !== (it.subcat || '')) changes.subcat = draft.subcat;
     if (draft.tier !== (it.tier || '')) changes.tier = draft.tier;
+    if (draft.xotelo_key !== (it.xotelo_key || '')) changes.xotelo_key = draft.xotelo_key;
     if (draft.transport_mode !== (it.transport_mode || '')) changes.transport_mode = draft.transport_mode;
     if (draft.is_rental !== !!it.is_rental) changes.is_rental = draft.is_rental;
     const hrs = parseFloat(draft.hrs);
@@ -362,6 +383,11 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
               <select className="edit-input" value={draft.tier} onChange={e => u('tier', e.target.value)}>
                 {TIER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+              <label className="edit-label">TripAdvisor link (for live prices)</label>
+              <input className="edit-input" value={tripadvisorUrl} onChange={e => handleTripAdvisorUrl(e.target.value)} placeholder="Paste TripAdvisor hotel URL..." />
+              {xoteloStatus === 'searching' && <div style={{ fontSize: 11, color: 'var(--accent)', padding: '4px 0' }}>Searching for live prices...</div>}
+              {xoteloStatus === 'found' && <div style={{ fontSize: 11, color: 'var(--green)', padding: '4px 0' }}>Live prices connected{draft.xotelo_key && ` (${draft.xotelo_key})`}</div>}
+              {xoteloStatus === 'not_found' && <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '4px 0' }}>No live prices found — enter estimate manually</div>}
             </>
           )}
           {draft.type === 'transport' && (

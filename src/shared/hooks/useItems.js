@@ -130,6 +130,7 @@ export function useItems(currentUserEmail, showToast) {
       dish: itemData.dish || '', subcat: itemData.subcat || '', tier: itemData.tier || '',
       route: itemData.route || '', transport_mode: itemData.transport_mode || '',
       is_rental: itemData.is_rental || false,
+      xotelo_key: itemData.xotelo_key || null,
       origin_name: itemData.origin_name || '', origin_lat: itemData.origin_lat || null, origin_lng: itemData.origin_lng || null,
       dest_name: itemData.dest_name || '', dest_lat: itemData.dest_lat || null, dest_lng: itemData.dest_lng || null,
       hrs: itemData.hrs || null, notes: itemData.notes || '',
