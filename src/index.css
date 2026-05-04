@@ -243,6 +243,14 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .sel-banner { background: var(--accent-light); color: var(--accent) }
 .conf-banner { background: var(--green-light); color: var(--green) }
 .status-change-btn { background: none; border: none; color: inherit; font-size: 11px; font-weight: 600; cursor: pointer; opacity: .6; text-decoration: underline }
+.status-selector { display: flex; gap: 4px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: var(--bg-card-hd) }
+.status-option { flex: 1; padding: 8px 4px; border: none; background: none; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font); color: var(--text-muted); transition: background var(--duration) var(--ease), color var(--duration) var(--ease); white-space: nowrap }
+.status-option.active { color: var(--text); background: var(--bg-card) }
+.status-option.sel.active { background: var(--accent-light); color: var(--accent) }
+.status-option.conf.active { background: var(--green-light); color: var(--green) }
+.edit-stop-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px }
+.stop-chip { padding: 6px 12px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font) }
+.stop-chip-active { background: var(--accent-light); color: var(--accent); border-color: var(--accent) }
 .upload-cta { display: block; width: 100%; padding: 12px; border-radius: var(--radius); border: 2px dashed var(--green); background: var(--green-light); color: var(--green); font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; min-height: 44px }
 .add-item-btn { display: block; width: 100%; padding: 12px; border: 1.5px dashed var(--border); border-radius: var(--radius); background: none; color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px }
 .pull-refresh-btn { display: none }

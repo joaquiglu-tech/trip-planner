@@ -159,7 +159,7 @@ export default function BudgetPage({ active, items, stops, livePrices, expenses,
         const exp = (expenses || []).filter(e => e.item_id === selectedItem.id).reduce((s, e) => s + Number(e.amount || 0), 0);
         return <DetailModal
           it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
-          updateItem={updateItem}
+          updateItem={updateItem} stops={stops}
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight}

@@ -7,14 +7,14 @@ function ItemCard({ it, status, onTap, livePrice, expenseAmount }) {
   const st = status || it.status || '';
   const price = priceLabel(it, livePrice, expenseAmount);
 
-  let timeInfo = '';
-  if (it.type === 'stay' && it.check_in) timeInfo = `${it.check_in} · ${it.city}`;
-  else if (it.type === 'stay') timeInfo = it.tier || it.city;
-  else if (it.type === 'transport' && it.departTime && it.departTime !== 'TBD') timeInfo = `${it.departTime} · ${it.route || ''}`;
-  else if (it.type === 'transport' && it.route) timeInfo = it.route;
-  else if (it.type === 'activity' && it.hrs) timeInfo = `${it.hrs}h · ${it.city}`;
-  else if (it.dish) timeInfo = it.dish;
-  else timeInfo = it.city;
+  const detail = (() => {
+    if (it.type === 'stay') return it.tier || '';
+    if (it.type === 'transport') return it.routeLabel || it.route || '';
+    if (it.type === 'food') return it.dish || '';
+    if (it.type === 'activity' && it.hrs) return `${it.hrs}h`;
+    return '';
+  })();
+  const timeInfo = [it.city, detail].filter(Boolean).join(' · ') || '';
 
   return (
     <div className={`item-card-compact ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onTap(it)}>

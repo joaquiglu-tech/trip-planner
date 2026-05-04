@@ -21,9 +21,18 @@ export function priceLabel(it, livePrice, expenseAmount) {
 // Merge DB row — add computed fields
 function mergeItem(row, stopName) {
   const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : null;
+  const originCoord = (row.origin_lat && row.origin_lng) ? { lat: Number(row.origin_lat), lng: Number(row.origin_lng) } : null;
+  const destCoord = (row.dest_lat && row.dest_lng) ? { lat: Number(row.dest_lat), lng: Number(row.dest_lng) } : null;
+  // Derive route label from origin/dest names, fallback to existing route field
+  const routeLabel = (row.origin_name && row.dest_name)
+    ? `${row.origin_name} → ${row.dest_name}`
+    : row.route || '';
   return {
     ...row,
     coord,
+    originCoord,
+    destCoord,
+    routeLabel,
     city: stopName || '',
     // Parse pipe-delimited text fields into arrays for display
     whatToExpect: row.what_to_expect ? row.what_to_expect.split('|').map(s => s.trim()).filter(Boolean) : null,
@@ -160,6 +169,21 @@ export function useItems(currentUserEmail) {
       link: itemData.link || '',
       estimated_cost: itemData.estimated_cost || 0,
       dish: itemData.dish || '',
+      subcat: itemData.subcat || '',
+      tier: itemData.tier || '',
+      route: itemData.route || '',
+      transport_mode: itemData.transport_mode || '',
+      is_rental: itemData.is_rental || false,
+      origin_name: itemData.origin_name || '',
+      origin_lat: itemData.origin_lat || null,
+      origin_lng: itemData.origin_lng || null,
+      dest_name: itemData.dest_name || '',
+      dest_lat: itemData.dest_lat || null,
+      dest_lng: itemData.dest_lng || null,
+      hrs: itemData.hrs || null,
+      depart_time: itemData.depart_time || '',
+      arrive_time: itemData.arrive_time || '',
+      notes: itemData.notes || '',
       start_time: itemData.start_time || null,
       end_time: itemData.end_time || null,
       stop_ids: itemData.stop_ids || [],
