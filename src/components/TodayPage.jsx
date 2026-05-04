@@ -89,7 +89,8 @@ function DayMap({ stop, mapItems, stayCoord, visible }) {
   const mapsReady = useGoogleMapsReady();
 
   // Center on stay coord or first item coord
-  const center = stayCoord || (mapItems.find(it => it.coord)?.coord) || null;
+  const stopCoord = (stop.lat && stop.lng) ? { lat: Number(stop.lat), lng: Number(stop.lng) } : null;
+  const center = stayCoord || stopCoord || (mapItems.find(it => it.coord)?.coord) || null;
   const key = `${stop.id}-${mapItems.map(e => e.id).join(',')}`;
   const coords = mapItems.filter(it => it.coord).map(it => it.coord);
   const mapsRouteUrl = coords.length > 1
@@ -171,11 +172,14 @@ function RouteMap({ visible, stops, items }) {
   const mapsReady = useGoogleMapsReady();
   useEffect(() => {
     if (!visible || !mapsReady || !mapRef.current || mapInstance.current) return;
-    // Get coords for each stop — from stay, or any item with coords, or stop's google place
+    // Get coords for each stop — from stop itself, stay item, or any item
     const points = stops.map(s => {
+      // 1. Stop has its own coords (from google_place_id)
+      if (s.lat && s.lng) return { stop: s, coord: { lat: Number(s.lat), lng: Number(s.lng) } };
+      // 2. From the selected stay
       const stay = getStay(items, s.id);
       if (stay?.coord) return { stop: s, coord: stay.coord };
-      // Fallback: any item in this stop with coords
+      // 3. From any item in this stop
       const anyItem = items.find(it => itemInStop(it, s.id) && it.coord);
       if (anyItem?.coord) return { stop: s, coord: anyItem.coord };
       return { stop: s, coord: null };

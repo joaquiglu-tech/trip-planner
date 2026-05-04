@@ -34,14 +34,21 @@ export function useStops() {
       setStops(data || []);
       setLoaded(true);
 
-      // Auto-populate google_place_id for stops that don't have one
-      const missing = (data || []).filter(s => !s.google_place_id);
-      if (missing.length > 0) {
-        for (const stop of missing) {
+      // Auto-populate google_place_id and lat/lng for stops missing them
+      const needsPlaceId = (data || []).filter(s => !s.google_place_id);
+      const needsCoords = (data || []).filter(s => !s.lat && s.google_place_id);
+      const toFetch = [...needsPlaceId, ...needsCoords];
+      if (toFetch.length > 0) {
+        for (const stop of toFetch) {
           const result = await fetchPlaceId(stop.name);
           if (result) {
-            await supabase.from('stops').update({ google_place_id: result.placeId }).eq('id', stop.id);
-            setStops(prev => prev.map(s => s.id === stop.id ? { ...s, google_place_id: result.placeId, _lat: result.lat, _lng: result.lng } : s));
+            const updates = {};
+            if (!stop.google_place_id) updates.google_place_id = result.placeId;
+            if (!stop.lat && result.lat) { updates.lat = result.lat; updates.lng = result.lng; }
+            if (Object.keys(updates).length > 0) {
+              await supabase.from('stops').update(updates).eq('id', stop.id);
+              setStops(prev => prev.map(s => s.id === stop.id ? { ...s, ...updates } : s));
+            }
           }
           await new Promise(r => setTimeout(r, 300));
         }
