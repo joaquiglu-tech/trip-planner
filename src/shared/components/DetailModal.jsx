@@ -40,7 +40,7 @@ function formatDatetime(dt) {
   } catch { return dt; }
 }
 
-export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, itemExpenses, addExpense, updateExpense, stops }) {
+export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, itemExpenses, addExpense, updateExpense, deleteExpense, stops }) {
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -54,17 +54,41 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
   function showSaved(label) { setSaved(label); setTimeout(() => setSaved(''), 1500); }
 
-  // Expense: create or update on blur
+  // Expense: create or update on blur. Auto-confirms item when expense is created.
   function handlePaidBlur() {
     const val = parseFloat(paidInput);
     if (isNaN(val) || val < 0) { setPaidInput(expenseAmount > 0 ? String(expenseAmount) : ''); return; }
     const existing = (itemExpenses || [])[0];
-    if (existing && val > 0) {
-      if (val !== Number(existing.amount)) updateExpense(existing.id, { amount: val });
-    } else if (!existing && val > 0) {
-      addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || '', created_by: '' });
+    if (val > 0) {
+      if (existing) {
+        if (val !== Number(existing.amount)) updateExpense(existing.id, { amount: val });
+      } else {
+        addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || '', created_by: '' });
+        // Auto-confirm when expense is created
+        if (st !== 'conf') setStatus(it.id, 'conf');
+      }
+      showSaved('Saved');
+    } else if (val === 0 && existing) {
+      // Clear to 0 = remove expense
+      if (confirm('Remove the confirmed payment?')) {
+        deleteExpense(existing.id);
+        setPaidInput('');
+        showSaved('Payment removed');
+      } else {
+        setPaidInput(String(expenseAmount));
+      }
     }
-    showSaved('Saved');
+  }
+
+  // Delete expense directly
+  function handleDeleteExpense() {
+    const existing = (itemExpenses || [])[0];
+    if (!existing) return;
+    if (confirm('Remove the confirmed payment?')) {
+      deleteExpense(existing.id);
+      setPaidInput('');
+      showSaved('Payment removed');
+    }
   }
 
   useEffect(() => { setPaidInput(expenseAmount > 0 ? String(expenseAmount) : ''); }, [expenseAmount]);
@@ -112,7 +136,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   // ═══ EDIT MODE — all fields, batch save ═══
   if (editing) {
     return <EditMode it={it} stops={stops} livePrice={livePrice} livePriceRates={livePriceRates}
-      expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur}
+      expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} onDeleteExpense={handleDeleteExpense}
       updateItem={updateItem} onClose={() => setEditing(false)} showSaved={showSaved} saved={saved}
       itemFiles={itemFiles} uploading={uploading} handleUpload={handleUpload} handleRemoveFile={handleRemoveFile} />;
   }
@@ -153,13 +177,17 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
               </div>
               {confirming && (
                 <div className="detail-booking-prompt" style={{ marginTop: 8 }}>
-                  <div className="detail-section-title" style={{ marginBottom: 8 }}>How much did you pay?</div>
-                  <div className="cost-input-row" style={{ marginBottom: 8 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" placeholder="0 (optional)" value={costInput} onChange={e => setCostInput(e.target.value)} autoFocus /></div>
+                  <div className="detail-section-title" style={{ marginBottom: 8 }}>{expenseAmount > 0 ? 'Update payment' : 'How much did you pay?'}</div>
+                  <div className="cost-input-row" style={{ marginBottom: 8 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" placeholder="0 (optional)" value={costInput || (expenseAmount > 0 ? String(expenseAmount) : '')} onChange={e => setCostInput(e.target.value)} autoFocus /></div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="detail-btn" onClick={() => setConfirming(false)} style={{ flex: 1 }}>Cancel</button>
+                    <button className="detail-btn" onClick={() => { setCostInput(''); setConfirming(false); }} style={{ flex: 1 }}>Cancel</button>
                     <button className="detail-btn conf" onClick={async () => {
-                      const val = parseFloat(costInput);
-                      if (val > 0 && addExpense) await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || '', created_by: '' });
+                      const val = parseFloat(costInput || (expenseAmount > 0 ? String(expenseAmount) : '0'));
+                      const existing = (itemExpenses || [])[0];
+                      if (val > 0) {
+                        if (existing) { if (val !== Number(existing.amount)) await updateExpense(existing.id, { amount: val }); }
+                        else { await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || '', created_by: '' }); }
+                      }
                       setStatus(it.id, 'conf');
                       setCostInput(''); setConfirming(false);
                       showSaved(val > 0 ? 'Confirmed & paid' : 'Booked');
@@ -207,7 +235,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           {it.reserveNote && <div className="detail-reserve-note">{it.reserveNote}</div>}
 
           {/* ═══ PRICING ═══ */}
-          <PricingBlock it={it} livePrice={livePrice} expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} />
+          <PricingBlock it={it} livePrice={livePrice} expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} onDeleteExpense={handleDeleteExpense} />
 
           {/* ═══ BOOKING ═══ */}
           {it.type === 'stay' && livePriceRates?.length > 0 && (
@@ -252,7 +280,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 }
 
 // ═══ EDIT MODE — batch save ═══
-function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInput, setPaidInput, handlePaidBlur, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile }) {
+function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInput, setPaidInput, handlePaidBlur, onDeleteExpense, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile }) {
   const [draft, setDraft] = useState({
     name: it.name || '', type: it.type || 'food',
     description: it.description || '', dish: it.dish || '', link: it.link || '',
@@ -424,7 +452,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
           </div>
 
           {/* Pricing — same component as summary for consistency */}
-          <PricingBlock it={{ ...it, estimated_cost: draft.estimated_cost ? Number(draft.estimated_cost) : it.estimated_cost }} livePrice={livePrice} expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} />
+          <PricingBlock it={{ ...it, estimated_cost: draft.estimated_cost ? Number(draft.estimated_cost) : it.estimated_cost }} livePrice={livePrice} expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} onDeleteExpense={onDeleteExpense} />
 
           {/* Links */}
           <div className="edit-section-title">Links</div>
@@ -471,7 +499,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
 }
 
 // ═══ SHARED PRICING BLOCK — used in both Summary and Edit modes ═══
-function PricingBlock({ it, livePrice, expenseAmount, paidInput, setPaidInput, handlePaidBlur }) {
+function PricingBlock({ it, livePrice, expenseAmount, paidInput, setPaidInput, handlePaidBlur, onDeleteExpense }) {
   return (
     <div className="detail-section" style={{ marginTop: 12 }}>
       <div className="detail-section-title">Pricing</div>
@@ -499,7 +527,10 @@ function PricingBlock({ it, livePrice, expenseAmount, paidInput, setPaidInput, h
         <input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} />
       </div>
       {expenseAmount > 0 && (
-        <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600, marginTop: 4 }}>Paid: {$f(expenseAmount)}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+          <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Paid: {$f(expenseAmount)}</span>
+          {onDeleteExpense && <button onClick={onDeleteExpense} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>Remove payment</button>}
+        </div>
       )}
     </div>
   );

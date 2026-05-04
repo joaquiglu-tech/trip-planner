@@ -7,7 +7,7 @@ import StatusFilter from './StatusFilter';
 import { toDateStr, formatStopDate, getTodayDayIndex, getCalendarDates } from './utils';
 
 export default function TodayPage({ active }) {
-  const { items, stops, livePrices, expenses, updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, files, setFile, removeFile, places, getPlaceData } = useTrip();
+  const { items, stops, livePrices, expenses, updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, deleteExpense, addItem, files, setFile, removeFile, places, getPlaceData } = useTrip();
   const expenseMap = useMemo(() => {
     const map = {};
     (expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
@@ -115,7 +115,7 @@ export default function TodayPage({ active }) {
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
-          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
+          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
           onClose={() => setSelectedItem(null)}
           onDelete={liveItem.created_by ? () => { deleteItem(liveItem.id); setSelectedItem(null); } : null}
         />;
