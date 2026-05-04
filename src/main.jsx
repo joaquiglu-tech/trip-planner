@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AuthProvider } from './lib/useAuth';
-import { SettingsProvider } from './lib/useSettings';
+import { AuthProvider } from './shared/hooks/useAuth';
+import { SettingsProvider } from './shared/hooks/useSettings';
 import './index.css';
 import App from './App.jsx';
 

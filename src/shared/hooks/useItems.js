@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { supabase } from './supabase';
-import { listFiles } from './storage';
-import { fetchHotelPrice } from './hotelPrices';
-import { enrichItem } from './enrichItem';
+import { supabase } from '../../services/supabase';
+import { listFiles } from '../../services/storage';
+import { fetchHotelPrice } from '../../services/hotelPrices';
+import { enrichItem } from '../../services/enrichItem';
 
 export const $f = (n) => '$' + (n || 0).toLocaleString();
 

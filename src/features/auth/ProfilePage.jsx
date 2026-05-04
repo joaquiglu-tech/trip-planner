@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { useSettings } from '../lib/useSettings';
+import { supabase } from '../../services/supabase';
+import { useSettings } from '../../shared/hooks/useSettings';
 
 export default function ProfilePage({ active, session }) {
   const { darkMode, setDarkMode } = useSettings();

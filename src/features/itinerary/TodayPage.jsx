@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { $f, itemCost } from '../lib/useItems';
-import DetailModal from './DetailModal';
+import { $f, itemCost } from '../../shared/hooks/useItems';
+import DetailModal from '../../shared/components/DetailModal';
 
 function getTodayDayIndex(stops) {
   const now = new Date();

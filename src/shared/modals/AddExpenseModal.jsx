@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { $f } from '../lib/useItems';
+import { $f } from '../hooks/useItems';
 
 export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmail }) {
   const [step, setStep] = useState('select'); // 'select' | 'amount'

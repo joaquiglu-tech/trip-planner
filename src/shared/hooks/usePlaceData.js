@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { supabase } from './supabase';
-import { fetchPlaceData } from './googlePlaces';
+import { supabase } from '../../services/supabase';
+import { fetchPlaceData } from '../../services/googlePlaces';
 
 export function usePlaceData() {
   const [places, setPlaces] = useState({});

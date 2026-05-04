@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
-import { itemCost } from '../lib/useItems';
+import { itemCost } from '../../shared/hooks/useItems';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
-import DetailModal from './DetailModal';
-import AddItemModal from './AddItemModal';
-import BudgetSummary from './BudgetSummary';
+import DetailModal from '../../shared/components/DetailModal';
+import AddItemModal from '../../shared/modals/AddItemModal';
+import BudgetSummary from '../expenses/BudgetSummary';
 
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];

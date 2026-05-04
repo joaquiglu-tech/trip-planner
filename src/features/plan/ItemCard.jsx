@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { $f, priceLabel } from '../lib/useItems';
+import { $f, priceLabel } from '../../shared/hooks/useItems';
 
 function ItemCard({ it, status, onTap, livePrice, expenseAmount }) {
   const st = status || it.status || '';

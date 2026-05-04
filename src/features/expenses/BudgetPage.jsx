@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { $f, itemCost } from '../lib/useItems';
-import DetailModal from './DetailModal';
+import { $f, itemCost } from '../../shared/hooks/useItems';
+import DetailModal from '../../shared/components/DetailModal';
 import BudgetSummary from './BudgetSummary';
 
 export default function BudgetPage({ active, items, stops, livePrices, expenses, updateItem, setStatus, addExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData, userEmail }) {

@@ -1,20 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from './lib/useAuth';
-import { useItems } from './lib/useItems';
-import { useStops } from './lib/useStops';
-import { usePlaceData } from './lib/usePlaceData';
-import { useExpenses } from './lib/useExpenses';
-import Login from './components/Login';
-import TopBar from './components/TopBar';
-import BottomTabs from './components/BottomTabs';
-import TodayPage from './components/TodayPage';
-import SelectPage from './components/SelectPage';
-import BudgetPage from './components/BudgetPage';
-import ProfilePage from './components/ProfilePage';
-import AddItemModal from './components/AddItemModal';
-import AddExpenseModal from './components/AddExpenseModal';
-import AddStopModal from './components/AddStopModal';
-import Toast from './components/Toast';
+import { useAuth } from './shared/hooks/useAuth';
+import { useItems } from './shared/hooks/useItems';
+import { useStops } from './shared/hooks/useStops';
+import { usePlaceData } from './shared/hooks/usePlaceData';
+import { useExpenses } from './shared/hooks/useExpenses';
+import Login from './features/auth/Login';
+import TopBar from './shared/components/TopBar';
+import BottomTabs from './shared/components/BottomTabs';
+import TodayPage from './features/itinerary/TodayPage';
+import SelectPage from './features/plan/SelectPage';
+import BudgetPage from './features/expenses/BudgetPage';
+import ProfilePage from './features/auth/ProfilePage';
+import AddItemModal from './shared/modals/AddItemModal';
+import AddExpenseModal from './shared/modals/AddExpenseModal';
+import AddStopModal from './shared/modals/AddStopModal';
+import Toast from './shared/components/Toast';
 
 function getTabFromHash() {
   const hash = window.location.hash.replace('#/', '').split('/')[0];

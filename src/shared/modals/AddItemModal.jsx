@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fetchUrlMeta } from '../lib/fetchMeta';
+import { fetchUrlMeta } from '../../services/fetchMeta';
 
 const TYPES = [
   { value: 'food', label: 'Food' },

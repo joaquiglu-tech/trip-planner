@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { $f, itemCost } from '../lib/useItems';
+import { $f, itemCost } from '../../shared/hooks/useItems';
 
 const TYPE_LABELS = { stay: 'Stays', activity: 'Activities', food: 'Food', transport: 'Transport' };
 const TYPE_ORDER = ['stay', 'activity', 'food', 'transport'];

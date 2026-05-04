@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from './supabase';
+import { supabase } from '../../services/supabase';
 
 export function useExpenses() {
   const [expenses, setExpenses] = useState([]);

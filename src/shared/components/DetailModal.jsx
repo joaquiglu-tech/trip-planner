@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { $f, priceLabel } from '../lib/useItems';
-import { uploadFile, deleteFile } from '../lib/storage';
+import { $f, priceLabel } from '../hooks/useItems';
+import { uploadFile, deleteFile } from '../../services/storage';
 
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_OPTIONS = [
