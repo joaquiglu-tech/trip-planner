@@ -59,6 +59,74 @@ function formatRelativeTime(ts) {
 
 const TYPE_LABEL_SHORT = { stay: 'Stay', food: 'Food', activity: 'Activity', transport: 'Transport' };
 
+// ═══ SCHEDULE LIST — with date dividers for multi-day stops ═══
+function ScheduleList({ items, stop, onItemTap }) {
+  // Group items by date within this stop
+  const nights = calcNights(stop);
+  const startStr = toDateStr(stop.start_date);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // For multi-day stops, create date labels
+  const dateLabels = useMemo(() => {
+    if (nights <= 1) return null;
+    const labels = {};
+    const [sy, sm, sd] = startStr.split('-').map(Number);
+    for (let i = 0; i < nights; i++) {
+      const d = new Date(sy, sm - 1, sd + i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      labels[ds] = `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}`;
+    }
+    return labels;
+  }, [nights, startStr]);
+
+  // Assign items to dates (by sort_order or time, approximate)
+  const groupedItems = useMemo(() => {
+    if (!dateLabels || nights <= 1) return [{ label: null, items }];
+    // Distribute items across days based on position in the list
+    const perDay = Math.ceil(items.length / nights);
+    const groups = [];
+    const dateKeys = Object.keys(dateLabels);
+    dateKeys.forEach((dk, dayIdx) => {
+      const dayItems = items.slice(dayIdx * perDay, (dayIdx + 1) * perDay);
+      if (dayItems.length > 0) groups.push({ label: dateLabels[dk], items: dayItems });
+    });
+    // Add any remaining items to the last group
+    const assigned = groups.reduce((s, g) => s + g.items.length, 0);
+    if (assigned < items.length && groups.length > 0) {
+      groups[groups.length - 1].items.push(...items.slice(assigned));
+    }
+    return groups;
+  }, [items, dateLabels, nights]);
+
+  return (
+    <div className="itin-schedule">
+      {groupedItems.map((group, gi) => (
+        <div key={gi}>
+          {group.label && <div className="itin-sched-date">{group.label}</div>}
+          {group.items.map(it => (
+            <div key={it.id} className={`itin-sched-row ${it.status}`} onClick={() => onItemTap(it)}>
+              <div className="itin-sched-time">
+                {it.start_time ? formatTime(it.start_time) : ''}
+                {it.end_time && <span className="itin-sched-end">{formatTime(it.end_time)}</span>}
+              </div>
+              <div className="itin-sched-dot-col"><div className={`itin-sched-dot ${it.status}`} /><div className="itin-sched-line" /></div>
+              <div className="itin-sched-info">
+                <div className="itin-sched-name">{it.name}</div>
+                <div className="itin-sched-sub">{it.dish ? it.dish : it.hrs ? `${it.hrs}h` : ''}</div>
+              </div>
+              <div className="itin-sched-actions">
+                {it.status === 'conf' && <span className="itin-sched-check">Booked</span>}
+                {it.coord && <a href={`https://www.google.com/maps/dir/?api=1&destination=${it.coord.lat},${it.coord.lng}`} target="_blank" rel="noopener" className="itin-action-sm" onClick={e => e.stopPropagation()}>Go</a>}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ═══ PLAN SECTION — collapsible, filterable, with date/time/type on cards ═══
 function PlanSection({ planItems, onItemTap }) {
   const [expanded, setExpanded] = useState(false);
@@ -490,29 +558,13 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
       <div className="itin-map-schedule">
         <div className="itin-schedule-col">
           <div className="itin-section-title">Schedule</div>
-          {scheduled.length > 0 ? (
-            <div className="itin-schedule">
-              {scheduled.map(it => (
-                <div key={it.id} className={`itin-sched-row ${it.status}`} onClick={() => onItemTap(it)}>
-                  <div className="itin-sched-time">
-                    {it.start_time ? formatTime(it.start_time) : ''}
-                    {it.end_time && <span className="itin-sched-end">{formatTime(it.end_time)}</span>}
-                  </div>
-                  <div className="itin-sched-dot-col"><div className={`itin-sched-dot ${it.status}`} /><div className="itin-sched-line" /></div>
-                  <div className="itin-sched-info">
-                    <div className="itin-sched-name">{it.name}</div>
-                    <div className="itin-sched-sub">{it.dish ? it.dish : it.hrs ? `${it.hrs}h` : ''}</div>
-                  </div>
-                  <div className="itin-sched-actions">
-                    {it.status === 'conf' && <span className="itin-sched-check">Booked</span>}
-                    {it.coord && <a href={`https://www.google.com/maps/dir/?api=1&destination=${it.coord.lat},${it.coord.lng}`} target="_blank" rel="noopener" className="itin-action-sm" onClick={e => e.stopPropagation()}>Go</a>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="itin-empty"><div className="itin-empty-text">No items scheduled.</div></div>
-          )}
+          <div className="itin-schedule-scroll">
+            {scheduled.length > 0 ? (
+              <ScheduleList items={scheduled} stop={stop} onItemTap={onItemTap} />
+            ) : (
+              <div className="itin-empty"><div className="itin-empty-text">No items scheduled.</div></div>
+            )}
+          </div>
         </div>
         <div className="itin-map-col">
           <DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} />

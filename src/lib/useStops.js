@@ -80,13 +80,15 @@ export function useStops() {
   }, []);
 
   const addStop = useCallback(async (stopData) => {
-    // Calculate sort_order (insert at end or by date)
     const maxSort = stops.reduce((max, s) => Math.max(max, s.sort_order || 0), 0);
     const newStop = {
       id: `stop-${stopData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`,
       name: stopData.name,
       start_date: stopData.start_date,
       end_date: stopData.end_date,
+      google_place_id: stopData.google_place_id || '',
+      lat: stopData.lat || null,
+      lng: stopData.lng || null,
       trip_id: 'trip-1',
       sort_order: maxSort + 1,
       tips: [],
@@ -94,16 +96,6 @@ export function useStops() {
     const { data, error } = await supabase.from('stops').insert(newStop).select().single();
     if (error) throw error;
     setStops(prev => [...prev, data].sort((a, b) => new Date(a.start_date) - new Date(b.start_date)));
-
-    // Auto-enrich: fetch google_place_id + coords
-    const result = await fetchPlaceId(stopData.name);
-    if (result) {
-      const updates = { google_place_id: result.placeId };
-      if (result.lat) { updates.lat = result.lat; updates.lng = result.lng; }
-      await supabase.from('stops').update(updates).eq('id', data.id);
-      setStops(prev => prev.map(s => s.id === data.id ? { ...s, ...updates } : s));
-    }
-
     return data;
   }, [stops]);
 
