@@ -238,7 +238,10 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
               {st === 'sel' && !confirming && (
                 <>
                   <div className="status-banner sel-banner"><span>Added to trip</span><button className="status-change-btn" onClick={handleSelect}>Remove from trip</button></div>
-                  <button className="detail-btn conf" onClick={() => setConfirming(true)} style={{ marginTop: 6 }}>Confirm & pay</button>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                    <button className="detail-btn conf" onClick={() => { setStatus(it.id, 'conf'); showSaved('Booked'); }} style={{ flex: 1 }}>Mark as booked</button>
+                    <button className="detail-btn" onClick={() => setConfirming(true)} style={{ flex: 1 }}>Confirm & pay</button>
+                  </div>
                 </>
               )}
               {st === 'sel' && confirming && (
@@ -256,7 +259,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                       await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || '', created_by: '' });
                       setStatus(it.id, 'conf');
                       setCostInput(''); setConfirming(false);
-                      showSaved('Confirmed');
+                      showSaved('Confirmed & paid');
                     }} style={{ flex: 1 }}>Confirm</button>
                   </div>
                 </div>

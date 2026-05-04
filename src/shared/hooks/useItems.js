@@ -44,6 +44,7 @@ export function useItems(currentUserEmail) {
   const [livePrices, setLivePrices] = useState({});
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
+  const stopsMapRef = useRef({});
 
   function showToast(msg) {
     setToast(msg);
@@ -60,6 +61,7 @@ export function useItems(currentUserEmail) {
       if (itemsRes.error) { console.warn('Failed to load items:', itemsRes.error); setLoaded(true); return; }
       const stopsMap = {};
       (stopsRes.data || []).forEach(s => { stopsMap[s.id] = s; });
+      stopsMapRef.current = stopsMap;
       const merged = (itemsRes.data || []).map(row => {
         const firstStopId = row.stop_ids?.[0];
         const stop = firstStopId ? stopsMap[firstStopId] : null;
@@ -108,7 +110,9 @@ export function useItems(currentUserEmail) {
         if (payload.eventType === 'DELETE') {
           setItems(prev => prev.filter(it => it.id !== payload.old.id));
         } else {
-          const merged = mergeItem(payload.new, '');
+          const firstStopId = payload.new.stop_ids?.[0];
+          const stopName = firstStopId ? stopsMapRef.current[firstStopId]?.name || '' : '';
+          const merged = mergeItem(payload.new, stopName);
           setItems(prev => {
             const idx = prev.findIndex(it => it.id === merged.id);
             if (idx >= 0) { const next = [...prev]; next[idx] = { ...prev[idx], ...merged }; return next; }
@@ -179,7 +183,18 @@ export function useItems(currentUserEmail) {
 
   const deleteItem = useCallback(async (id) => {
     setItems(prev => prev.filter(it => it.id !== id));
+    // Cascade: delete linked expenses
+    await supabase.from('expenses').delete().eq('item_id', id);
+    // Cascade: delete files from storage
+    try {
+      const { data: storageFiles } = await supabase.storage.from('reservations').list(id);
+      if (storageFiles?.length > 0) {
+        await supabase.storage.from('reservations').remove(storageFiles.map(f => `${id}/${f.name}`));
+      }
+    } catch { /* skip storage cleanup errors */ }
+    // Delete the item
     await supabase.from('items').delete().eq('id', id);
+    setFilesState(prev => { const n = { ...prev }; delete n[id]; return n; });
   }, []);
 
   const setFile = useCallback((id, fileData) => {

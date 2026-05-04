@@ -1,13 +1,15 @@
 import { memo } from 'react';
-import { $f, priceLabel } from '../../shared/hooks/useItems';
+import { priceLabel } from '../../shared/hooks/useItems';
+
+const TYPE_ICON = { stay: '🏨', food: '🍽', activity: '🎟', transport: '✈' };
 
 function ItemCard({ it, status, onTap, livePrice, expenseAmount }) {
   const st = status || it.status || '';
   const price = priceLabel(it, livePrice, expenseAmount);
 
   let timeInfo = '';
-  if (it.type === 'stay' && it.check_in) timeInfo = `In ${it.check_in} · ${it.city}`;
-  else if (it.type === 'stay') timeInfo = `${it.tier || it.city}`;
+  if (it.type === 'stay' && it.check_in) timeInfo = `${it.check_in} · ${it.city}`;
+  else if (it.type === 'stay') timeInfo = it.tier || it.city;
   else if (it.type === 'transport' && it.departTime && it.departTime !== 'TBD') timeInfo = `${it.departTime} · ${it.route || ''}`;
   else if (it.type === 'transport' && it.route) timeInfo = it.route;
   else if (it.type === 'activity' && it.hrs) timeInfo = `${it.hrs}h · ${it.city}`;
@@ -16,6 +18,7 @@ function ItemCard({ it, status, onTap, livePrice, expenseAmount }) {
 
   return (
     <div className={`item-card-compact ${st === 'conf' ? 'confirmed' : st === 'sel' ? 'selected' : ''}`} onClick={() => onTap(it)}>
+      <div className="icc-type-icon">{TYPE_ICON[it.type] || '•'}</div>
       <div className="icc-left">
         <div className="icc-name">{it.name}</div>
         <div className="icc-sub">{timeInfo}</div>

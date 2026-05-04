@@ -9,7 +9,7 @@ import BudgetSummary from '../expenses/BudgetSummary';
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];
 
-export default function SelectPage({ active, items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, userEmail, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
+export default function SelectPage({ active, items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, userEmail, stops, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
 
   useEffect(() => {
@@ -21,6 +21,7 @@ export default function SelectPage({ active, items, livePrices, expenses, update
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [sortBy, setSortBy] = useState('default');
 
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase();
@@ -44,21 +45,31 @@ export default function SelectPage({ active, items, livePrices, expenses, update
     });
   }, [items, filters]);
 
+  const sorted = useMemo(() => {
+    if (sortBy === 'name') return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === 'price') return [...filtered].sort((a, b) => (Number(b.estimated_cost) || 0) - (Number(a.estimated_cost) || 0));
+    if (sortBy === 'status') return [...filtered].sort((a, b) => {
+      const order = { conf: 0, sel: 1, '': 2 };
+      return (order[a.status] ?? 2) - (order[b.status] ?? 2);
+    });
+    return filtered;
+  }, [filtered, sortBy]);
+
   const { sections, groupByCity } = useMemo(() => {
     const isTypeFilter = filters.type !== 'all';
     if (isTypeFilter) {
       const byCity = {};
-      filtered.forEach((it) => { const c = it.city || 'Other'; if (!byCity[c]) byCity[c] = []; byCity[c].push(it); });
+      sorted.forEach((it) => { const c = it.city || 'Other'; if (!byCity[c]) byCity[c] = []; byCity[c].push(it); });
       const cities = Object.keys(byCity).sort();
       return { sections: cities.map(c => ({ key: c, label: c, items: byCity[c] })), groupByCity: true };
     }
     const byType = {};
-    filtered.forEach((it) => { const k = it.type; if (!byType[k]) byType[k] = []; byType[k].push(it); });
+    sorted.forEach((it) => { const k = it.type; if (!byType[k]) byType[k] = []; byType[k].push(it); });
     return {
       sections: TYPE_ORDER.filter(k => byType[k]?.length).map(k => ({ key: k, label: (TYPE_LABEL[k] || k) + ' (' + byType[k].length + ')', items: byType[k] })),
       groupByCity: false,
     };
-  }, [filtered, filters.type]);
+  }, [sorted, filters.type]);
 
   return (
     <div id="page-select" className={`page ${active ? "active" : ""}`}>
@@ -66,6 +77,12 @@ export default function SelectPage({ active, items, livePrices, expenses, update
 
       <div className="planner-sticky-bar">
         <FilterBar filters={filters} setFilters={setFilters} items={items} />
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Sort:</span>
+          {[{ v: 'default', l: 'Default' }, { v: 'name', l: 'Name' }, { v: 'price', l: 'Price' }, { v: 'status', l: 'Status' }].map(s => (
+            <button key={s.v} className={`fp ${sortBy === s.v ? 'fp-active' : ''}`} onClick={() => setSortBy(s.v)} style={{ padding: '4px 10px', fontSize: 10 }}>{s.l}</button>
+          ))}
+        </div>
       </div>
       <button className="add-item-btn" onClick={() => setShowAddModal(true)}>+ Add something new</button>
 
@@ -101,7 +118,7 @@ export default function SelectPage({ active, items, livePrices, expenses, update
           onDelete={selectedItem.created_by ? () => { deleteItem(selectedItem.id); setSelectedItem(null); } : null}
         />;
       })()}
-      {showAddModal && <AddItemModal onClose={() => setShowAddModal(false)} onAdd={addItem} userEmail={userEmail} />}
+      {showAddModal && <AddItemModal onClose={() => setShowAddModal(false)} onAdd={addItem} stops={stops} userEmail={userEmail} />}
     </div>
   );
 }

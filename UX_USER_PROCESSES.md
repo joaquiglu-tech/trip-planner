@@ -551,3 +551,200 @@ Steps:
 **I14. Add "duplicate item" action** — In the detail modal, add "Copy to another stop" which creates a clone assigned to a different stop.
 
 **I15. Show schedule position in plan cards** — Plan cards show type + time but not which day of a multi-day stop the item is on.
+
+---
+
+## ADDENDUM: PLAN TAB — DETAILED ITEM PROCESSES
+**Added by Elena Varga — May 2026**
+
+---
+
+### PLAN TAB OVERVIEW
+
+**Purpose:** The Plan tab is the browsing and selection workspace. Users discover, compare, and add items to their trip. It's the catalog of everything they might want to do.
+
+**Current layout:**
+1. BudgetSummary (shared with Expenses tab) — Selected (est.) | Confirmed
+2. Filter bar — type pills + status pills + city dropdown + urgent toggle + search
+3. Item sections — grouped by type (default) or by city (when type filter active)
+4. Each section has a header + item cards in a grid
+5. "+ Add something new" button above the grid
+
+**Data:** 98 items total. 70 selected, 1 confirmed, 27 not added. All have stop assignments.
+
+---
+
+### USER STORIES — PLAN TAB
+
+**US-P1: Browse items by type**
+```
+As a trip planner,
+I want to filter items by type (Stay/Food/Activity/Transport),
+so I can focus on one category at a time.
+
+Current: Type pills filter → items regroup by city within that type
+Issue: None — works correctly
+```
+
+**US-P2: Browse items by status**
+```
+As a trip planner,
+I want to filter by status (All/Selected/Booked/To book/Not added),
+so I can see what's planned vs what still needs action.
+
+Current: Status pills filter correctly
+Issue: "To book" shows items with status 'sel' — label is confusing since
+       'sel' means selected/planned, not necessarily needing booking
+Suggestion: Rename "To book" to "Planned" — it's clearer
+```
+
+**US-P3: Search for a specific item**
+```
+As a trip planner,
+I want to search by name, description, dish, or city,
+so I can quickly find a specific restaurant or activity.
+
+Current: Search input filters across name + description + dish + city
+Issue: City is a derived field (from stop name) — may be empty for some items
+```
+
+**US-P4: View item details**
+```
+As a trip planner,
+I want to tap an item card to see full details,
+so I can learn about it before deciding to add it.
+
+Current: Taps opens DetailModal with photos, badges, prices, description,
+         type-specific content, booking links, attachments, notes
+Issue: Modal is 466 lines — does too many things. But functionally works.
+```
+
+**US-P5: Add an item to the trip (select)**
+```
+As a trip planner,
+I want to tap "Add to our trip" to mark an item as selected,
+so it appears in my itinerary and budget.
+
+Current: Taps "Add to our trip" → status = 'sel' → card shows violet tint
+Side effect: For stays — deselects other stays in the same stop (mutual exclusion)
+Issue: No confirmation of what stop the item was added to
+```
+
+**US-P6: Confirm and pay for an item**
+```
+As a trip planner,
+I want to confirm a booking and enter what I paid,
+so I can track my actual spending.
+
+Flow: "Confirm & pay" → enter amount → "Confirm"
+→ Creates expense (amount, linked to item + stop)
+→ Sets item status to 'conf' → card shows green tint
+Issue: No note field in the confirm flow
+Issue: Can't confirm without entering an amount (what if booking is free?)
+```
+
+**US-P7: Remove an item from the trip**
+```
+As a trip planner,
+I want to remove a selected item from my trip,
+so I can change my mind without deleting it.
+
+Current: "Remove from trip" → status = '' → card loses tint
+Issue: If item was confirmed with expenses, reverting warns but keeps expenses
+```
+
+**US-P8: Create a new item**
+```
+As a trip planner,
+I want to add something new I found (restaurant, hotel, activity),
+so I can include it in my planning.
+
+Flow A — URL: Paste URL → Fetch → Pre-fills name/description → Edit form → Save
+Flow B — Manual: "Add Manually" → Fill form (name, type, stop, desc, dish, times, cost, link) → Save
+Post-save: enrichItem runs async (Google Places for photos/rating/coords)
+
+Issues:
+- AddItemModal at line 104 opens WITHOUT stops prop when triggered from Plan tab
+  "Add something new" button. The stop dropdown will be empty.
+- No Google Places name search — user has to know the exact name
+- No feedback that enrichment is running in background
+- No way to assign to multiple stops (transport items)
+```
+
+**US-P9: Edit an item**
+```
+As a trip planner,
+I want to edit item details (name, times, cost, notes),
+so I can keep information accurate.
+
+Current: DetailModal → "Edit" button → edit mode with form fields
+Editable: name, type, description, dish, link, source, urgent, times, check-in/out, cost, notes
+NOT editable in edit mode: stop assignment, subcat, tier, reserve_note, rich content fields
+Issue: Can't change which stop(s) an item belongs to
+Issue: Notes are now inline-editable in view mode (Phase 3 fix) — but edit mode still has them too (duplicate)
+```
+
+**US-P10: Delete an item**
+```
+As a trip planner,
+I want to permanently delete an item I created,
+so I can clean up mistakes.
+
+Current: Only available for items with `created_by` set
+"Delete permanently" → browser confirm → delete from DB
+Issue: Pre-loaded items (98 original) can never be deleted — only deselected
+Issue: What about the user's expenses linked to this item? They become orphaned.
+```
+
+**US-P11: Upload a file/attachment**
+```
+As a trip planner,
+I want to attach a reservation PDF or screenshot to an item,
+so I have all booking documents in one place.
+
+Current: "Upload file" in DetailModal → file picker → uploads to Supabase Storage
+Multiple files per item supported
+Issue: No file type indicator in the attachment list
+Issue: Files stored under item ID — if item deleted, files remain in storage (orphaned)
+```
+
+---
+
+### ITEM CARD — WHAT'S SHOWN
+
+| Field | Shown on card? | Source |
+|---|---|---|
+| Name | Yes — primary text | items.name |
+| Subtitle | Yes — varies by type | Derived: check_in/city (stay), route (transport), hrs/city (activity), dish (food), city (fallback) |
+| Price | Yes — right side | priceLabel(): expense > live > estimate > free |
+| Status indicator | Yes — ✓ (conf) or ● (sel) | items.status |
+| Urgent badge | Yes — "Book now" | items.urgent (only when status is empty) |
+| Type | No — not shown on card | items.type |
+| Stop/city | Indirectly — in subtitle | Derived from stop name |
+| Time | No — not shown on card | items.start_time |
+| Photo | No — only in DetailModal | place_cache |
+
+**Elena's observation:** The card is missing the item TYPE — all cards look identical in shape. A small type icon or color indicator would help scanning. The card also doesn't show the stop name prominently — when browsing "All" items, you can't tell which stop an item belongs to without looking at the subtitle.
+
+---
+
+### PROCESS ISSUES FOUND
+
+**P1. AddItemModal missing `stops` prop from Plan tab**
+`SelectPage.jsx:104`: `{showAddModal && <AddItemModal onClose={() => setShowAddModal(false)} onAdd={addItem} userEmail={userEmail} />}`
+No `stops` prop passed — the stop dropdown in AddItemModal will be empty. Compare to the contextual add in TodayPage which correctly passes stops.
+
+**P2. deleteItem doesn't clean up expenses or files**
+`useItems.js:180-183`: Deletes the item row but doesn't delete linked expenses or files in Supabase Storage. Creates orphaned data.
+
+**P3. Realtime merge loses city**
+`useItems.js:111`: `mergeItem(payload.new, '')` — realtime updates merge with empty stop name, so `it.city` becomes '' for items updated via realtime. The city only populates correctly on initial load.
+
+**P4. Status filter "To book" is confusing**
+`FilterBar.jsx:14`: `{ value: 'unbooked', label: 'To book' }` — but it filters for `status === 'sel'`. "To book" implies "not yet booked" which could include items not yet selected. Should be "Planned" or "Selected".
+
+**P5. No sort options**
+Items are displayed in DB `sort_order` with no user control. Can't sort by name, price, type, or status. For 98 items this makes finding things harder.
+
+**P6. Confirm flow requires payment amount**
+`DetailModal.jsx:254-255`: `if (!val || val <= 0) return;` — can't confirm with $0. What about free activities or items where the user just wants to mark as "booked" without a payment?

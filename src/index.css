@@ -121,6 +121,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .item-card-compact.selected { border-color: var(--accent); background: var(--accent-light) }
 .item-card-compact.confirmed { border-color: var(--green); background: var(--green-light) }
 .icc-left { flex: 1; min-width: 0 }
+.icc-type-icon { font-size: 16px; flex-shrink: 0; width: 24px; text-align: center }
 .icc-name { font-size: 13px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .icc-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px }
 .icc-urgent { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-pill); background: #FEF2F2; color: #DC2626; margin-top: 3px }

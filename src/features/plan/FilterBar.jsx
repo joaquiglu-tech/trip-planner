@@ -12,7 +12,7 @@ const STATUSES = [
   { value: 'all', label: 'All' },
   { value: 'sel', label: 'Selected' },
   { value: 'conf', label: 'Booked' },
-  { value: 'unbooked', label: 'To book' },
+  { value: 'unbooked', label: 'Planned' },
   { value: 'none', label: 'Not added' },
 ];
 

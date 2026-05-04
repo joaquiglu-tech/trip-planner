@@ -64,7 +64,7 @@ export default function App() {
           items={items} livePrices={livePrices} expenses={expenses}
           updateItem={updateItem} setStatus={setStatus}
           addItem={addItem} deleteItem={deleteItem}
-          userEmail={email} files={files} setFile={setFile} removeFile={removeFile}
+          userEmail={email} stops={stops} files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
           filterCity={filterCity} clearFilterCity={() => setFilterCity(null)}
         />
