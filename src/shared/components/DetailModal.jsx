@@ -133,10 +133,10 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   }
 
   return (
-    <div className="detail-overlay" onClick={onClose}>
+    <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Item details">
       <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="detail-handle" />
-        <button className="detail-close" onClick={onClose}>✕</button>
+        <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
 
         {/* Photos */}
         {photoUrls.length > 1 ? (

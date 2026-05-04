@@ -13,7 +13,18 @@ export function useExpenses() {
 
     const channel = supabase
       .channel('expenses-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => { load(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, (payload) => {
+        if (payload.eventType === 'DELETE') {
+          setExpenses(prev => prev.filter(e => e.id !== payload.old.id));
+        } else if (payload.eventType === 'INSERT') {
+          setExpenses(prev => {
+            if (prev.some(e => e.id === payload.new.id)) return prev;
+            return [payload.new, ...prev];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setExpenses(prev => prev.map(e => e.id === payload.new.id ? { ...e, ...payload.new } : e));
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);

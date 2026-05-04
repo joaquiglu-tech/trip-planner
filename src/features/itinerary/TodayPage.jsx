@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { $f, itemCost } from '../../shared/hooks/useItems';
+import { useTrip } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
 import AddItemModal from '../../shared/modals/AddItemModal';
 import {
@@ -462,7 +463,8 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
 }
 
 // ═══ MAIN ═══
-export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, files, setFile, removeFile, places, getPlaceData }) {
+export default function TodayPage({ active }) {
+  const { items, stops, livePrices, expenses, updateItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, files, setFile, removeFile, places, getPlaceData } = useTrip();
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');

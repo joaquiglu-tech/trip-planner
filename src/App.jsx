@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './shared/hooks/useAuth';
-import { useItems } from './shared/hooks/useItems';
-import { useStops } from './shared/hooks/useStops';
-import { usePlaceData } from './shared/hooks/usePlaceData';
-import { useExpenses } from './shared/hooks/useExpenses';
+import { TripProvider, useTrip } from './shared/hooks/TripContext';
 import Login from './features/auth/Login';
 import TopBar from './shared/components/TopBar';
 import BottomTabs from './shared/components/BottomTabs';
@@ -24,23 +21,28 @@ function getTabFromHash() {
 
 export default function App() {
   const session = useAuth();
+  if (session === undefined) return <div className="loading-screen">Loading...</div>;
+  if (!session) return <Login />;
+  return (
+    <TripProvider email={session.user?.email || ''}>
+      <AppShell session={session} />
+    </TripProvider>
+  );
+}
+
+function AppShell({ session }) {
+  const { items, loaded, stops, stopsLoaded, toast, addItem, addStop, addExpense, expenses, email } = useTrip();
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [showFab, setShowFab] = useState(null);
   const [showAddItem, setShowAddItem] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddStop, setShowAddStop] = useState(false);
-  const email = session?.user?.email || '';
-  const { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
-  const { stops, loaded: stopsLoaded, updateStop, addStop, deleteStop } = useStops();
-  const { places, getPlaceData } = usePlaceData();
-  const { expenses, addExpense, updateExpense, deleteExpense } = useExpenses();
+  const [filterCity, setFilterCity] = useState(null);
 
   const navigateTab = useCallback((tab) => {
     setActiveTab(tab);
     window.location.hash = `#/${tab}`;
   }, []);
-
-  const [filterCity, setFilterCity] = useState(null);
 
   useEffect(() => {
     if (!window.location.hash) window.location.hash = `#/${activeTab}`;
@@ -49,8 +51,6 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  if (session === undefined) return <div className="loading-screen">Loading...</div>;
-  if (!session) return <Login />;
   if (!loaded || !stopsLoaded) return <div className="loading-screen">Loading...</div>;
 
   const isProfile = activeTab === 'profile';
@@ -59,32 +59,9 @@ export default function App() {
     <div className="app-shell">
       <TopBar items={items} stops={stops} session={session} onProfileClick={() => navigateTab('profile')} />
       <div className="page-container">
-        <SelectPage
-          active={activeTab === 'plan'}
-          items={items} livePrices={livePrices} expenses={expenses}
-          updateItem={updateItem} setStatus={setStatus}
-          addItem={addItem} deleteItem={deleteItem}
-          addExpense={addExpense} updateExpense={updateExpense}
-          userEmail={email} stops={stops} files={files} setFile={setFile} removeFile={removeFile}
-          places={places} getPlaceData={getPlaceData}
-          filterCity={filterCity} clearFilterCity={() => setFilterCity(null)}
-        />
-        <BudgetPage
-          active={activeTab === 'expenses'}
-          items={items} stops={stops} livePrices={livePrices}
-          updateItem={updateItem} setStatus={setStatus}
-          files={files} setFile={setFile} removeFile={removeFile}
-          places={places} getPlaceData={getPlaceData}
-          expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
-          userEmail={email}
-        />
-        <TodayPage
-          active={activeTab === 'itinerary'}
-          items={items} stops={stops} livePrices={livePrices} expenses={expenses}
-          updateItem={updateItem} updateStop={updateStop} deleteStop={deleteStop} setStatus={setStatus} addExpense={addExpense} updateExpense={updateExpense} addItem={addItem}
-          files={files} setFile={setFile} removeFile={removeFile}
-          places={places} getPlaceData={getPlaceData}
-        />
+        <SelectPage active={activeTab === 'plan'} filterCity={filterCity} clearFilterCity={() => setFilterCity(null)} />
+        <BudgetPage active={activeTab === 'expenses'} />
+        <TodayPage active={activeTab === 'itinerary'} />
         <ProfilePage active={isProfile} session={session} />
       </div>
       <Toast message={toast} />

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { itemCost } from '../../shared/hooks/useItems';
+import { useTrip } from '../../shared/hooks/TripContext';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
 import DetailModal from '../../shared/components/DetailModal';
@@ -9,7 +10,8 @@ import BudgetSummary from '../expenses/BudgetSummary';
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];
 
-export default function SelectPage({ active, items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, addExpense, updateExpense, userEmail, stops, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
+export default function SelectPage({ active, filterCity, clearFilterCity }) {
+  const { items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, addExpense, updateExpense, email: userEmail, stops, files, setFile, removeFile, places, getPlaceData } = useTrip();
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', search: '' });
 
   useEffect(() => {

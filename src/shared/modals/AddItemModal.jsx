@@ -24,6 +24,7 @@ const TRANSPORT_MODES = [
 export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(null);
 
   async function handleFetch() {
@@ -59,7 +60,8 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || saving) return;
+    setSaving(true);
     try {
       const originName = form.origin?.name || '';
       const destName = form.dest?.name || '';
@@ -79,6 +81,7 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
       onClose();
     } catch (err) {
       alert('Error saving: ' + err.message);
+      setSaving(false);
     }
   }
 
@@ -212,7 +215,7 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
               <label className="add-label">Notes</label>
               <textarea className="add-input" rows={2} value={form.notes} onChange={(e) => updateForm('notes', e.target.value)} placeholder="Any notes..." />
 
-              <button className="detail-btn sel" onClick={handleSave} style={{ marginTop: 14 }}>Save Item</button>
+              <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ marginTop: 14 }}>{saving ? 'Saving...' : 'Save Item'}</button>
             </div>
           )}
         </div>

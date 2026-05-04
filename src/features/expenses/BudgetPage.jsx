@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { $f, itemCost } from '../../shared/hooks/useItems';
+import { useTrip } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
 import BudgetSummary from './BudgetSummary';
 
-export default function BudgetPage({ active, items, stops, livePrices, expenses, updateItem, setStatus, addExpense, updateExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData, userEmail }) {
+export default function BudgetPage({ active }) {
+  const { items, stops, livePrices, expenses, updateItem, setStatus, addExpense, updateExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData, email: userEmail } = useTrip();
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
 
