@@ -466,13 +466,24 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
 // ═══ CALENDAR DATES ═══
 function getCalendarDates(stops) {
   if (!stops.length) return [];
-  const start = new Date(stops[0].start_date);
-  const end = new Date(stops[stops.length - 1].end_date);
+  // Use date portions only (no timezone issues)
+  const startStr = stops[0].start_date?.split('T')[0];
+  const endStr = stops[stops.length - 1].end_date?.split('T')[0];
+  if (!startStr || !endStr) return [];
   const dates = [];
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Parse as local dates to avoid timezone shift
+  const [sy, sm, sd] = startStr.split('-').map(Number);
+  const [ey, em, ed] = endStr.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
   for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
-    const overlapping = stops.filter(s => dateStr >= s.start_date.split('T')[0] && dateStr < s.end_date.split('T')[0]);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const overlapping = stops.filter(s => {
+      const sd = s.start_date?.split('T')[0];
+      const ed = s.end_date?.split('T')[0];
+      return dateStr >= sd && dateStr < ed;
+    });
     const stop = overlapping[0] || null;
     const title = overlapping.length > 1 ? overlapping.map(s => s.name).join(' / ') : (stop?.name || '');
     dates.push({
@@ -481,10 +492,10 @@ function getCalendarDates(stops) {
       title,
       stop,
       stopIdx: stop ? stops.indexOf(stop) : -1,
-      color: '#7C3AED',
     });
   }
-  return dates;
+  // Only return dates that have at least one stop — no greyed out pills
+  return dates.filter(cd => cd.stopIdx >= 0);
 }
 
 // ═══ MAIN ═══
