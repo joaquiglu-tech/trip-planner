@@ -168,7 +168,6 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                 </div>
               )}
             </div>
-            <button className="edit-toggle-btn" onClick={() => setEditing(true)}>Edit</button>
           </div>
         </div>
 
@@ -243,6 +242,9 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           )}
         </div>
 
+        <div className="detail-edit-actions">
+          <button className="detail-btn sel" onClick={() => setEditing(true)} style={{ flex: 1 }}>Edit</button>
+        </div>
         {onDelete && (<div style={{ padding: '0 16px 16px' }}><button className="detail-btn-delete" onClick={() => { if (confirm('Delete this item permanently? This cannot be undone.')) onDelete(); }}>Delete permanently</button></div>)}
       </div>
     </div>
