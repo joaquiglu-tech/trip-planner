@@ -26,7 +26,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
         category: selectedItem.type,
         note: note || selectedItem.name,
         item_id: selectedItem.id,
-        stop_id: selectedItem.stop_id || '',
+        stop_id: selectedItem.stop_ids?.[0] || selectedItem.stop_id || '',
         created_by: userEmail,
       });
       onClose();
@@ -57,7 +57,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
                   <div className="itin-empty"><div className="itin-empty-text">No items found. Add items from the Plan tab first.</div></div>
                 )}
                 {availableItems.map(it => {
-                  const stop = it.stop_id ? stops?.find(s => s.id === it.stop_id) : null;
+                  const stop = it.stop_ids?.[0] ? stops?.find(s => s.id === it.stop_ids[0]) : null;
                   return (
                     <div
                       key={it.id}

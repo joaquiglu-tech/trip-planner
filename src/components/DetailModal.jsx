@@ -261,7 +261,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                     <button className="detail-btn conf" onClick={async () => {
                       const val = parseFloat(costInput);
                       if (!val || val <= 0) return;
-                      await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_id || '', created_by: '' });
+                      await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || it.stop_id || '', created_by: '' });
                       setStatus(it.id, 'conf');
                       setCostInput(''); setConfirming(false);
                       showSaved('Confirmed');
@@ -447,7 +447,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                 <button className="detail-btn sel" onClick={async () => {
                   const val = parseFloat(costInput);
                   if (!val || val <= 0) return;
-                  await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_id || '', created_by: '' });
+                  await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || it.stop_id || '', created_by: '' });
                   setCostInput('');
                   showSaved('Payment added');
                 }}>Add payment</button>

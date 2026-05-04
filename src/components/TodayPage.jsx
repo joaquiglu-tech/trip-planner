@@ -16,20 +16,25 @@ function getDaysUntilTrip(stops) {
 }
 
 function formatStopDate(stop) {
-  if (!stop.start_date) return '';
-  const s = new Date(stop.start_date);
-  const e = new Date(stop.end_date);
+  const sd = toDateStr(stop.start_date);
+  const ed = toDateStr(stop.end_date);
+  if (!sd) return '';
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const sd = s.getUTCDate(), sm = months[s.getUTCMonth()];
-  const ed = e.getUTCDate(), em = months[e.getUTCMonth()];
-  if (s.getUTCMonth() === e.getUTCMonth() && sd !== ed) return `${sm} ${sd}–${ed}`;
-  if (s.getUTCMonth() !== e.getUTCMonth()) return `${sm} ${sd} – ${em} ${ed}`;
-  return `${sm} ${sd}`;
+  const [sy, smn, sdy] = sd.split('-').map(Number);
+  const [ey, emn, edy] = ed.split('-').map(Number);
+  const sm = months[smn - 1], em = months[emn - 1];
+  if (smn === emn && sdy !== edy) return `${sm} ${sdy}–${edy}`;
+  if (smn !== emn) return `${sm} ${sdy} – ${em} ${edy}`;
+  return `${sm} ${sdy}`;
 }
 
 function calcNights(stop) {
-  if (!stop.start_date || !stop.end_date) return 1;
-  return Math.max(1, Math.round((new Date(stop.end_date) - new Date(stop.start_date)) / 86400000));
+  const sd = toDateStr(stop.start_date);
+  const ed = toDateStr(stop.end_date);
+  if (!sd || !ed) return 1;
+  const [sy, sm, sday] = sd.split('-').map(Number);
+  const [ey, em, eday] = ed.split('-').map(Number);
+  return Math.max(1, Math.round((new Date(ey, em - 1, eday) - new Date(sy, sm - 1, sday)) / 86400000));
 }
 
 function formatTime(t) {
@@ -64,9 +69,16 @@ function useGoogleMapsReady() {
 
 const directionsCache = {};
 
+// Check if an item belongs to a stop (supports stop_ids array)
+function itemInStop(it, stopId) {
+  if (it.stop_ids?.includes(stopId)) return true;
+  if (it.stop_id === stopId) return true; // fallback
+  return false;
+}
+
 // Get stay for a stop (from items)
 function getStay(items, stopId) {
-  return items.find(it => it.type === 'stay' && it.stop_id === stopId && (it.status === 'sel' || it.status === 'conf'));
+  return items.find(it => it.type === 'stay' && itemInStop(it, stopId) && (it.status === 'sel' || it.status === 'conf'));
 }
 
 // ═══ DAY MAP ═══
@@ -202,7 +214,7 @@ function StatusFilter({ value, onChange }) {
 
 // ═══ STOP STATS (for overview destination cards) ═══
 function getStopStats(stop, items) {
-  const stopItems = items.filter(it => it.stop_id === stop.id);
+  const stopItems = items.filter(it => itemInStop(it, stop.id));
   const stays = stopItems.filter(it => it.type === 'stay');
   const transports = stopItems.filter(it => it.type === 'transport');
   const activities = stopItems.filter(it => it.type === 'activity');
@@ -243,7 +255,10 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
     <>
       {daysLeft > 0 && (
         <div className="home-header">
-          <div className="home-trip-name">{stops[0]?.name} to {stops[stops.length - 1]?.name}</div>
+          <div className="home-trip-name">{(() => {
+            const tripStops = stops.filter(s => s.name !== 'Lima');
+            return tripStops.length > 1 ? `${tripStops[0]?.name} to ${tripStops[tripStops.length - 1]?.name}` : (tripStops[0]?.name || 'Trip');
+          })()}</div>
           <div className="home-countdown">{daysLeft} days away</div>
         </div>
       )}
@@ -336,7 +351,7 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
   }
 
   const scheduled = useMemo(() => {
-    return items.filter(it => it.stop_id === stop.id && it.type !== 'transport')
+    return items.filter(it => itemInStop(it, stop.id) && it.type !== 'transport')
       .filter(it => {
         if (statusFilter === 'all') return it.status === 'sel' || it.status === 'conf';
         if (statusFilter === 'sel') return it.status === 'sel';
@@ -346,7 +361,7 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
       .sort((a, b) => (a.start_time || 'zz').localeCompare(b.start_time || 'zz') || (a.sort_order || 0) - (b.sort_order || 0));
   }, [items, stop.id, statusFilter]);
 
-  const allStopItems = useMemo(() => items.filter(it => it.stop_id === stop.id && it.type !== 'transport'), [items, stop.id]);
+  const allStopItems = useMemo(() => items.filter(it => itemInStop(it, stop.id) && it.type !== 'transport'), [items, stop.id]);
   const stay = getStay(items, stop.id);
   const stayCoord = stay?.coord || null;
   const stayPlace = stay ? places?.[stay.id] : null;
@@ -463,16 +478,22 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
   );
 }
 
+// Extract YYYY-MM-DD from any date format
+function toDateStr(d) {
+  if (!d) return '';
+  const s = String(d);
+  // Handle: "2026-07-11", "2026-07-11T00:00:00Z", "2026-07-11 00:00:00+00"
+  return s.substring(0, 10);
+}
+
 // ═══ CALENDAR DATES ═══
 function getCalendarDates(stops) {
   if (!stops.length) return [];
-  // Use date portions only (no timezone issues)
-  const startStr = stops[0].start_date?.split('T')[0];
-  const endStr = stops[stops.length - 1].end_date?.split('T')[0];
+  const startStr = toDateStr(stops[0].start_date);
+  const endStr = toDateStr(stops[stops.length - 1].end_date);
   if (!startStr || !endStr) return [];
   const dates = [];
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  // Parse as local dates to avoid timezone shift
   const [sy, sm, sd] = startStr.split('-').map(Number);
   const [ey, em, ed] = endStr.split('-').map(Number);
   const start = new Date(sy, sm - 1, sd);
@@ -480,9 +501,7 @@ function getCalendarDates(stops) {
   for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const overlapping = stops.filter(s => {
-      const sd = s.start_date?.split('T')[0];
-      const ed = s.end_date?.split('T')[0];
-      return dateStr >= sd && dateStr < ed;
+      return dateStr >= toDateStr(s.start_date) && dateStr < toDateStr(s.end_date);
     });
     const stop = overlapping[0] || null;
     const title = overlapping.length > 1 ? overlapping.map(s => s.name).join(' / ') : (stop?.name || '');
@@ -556,7 +575,7 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
                 onClick={() => setView({ type: 'stop', idx: i })}
                 style={{ borderLeftColor: 'var(--accent)', minWidth: Math.max(70, nights * 50), flexShrink: 0 }}>
                 <span className="pill-stop-name" title={s.name}>{s.name}</span>
-                <span className="pill-stop-date">{formatStopDate(s)}{nights > 1 ? ` · ${nights}n` : ''}</span>
+                <span className="pill-stop-date">{formatStopDate(s)}</span>
               </button>
             );
           })

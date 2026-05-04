@@ -11,7 +11,7 @@ export default function BudgetPage({ active, items, stops, livePrices, expenses,
   const confirmedExpenses = useMemo(() => {
     return (expenses || []).filter(e => e.item_id).map(e => {
       const item = items.find(it => it.id === e.item_id);
-      const stop = item?.stop_id ? stops?.find(s => s.id === item.stop_id) : null;
+      const stop = item?.stop_ids?.[0] ? stops?.find(s => s.id === item.stop_ids[0]) : (item?.stop_id ? stops?.find(s => s.id === item.stop_id) : null);
       return { ...e, item, stop };
     }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [expenses, items, stops]);
