@@ -56,7 +56,7 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
               const mapsUrl = tripStops.length > 1
                 ? `https://www.google.com/maps/dir/${tripStops.map(s => `${s.lat},${s.lng}`).join('/')}`
                 : null;
-              return mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener" className="itin-maps-btn" style={{ margin: 0, fontSize: 10, padding: '4px 10px' }}>Open in Google Maps</a> : null;
+              return mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener" className="itin-maps-btn itin-maps-btn-sm">Open in Google Maps</a> : null;
             })()}
           </div>
           <RouteMap stops={stops} items={items} />

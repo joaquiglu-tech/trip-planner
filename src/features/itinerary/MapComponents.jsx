@@ -22,33 +22,19 @@ export function DayMap({ stop, mapItems, transportItems, stayCoord }) {
   const center = stayCoord || stopCoord || (mapItems.find(it => it.coord)?.coord) || null;
   if (!center) return null;
 
-  const coords = mapItems.filter(it => it.coord).map(it => it.coord);
-  const mapsRouteUrl = coords.length > 1
-    ? `https://www.google.com/maps/dir/${coords.map(c => `${c.lat},${c.lng}`).join('/')}`
-    : coords.length === 1 ? `https://www.google.com/maps/dir/?api=1&destination=${coords[0].lat},${coords[0].lng}` : null;
-
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div className="map-wrap" style={{ height: 240 }}>
-        <Map
-          defaultCenter={center}
-          defaultZoom={14}
-          mapId="day-map"
-          gestureHandling="cooperative"
-          disableDefaultUI
-          fullscreenControl
-          style={{ width: '100%', height: '100%' }}
-        >
-          <DayMapContent mapItems={mapItems} transportItems={transportItems} stayCoord={stayCoord} stopName={stop.name} />
-        </Map>
-      </div>
-      <div className="map-legend">
-        <span><span className="ml-dot" style={{ background: '#7C3AED' }} /> Stay</span>
-        <span><span className="ml-dot" style={{ background: '#16A34A' }} /> Activity</span>
-        <span><span className="ml-dot" style={{ background: '#D97706' }} /> Food</span>
-        <span><span className="ml-dot" style={{ background: '#2563EB' }} /> Transport</span>
-      </div>
-      {mapsRouteUrl && <a href={mapsRouteUrl} target="_blank" rel="noopener" className="itin-maps-btn">Open in Google Maps</a>}
+    <div className="map-wrap">
+      <Map
+        defaultCenter={center}
+        defaultZoom={14}
+        mapId="day-map"
+        gestureHandling="cooperative"
+        disableDefaultUI
+        fullscreenControl
+        style={{ width: '100%', height: '100%' }}
+      >
+        <DayMapContent mapItems={mapItems} transportItems={transportItems} stayCoord={stayCoord} stopName={stop.name} />
+      </Map>
     </div>
   );
 }
@@ -152,7 +138,7 @@ export function RouteMap({ stops, items }) {
     return { stop: s, coord: null };
   }).filter(p => p.coord);
 
-  if (!points.length) return <div className="map-wrap" style={{ height: 200, marginBottom: 12 }} />;
+  if (!points.length) return <div className="map-wrap" />;
 
   const tripPoints = points.filter(p => p.stop.name !== 'Lima');
   const mapPoints = tripPoints.length > 0 ? tripPoints : points;
@@ -160,7 +146,7 @@ export function RouteMap({ stops, items }) {
   const cLng = mapPoints.reduce((s, p) => s + p.coord.lng, 0) / mapPoints.length;
 
   return (
-    <div className="map-wrap" style={{ height: 200, marginBottom: 12 }}>
+    <div className="map-wrap">
       <Map
         defaultCenter={{ lat: cLat, lng: cLng }}
         defaultZoom={6}

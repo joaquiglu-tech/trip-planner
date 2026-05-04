@@ -120,7 +120,7 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
               const mapsUrl = coords.length > 1
                 ? `https://www.google.com/maps/dir/${coords.map(c => `${c.lat},${c.lng}`).join('/')}`
                 : coords.length === 1 ? `https://www.google.com/maps/dir/?api=1&destination=${coords[0].lat},${coords[0].lng}` : null;
-              return mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener" className="itin-maps-btn" style={{ margin: 0, fontSize: 10, padding: '4px 10px' }}>Open in Google Maps</a> : null;
+              return mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener" className="itin-maps-btn itin-maps-btn-sm">Open in Google Maps</a> : null;
             })()}
           </div>
           <DayMap stop={stop} mapItems={scheduled.filter(it => it.type !== 'transport')} transportItems={transportForMap} stayCoord={stayCoord} />
