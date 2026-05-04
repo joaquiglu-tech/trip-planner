@@ -492,6 +492,7 @@ function getCalendarDates(stops) {
       title,
       stop,
       stopIdx: stop ? stops.indexOf(stop) : -1,
+      overlapping,
     });
   }
   // Only return dates that have at least one stop — no greyed out pills
@@ -560,15 +561,18 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
             );
           })
         ) : (
-          calendarDates.map(cd => (
-            <button key={cd.date} data-active={isDateActive(cd.date) ? 'true' : 'false'}
-              className={`today-sel-pill today-sel-pill-stop ${isDateActive(cd.date) ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`}
-              onClick={() => cd.stopIdx >= 0 && setView({ type: 'date', date: cd.date })}
-              style={{ borderLeftColor: 'var(--accent)', opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
-              <span className="pill-stop-name">{cd.title}</span>
-              <span className="pill-stop-date">{cd.shortLabel}</span>
-            </button>
-          ))
+          calendarDates.map(cd => {
+            const isMulti = cd.overlapping.length > 1;
+            return (
+              <button key={cd.date} data-active={isDateActive(cd.date) ? 'true' : 'false'}
+                className={`today-sel-pill today-sel-pill-stop ${isDateActive(cd.date) ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`}
+                onClick={() => cd.stopIdx >= 0 && setView({ type: 'date', date: cd.date })}
+                style={{ borderLeftColor: 'var(--accent)', minWidth: isMulti ? 120 : undefined }}>
+                <span className="pill-stop-name" title={cd.title} style={isMulti ? { whiteSpace: 'normal', lineHeight: 1.2, fontSize: 11 } : undefined}>{cd.title}</span>
+                <span className="pill-stop-date">{cd.shortLabel}</span>
+              </button>
+            );
+          })
         )}
       </div>
 
