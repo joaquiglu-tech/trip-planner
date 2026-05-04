@@ -47,23 +47,39 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
         <div className="home-stat"><div className="home-stat-num">{$f(stats.estimated)}</div><div className="home-stat-label">Estimated</div></div>
         {stats.confirmed > 0 && <div className="home-stat"><div className="home-stat-num" style={{ color: 'var(--green)' }}>{$f(stats.confirmed)}</div><div className="home-stat-label">Confirmed</div></div>}
       </div>
-      <div className="overview-map-activity">
-        <div className="overview-map-col">
+      <div className="itin-map-schedule">
+        <div className="itin-map-col">
+          <div className="itin-col-header">
+            <div className="itin-section-title" style={{ margin: 0 }}>Route</div>
+            {(() => {
+              const tripStops = stops.filter(s => s.lat && s.lng && s.name !== 'Lima');
+              const mapsUrl = tripStops.length > 1
+                ? `https://www.google.com/maps/dir/${tripStops.map(s => `${s.lat},${s.lng}`).join('/')}`
+                : null;
+              return mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener" className="itin-maps-btn" style={{ margin: 0, fontSize: 10, padding: '4px 10px' }}>Open in Google Maps</a> : null;
+            })()}
+          </div>
           <RouteMap stops={stops} items={items} />
         </div>
-        {recentItems.length > 0 && (
-          <div className="itin-recent">
-            <div className="itin-section-title">Recent activity</div>
-            {recentItems.map(r => (
-              <div key={r.id} className="itin-recent-row">
-                <span className="itin-recent-who">{(r.updated_by || '').split('@')[0]}</span>
-                <span className="itin-recent-action">{r.status === 'conf' ? 'booked' : r.status === 'sel' ? 'added' : 'updated'}</span>
-                <span className="itin-recent-name">{r.name}</span>
-                <span className="itin-recent-time">{formatRelativeTime(r.updated_at)}</span>
-              </div>
-            ))}
+        <div className="itin-schedule-col">
+          <div className="itin-col-header">
+            <div className="itin-section-title" style={{ margin: 0 }}>Recent activity</div>
           </div>
-        )}
+          {recentItems.length > 0 ? (
+            <div className="itin-schedule-scroll">
+              {recentItems.map(r => (
+                <div key={r.id} className="itin-recent-row">
+                  <span className="itin-recent-who">{(r.updated_by || '').split('@')[0]}</span>
+                  <span className="itin-recent-action">{r.status === 'conf' ? 'booked' : r.status === 'sel' ? 'added' : 'updated'}</span>
+                  <span className="itin-recent-name">{r.name}</span>
+                  <span className="itin-recent-time">{formatRelativeTime(r.updated_at)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: 12 }}>No recent activity</div>
+          )}
+        </div>
       </div>
       <div className="home-section-title">Your destinations</div>
       <div className="home-destinations">

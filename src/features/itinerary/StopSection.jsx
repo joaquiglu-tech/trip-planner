@@ -112,9 +112,23 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
         )}
       </div>
       <div className="itin-map-schedule">
-        <div className="itin-map-col"><DayMap stop={stop} mapItems={scheduled.filter(it => it.type !== 'transport')} transportItems={transportForMap} stayCoord={stayCoord} /></div>
+        <div className="itin-map-col">
+          <div className="itin-col-header">
+            <div className="itin-section-title" style={{ margin: 0 }}>Map</div>
+            {(() => {
+              const coords = scheduled.filter(it => it.coord).map(it => it.coord);
+              const mapsUrl = coords.length > 1
+                ? `https://www.google.com/maps/dir/${coords.map(c => `${c.lat},${c.lng}`).join('/')}`
+                : coords.length === 1 ? `https://www.google.com/maps/dir/?api=1&destination=${coords[0].lat},${coords[0].lng}` : null;
+              return mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener" className="itin-maps-btn" style={{ margin: 0, fontSize: 10, padding: '4px 10px' }}>Open in Google Maps</a> : null;
+            })()}
+          </div>
+          <DayMap stop={stop} mapItems={scheduled.filter(it => it.type !== 'transport')} transportItems={transportForMap} stayCoord={stayCoord} />
+        </div>
         <div className="itin-schedule-col">
-          <div className="itin-section-title">Schedule</div>
+          <div className="itin-col-header">
+            <div className="itin-section-title" style={{ margin: 0 }}>Schedule</div>
+          </div>
           <div className="itin-schedule-scroll">
             {scheduled.length > 0 ? (<ScheduleList items={scheduled} stop={stop} onItemTap={onItemTap} selectedDate={selectedDate} livePrices={livePrices} expenseMap={expenseMap} />) : (
               <div className="itin-empty">
