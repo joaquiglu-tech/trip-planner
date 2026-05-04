@@ -25,6 +25,10 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [sortBy, setSortBy] = useState('default');
 
+  // Parse sort value into field + direction
+  const sortField = sortBy.includes('-') ? sortBy.split('-')[0] : sortBy;
+  const sortDir = sortBy.includes('-desc') ? 'desc' : 'asc';
+
   const expenseMap = useMemo(() => {
     const map = {};
     (expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
@@ -53,14 +57,19 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
   }, [items, filters]);
 
   const sorted = useMemo(() => {
-    if (sortBy === 'name') return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === 'price') return [...filtered].sort((a, b) => (Number(b.estimated_cost) || 0) - (Number(a.estimated_cost) || 0));
-    if (sortBy === 'status') return [...filtered].sort((a, b) => {
-      const order = { conf: 0, sel: 1, '': 2 };
-      return (order[a.status] ?? 2) - (order[b.status] ?? 2);
+    if (sortField === 'default') return filtered;
+    const dir = sortDir === 'desc' ? -1 : 1;
+    return [...filtered].sort((a, b) => {
+      if (sortField === 'name') return a.name.localeCompare(b.name) * dir;
+      if (sortField === 'price') return ((Number(a.estimated_cost) || 0) - (Number(b.estimated_cost) || 0)) * dir;
+      if (sortField === 'date') return ((a.start_time || 'zz').localeCompare(b.start_time || 'zz')) * dir;
+      if (sortField === 'status') {
+        const order = { conf: 0, sel: 1, '': 2 };
+        return ((order[a.status] ?? 2) - (order[b.status] ?? 2));
+      }
+      return 0;
     });
-    return filtered;
-  }, [filtered, sortBy]);
+  }, [filtered, sortField, sortDir]);
 
   const { sections, groupByCity } = useMemo(() => {
     const isTypeFilter = filters.type !== 'all';
@@ -83,13 +92,7 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
       <BudgetSummary items={items} expenses={expenses} />
 
       <div className="planner-sticky-bar">
-        <FilterBar filters={filters} setFilters={setFilters} items={items} />
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Sort:</span>
-          {[{ v: 'default', l: 'Default' }, { v: 'name', l: 'Name' }, { v: 'price', l: 'Price' }, { v: 'status', l: 'Status' }].map(s => (
-            <button key={s.v} className={`fp ${sortBy === s.v ? 'fp-active' : ''}`} onClick={() => setSortBy(s.v)} style={{ padding: '4px 10px', fontSize: 10 }}>{s.l}</button>
-          ))}
-        </div>
+        <FilterBar filters={filters} setFilters={setFilters} items={items} sortBy={sortBy} setSortBy={setSortBy} />
       </div>
       <button className="add-item-btn" onClick={() => setShowAddModal(true)}>+ Add something new</button>
 
