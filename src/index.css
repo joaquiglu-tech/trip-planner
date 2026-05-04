@@ -550,7 +550,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .today-sel-pill.is-today { border-color: var(--accent) }
 .today-pill-accent { background: var(--accent-light) !important; color: var(--accent) !important; border-color: var(--accent) !important }
 /* Stop pills — show city name + date */
-.today-sel-pill-stop { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 12px; line-height: 1.2; border-left: 3px solid transparent; text-align: left; min-height: 44px; justify-content: center }
+.today-sel-pill-stop { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 12px; line-height: 1.2; border-left: 3px solid transparent; text-align: center; min-height: 44px; justify-content: center }
 .pill-stop-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100% }
 .pill-stop-date { font-size: 9px; font-weight: 500; opacity: .6; white-space: nowrap }
 
