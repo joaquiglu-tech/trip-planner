@@ -352,6 +352,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .budget-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer }
 .budget-item:hover { background: var(--surface-hover) }
 .budget-item-conf { border-left: 3px solid var(--green) }
+.budget-item-unlinked { border-left: 3px solid #D97706 }
 .bi-type { text-transform: capitalize }
 .bi-left { flex: 1; min-width: 0 }
 .bi-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
