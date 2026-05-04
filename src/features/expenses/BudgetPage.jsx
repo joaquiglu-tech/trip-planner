@@ -7,9 +7,8 @@ import BudgetSummary from './BudgetSummary';
 export default function BudgetPage({ active }) {
   const { items, stops, livePrices, expenses, updateItem, deleteItem, setStatus, addExpense, updateExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData, email: userEmail } = useTrip();
   const [selectedItem, setSelectedItem] = useState(null);
-  const [selectedExpense, setSelectedExpense] = useState(null);
 
-  // Confirmed: expenses linked to items (things paid for)
+  // Confirmed: expenses linked to items
   const confirmedExpenses = useMemo(() => {
     return (expenses || []).filter(e => e.item_id).map(e => {
       const item = items.find(it => it.id === e.item_id);
@@ -18,7 +17,7 @@ export default function BudgetPage({ active }) {
     }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [expenses, items, stops]);
 
-  // Unlinked expenses (daily expenses without item)
+  // Unlinked expenses (should be linked — flagged)
   const unlinkedExpenses = useMemo(() => {
     return (expenses || []).filter(e => !e.item_id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [expenses]);
@@ -26,16 +25,23 @@ export default function BudgetPage({ active }) {
   // Planned: selected items not yet confirmed
   const planned = useMemo(() => items.filter(it => it.status === 'sel'), [items]);
 
+  // Click confirmed expense → open linked item's DetailModal
+  function handleExpenseClick(expense) {
+    if (expense.item) {
+      setSelectedItem(expense.item);
+    }
+  }
+
   return (
     <div id="page-budget" className={`page ${active ? "active" : ""}`}>
       <BudgetSummary items={items} expenses={expenses} />
 
-      {/* CONFIRMED SECTION — expenses with linked items */}
+      {/* CONFIRMED — expenses with linked items */}
       <div className="sect-title">Confirmed ({confirmedExpenses.length})</div>
       {confirmedExpenses.length > 0 ? (
         <div className="budget-list">
           {confirmedExpenses.map(e => (
-            <div key={e.id} className="budget-item budget-item-conf" onClick={() => setSelectedExpense(e)} style={{ cursor: 'pointer' }}>
+            <div key={e.id} className="budget-item budget-item-conf" onClick={() => handleExpenseClick(e)} style={{ cursor: 'pointer' }}>
               <div className="bi-left">
                 <div className="bi-name">{e.item?.name || e.note || 'Expense'}</div>
                 <div className="bi-meta">
@@ -51,23 +57,26 @@ export default function BudgetPage({ active }) {
           ))}
         </div>
       ) : (
-        <div className="itin-empty"><div className="itin-empty-text">No confirmed expenses yet. Confirm and pay for items to see them here.</div></div>
+        <div className="itin-empty"><div className="itin-empty-text">No confirmed expenses yet.</div></div>
       )}
 
-      {/* Unlinked daily expenses */}
+      {/* UNLINKED — flagged, should be linked to an item */}
       {unlinkedExpenses.length > 0 && (
         <>
-          <div className="sect-title">Daily Expenses ({unlinkedExpenses.length})</div>
+          <div className="sect-title">Unlinked ({unlinkedExpenses.length})</div>
           <div className="budget-list">
             {unlinkedExpenses.map(e => (
-              <div key={e.id} className="budget-item">
+              <div key={e.id} className="budget-item budget-item-unlinked">
                 <div className="bi-left">
                   <div className="bi-name">{e.note || e.category || 'Expense'}</div>
-                  <div className="bi-meta">{new Date(e.created_at).toLocaleDateString()}</div>
+                  <div className="bi-meta">
+                    <span style={{ color: '#D97706', fontWeight: 600 }}>Not linked to an item</span>
+                    <span> · {new Date(e.created_at).toLocaleDateString()}</span>
+                  </div>
                 </div>
                 <div className="bi-right">
                   <div className="bi-paid">{$f(Number(e.amount))}</div>
-                  <button onClick={() => deleteExpense(e.id)} style={{ background: 'none', border: 'none', color: 'var(--text-light)', fontSize: 11, cursor: 'pointer' }}>remove</button>
+                  <button onClick={() => deleteExpense(e.id)} style={{ background: 'none', border: 'none', color: '#f87171', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>delete</button>
                 </div>
               </div>
             ))}
@@ -75,7 +84,7 @@ export default function BudgetPage({ active }) {
         </>
       )}
 
-      {/* PLANNED SECTION — selected items not yet confirmed */}
+      {/* PLANNED — selected items not yet confirmed */}
       <div className="sect-title">Planned ({planned.length})</div>
       {planned.length > 0 ? (
         <div className="budget-list">
@@ -85,7 +94,7 @@ export default function BudgetPage({ active }) {
               <div key={it.id} className="budget-item" onClick={() => setSelectedItem(it)} style={{ cursor: 'pointer' }}>
                 <div className="bi-left">
                   <div className="bi-name">{it.name}</div>
-                  <div className="bi-meta">{it.city} · Planned</div>
+                  <div className="bi-meta">{it.city} · Selected</div>
                 </div>
                 <div className="bi-right">
                   <div style={{ fontSize: 13, fontWeight: 700 }}>{est > 0 ? $f(est) : '—'}</div>
@@ -95,68 +104,10 @@ export default function BudgetPage({ active }) {
           })}
         </div>
       ) : (
-        <div className="itin-empty"><div className="itin-empty-text">No planned items. Add items from the Plan tab.</div></div>
+        <div className="itin-empty"><div className="itin-empty-text">No planned items.</div></div>
       )}
 
-      {/* Expense detail overlay */}
-      {selectedExpense && (
-        <div className="detail-overlay" onClick={() => setSelectedExpense(null)}>
-          <div className="detail-sheet" onClick={e => e.stopPropagation()}>
-            <div className="detail-handle" />
-            <button className="detail-close" onClick={() => setSelectedExpense(null)}>✕</button>
-            <div className="detail-content">
-              <h2 className="detail-name" style={{ fontSize: 20 }}>{selectedExpense.item?.name || 'Expense'}</h2>
-              <div className="itin-general" style={{ marginBottom: 12 }}>
-                <div className="itin-general-row">
-                  <span className="itin-general-label">Amount</span>
-                  <span style={{ fontWeight: 700, color: 'var(--green)' }}>{$f(Number(selectedExpense.amount))}</span>
-                </div>
-                <div className="itin-general-row">
-                  <span className="itin-general-label">Date paid</span>
-                  <span>{new Date(selectedExpense.created_at).toLocaleDateString()}</span>
-                </div>
-                {selectedExpense.item?.type && (
-                  <div className="itin-general-row">
-                    <span className="itin-general-label">Type</span>
-                    <span>{selectedExpense.item.type}</span>
-                  </div>
-                )}
-                {selectedExpense.stop?.name && (
-                  <div className="itin-general-row">
-                    <span className="itin-general-label">Stop</span>
-                    <span>{selectedExpense.stop.name}</span>
-                  </div>
-                )}
-                {selectedExpense.note && (
-                  <div className="itin-general-row">
-                    <span className="itin-general-label">Note</span>
-                    <span>{selectedExpense.note}</span>
-                  </div>
-                )}
-                {selectedExpense.created_by && (
-                  <div className="itin-general-row">
-                    <span className="itin-general-label">Paid by</span>
-                    <span>{selectedExpense.created_by.split('@')[0]}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Link to related item */}
-              {selectedExpense.item && (
-                <button className="detail-btn" onClick={() => { setSelectedExpense(null); setSelectedItem(selectedExpense.item); }} style={{ marginBottom: 8 }}>
-                  View {selectedExpense.item.name}
-                </button>
-              )}
-
-              <button className="detail-btn-delete" onClick={() => { deleteExpense(selectedExpense.id); setSelectedExpense(null); }}>
-                Delete expense
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Item detail modal */}
+      {/* Item DetailModal — used for both confirmed expenses and planned items */}
       {selectedItem && (() => {
         const liveItem = items.find(i => i.id === selectedItem.id) || selectedItem;
         const itemExpenses = (expenses || []).filter(e => e.item_id === liveItem.id);
