@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabase';
 
 const API_KEY = 'AIzaSyD7cRriZQE319Gx9x84_HUSD_M9YNbHDWA';
@@ -56,5 +56,11 @@ export function useStops() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  return { stops, loaded };
+  const updateStop = useCallback(async (id, changes) => {
+    setStops(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
+    const { error } = await supabase.from('stops').update(changes).eq('id', id);
+    if (error) console.warn('Failed to update stop:', error);
+  }, []);
+
+  return { stops, loaded, updateStop };
 }

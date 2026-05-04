@@ -30,7 +30,7 @@ export default function App() {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const email = session?.user?.email || '';
   const { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
-  const { stops, loaded: stopsLoaded } = useStops();
+  const { stops, loaded: stopsLoaded, updateStop } = useStops();
   const { places, getPlaceData } = usePlaceData();
   const { expenses, addExpense, deleteExpense } = useExpenses();
 
@@ -80,7 +80,7 @@ export default function App() {
         <TodayPage
           active={activeTab === 'itinerary'}
           items={items} stops={stops} livePrices={livePrices} expenses={expenses}
-          updateItem={updateItem} setStatus={setStatus} addExpense={addExpense}
+          updateItem={updateItem} updateStop={updateStop} setStatus={setStatus} addExpense={addExpense}
           files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
         />

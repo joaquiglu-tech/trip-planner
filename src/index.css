@@ -598,6 +598,9 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 
 /* ═══ ITINERARY — NEW COMPONENTS ═══ */
 .itin-mode-toggle { display: flex; gap: 4px; margin-bottom: 8px }
+.stop-section { border-top: 2px solid var(--accent); padding-top: 12px; margin-top: 16px }
+.stop-section:first-child { border-top: none; margin-top: 0; padding-top: 0 }
+.stop-section-title { font-size: 16px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 10px; color: var(--accent) }
 .itin-filter { display: flex; gap: 4px; margin-bottom: 12px }
 .itin-general { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 12px }
 .itin-general-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-lighter); font-size: 13px }

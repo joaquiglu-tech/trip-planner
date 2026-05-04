@@ -312,8 +312,29 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
   );
 }
 
-// ═══ DAY DETAIL ═══
-function DayDetailView({ stop, items, onItemTap, places, visible, statusFilter }) {
+// ═══ SINGLE STOP SECTION (reusable — shown once per stop) ═══
+function StopSection({ stop, items, onItemTap, places, visible, statusFilter, updateStop, showTitle }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({});
+
+  function startEdit() {
+    setDraft({
+      name: stop.name || '',
+      start_date: stop.start_date?.split('T')[0] || '',
+      end_date: stop.end_date?.split('T')[0] || '',
+    });
+    setEditing(true);
+  }
+
+  function saveEdit() {
+    const changes = {};
+    if (draft.name !== (stop.name || '')) changes.name = draft.name;
+    if (draft.start_date && draft.start_date !== stop.start_date?.split('T')[0]) changes.start_date = draft.start_date + 'T00:00:00Z';
+    if (draft.end_date && draft.end_date !== stop.end_date?.split('T')[0]) changes.end_date = draft.end_date + 'T00:00:00Z';
+    if (Object.keys(changes).length > 0 && updateStop) updateStop(stop.id, changes);
+    setEditing(false);
+  }
+
   const scheduled = useMemo(() => {
     return items.filter(it => it.stop_id === stop.id && it.type !== 'transport')
       .filter(it => {
@@ -325,16 +346,12 @@ function DayDetailView({ stop, items, onItemTap, places, visible, statusFilter }
       .sort((a, b) => (a.start_time || 'zz').localeCompare(b.start_time || 'zz') || (a.sort_order || 0) - (b.sort_order || 0));
   }, [items, stop.id, statusFilter]);
 
-  const allStopItems = useMemo(() => {
-    return items.filter(it => it.stop_id === stop.id && it.type !== 'transport');
-  }, [items, stop.id]);
-
+  const allStopItems = useMemo(() => items.filter(it => it.stop_id === stop.id && it.type !== 'transport'), [items, stop.id]);
   const stay = getStay(items, stop.id);
   const stayCoord = stay?.coord || null;
   const stayPlace = stay ? places?.[stay.id] : null;
   const nights = calcNights(stop);
   const tips = stop.tips?.length > 0 ? stop.tips : null;
-
   const planItems = useMemo(() => {
     return allStopItems.filter(it => {
       if (statusFilter === 'all') return true;
@@ -345,17 +362,45 @@ function DayDetailView({ stop, items, onItemTap, places, visible, statusFilter }
   }, [allStopItems, statusFilter]);
 
   return (
-    <>
-      {/* General details */}
+    <div className={showTitle ? 'stop-section' : ''}>
+      {showTitle && <div className="stop-section-title">{stop.name}</div>}
+
+      {/* General details — inline editable */}
       <div className="itin-general">
-        <div className="itin-general-row"><span className="itin-general-label">Dates</span><span>{formatStopDate(stop)}{nights > 1 ? ` (${nights} nights)` : ''}</span></div>
-        {stay && (
+        {editing ? (
           <>
-            <div className="itin-general-row"><span className="itin-general-label">Stay</span><span>{stay.name}</span></div>
-            {(stayPlace?.address || stay.address) && <div className="itin-general-row"><span className="itin-general-label">Address</span><span>{stayPlace?.address || stay.address}</span></div>}
-            {stayCoord && <div className="itin-general-row"><span className="itin-general-label">Directions</span><a href={`https://www.google.com/maps/dir/?api=1&destination=${stayCoord.lat},${stayCoord.lng}`} target="_blank" rel="noopener" className="itin-link">Google Maps</a></div>}
-            {stayPlace?.phone && <div className="itin-general-row"><span className="itin-general-label">Contact</span><a href={`tel:${stayPlace.phone}`} className="itin-link">{stayPlace.phone}</a></div>}
-            {(stay.check_in || stay.check_out) && <div className="itin-general-row"><span className="itin-general-label">Check-in/out</span><span>{stay.check_in && `In ${stay.check_in}`}{stay.check_in && stay.check_out && ' · '}{stay.check_out && `Out ${stay.check_out}`}</span></div>}
+            <div className="itin-general-row">
+              <span className="itin-general-label">Name</span>
+              <input className="edit-input" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} style={{ flex: 1 }} />
+            </div>
+            <div className="itin-general-row">
+              <span className="itin-general-label">Start</span>
+              <input className="edit-input" type="date" value={draft.start_date} onChange={e => setDraft(d => ({ ...d, start_date: e.target.value }))} style={{ flex: 1 }} />
+            </div>
+            <div className="itin-general-row">
+              <span className="itin-general-label">End</span>
+              <input className="edit-input" type="date" value={draft.end_date} onChange={e => setDraft(d => ({ ...d, end_date: e.target.value }))} style={{ flex: 1 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button className="detail-btn" onClick={() => setEditing(false)} style={{ flex: 1 }}>Cancel</button>
+              <button className="detail-btn sel" onClick={saveEdit} style={{ flex: 1 }}>Save</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="itin-general-row" onClick={startEdit} style={{ cursor: 'pointer' }}>
+              <span className="itin-general-label">Dates</span>
+              <span>{formatStopDate(stop)}{nights > 1 ? ` (${nights} nights)` : ''}</span>
+            </div>
+            {stay && (
+              <>
+                <div className="itin-general-row"><span className="itin-general-label">Stay</span><span>{stay.name}</span></div>
+                {(stayPlace?.address || stay.address) && <div className="itin-general-row"><span className="itin-general-label">Address</span><span>{stayPlace?.address || stay.address}</span></div>}
+                {stayCoord && <div className="itin-general-row"><span className="itin-general-label">Directions</span><a href={`https://www.google.com/maps/dir/?api=1&destination=${stayCoord.lat},${stayCoord.lng}`} target="_blank" rel="noopener" className="itin-link">Google Maps</a></div>}
+                {stayPlace?.phone && <div className="itin-general-row"><span className="itin-general-label">Contact</span><a href={`tel:${stayPlace.phone}`} className="itin-link">{stayPlace.phone}</a></div>}
+                {(stay.check_in || stay.check_out) && <div className="itin-general-row"><span className="itin-general-label">Check-in/out</span><span>{stay.check_in && `In ${stay.check_in}`}{stay.check_in && stay.check_out && ' · '}{stay.check_out && `Out ${stay.check_out}`}</span></div>}
+              </>
+            )}
           </>
         )}
       </div>
@@ -386,7 +431,7 @@ function DayDetailView({ stop, items, onItemTap, places, visible, statusFilter }
           ))}
         </div>
       ) : (
-        <div className="itin-empty"><div className="itin-empty-text">No items scheduled. Add items from the Plan tab.</div></div>
+        <div className="itin-empty"><div className="itin-empty-text">No items scheduled.</div></div>
       )}
 
       {/* Travel tips */}
@@ -414,7 +459,7 @@ function DayDetailView({ stop, items, onItemTap, places, visible, statusFilter }
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -443,16 +488,34 @@ function getCalendarDates(stops) {
 }
 
 // ═══ MAIN ═══
-export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, setStatus, addExpense, files, setFile, removeFile, places, getPlaceData }) {
+export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, updateStop, setStatus, addExpense, files, setFile, removeFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');
   const todayIdx = getTodayDayIndex(stops);
   const isDuringTrip = todayIdx !== null;
-  const [view, setView] = useState(isDuringTrip ? todayIdx : 'overview');
+  // view: 'overview' | { type: 'stop', idx: N } | { type: 'date', date: 'YYYY-MM-DD' }
+  const [view, setView] = useState(isDuringTrip ? { type: 'stop', idx: todayIdx } : 'overview');
   const selectorRef = useRef(null);
   const calendarDates = useMemo(() => getCalendarDates(stops), [stops]);
   const todayDateStr = new Date().toISOString().split('T')[0];
+
+  // Resolve which stops to show based on current view
+  const activeStops = useMemo(() => {
+    if (view === 'overview') return [];
+    if (view.type === 'stop') return stops[view.idx] ? [stops[view.idx]] : [];
+    if (view.type === 'date') {
+      return stops.filter(s => {
+        const sd = s.start_date?.split('T')[0];
+        const ed = s.end_date?.split('T')[0];
+        return view.date >= sd && view.date < ed;
+      });
+    }
+    return [];
+  }, [view, stops]);
+
+  const isActive = (stopIdx) => view !== 'overview' && view.type === 'stop' && view.idx === stopIdx;
+  const isDateActive = (date) => view !== 'overview' && view.type === 'date' && view.date === date;
 
   useEffect(() => {
     if (selectorRef.current && view !== 'overview') {
@@ -470,15 +533,15 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
 
       <div className="today-selector" ref={selectorRef}>
         <button className={`today-sel-pill ${view === 'overview' ? 'active' : ''}`} onClick={() => setView('overview')}>Overview</button>
-        {isDuringTrip && view !== todayIdx && <button className="today-sel-pill today-pill-accent" onClick={() => setView(todayIdx)}>Today</button>}
+        {isDuringTrip && !isActive(todayIdx) && <button className="today-sel-pill today-pill-accent" onClick={() => setView({ type: 'stop', idx: todayIdx })}>Today</button>}
 
         {selectorMode === 'stops' ? (
           stops.map((s, i) => {
             const nights = calcNights(s);
             return (
-              <button key={s.id} data-active={view === i ? 'true' : 'false'}
-                className={`today-sel-pill today-sel-pill-stop ${view === i ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`}
-                onClick={() => setView(i)}
+              <button key={s.id} data-active={isActive(i) ? 'true' : 'false'}
+                className={`today-sel-pill today-sel-pill-stop ${isActive(i) ? 'active' : ''} ${i === todayIdx ? 'is-today' : ''}`}
+                onClick={() => setView({ type: 'stop', idx: i })}
                 style={{ borderLeftColor: 'var(--accent)', minWidth: Math.max(70, nights * 50), flexShrink: 0 }}>
                 <span className="pill-stop-name" title={s.name}>{s.name}</span>
                 <span className="pill-stop-date">{formatStopDate(s)}{nights > 1 ? ` · ${nights}n` : ''}</span>
@@ -487,9 +550,9 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
           })
         ) : (
           calendarDates.map(cd => (
-            <button key={cd.date} data-active={cd.stopIdx === view ? 'true' : 'false'}
-              className={`today-sel-pill today-sel-pill-stop ${cd.stopIdx === view ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`}
-              onClick={() => cd.stopIdx >= 0 && setView(cd.stopIdx)}
+            <button key={cd.date} data-active={isDateActive(cd.date) ? 'true' : 'false'}
+              className={`today-sel-pill today-sel-pill-stop ${isDateActive(cd.date) ? 'active' : ''} ${cd.date === todayDateStr ? 'is-today' : ''}`}
+              onClick={() => cd.stopIdx >= 0 && setView({ type: 'date', date: cd.date })}
               style={{ borderLeftColor: 'var(--accent)', opacity: cd.stopIdx >= 0 ? 1 : 0.4 }}>
               <span className="pill-stop-name">{cd.title}</span>
               <span className="pill-stop-date">{cd.shortLabel}</span>
@@ -501,9 +564,19 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
       {view !== 'overview' && <StatusFilter value={statusFilter} onChange={setStatusFilter} />}
 
       {view === 'overview' ? (
-        <OverviewView items={items} stops={stops} expenses={expenses} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={setView} />
+        <OverviewView items={items} stops={stops} expenses={expenses} onItemTap={setSelectedItem} visible={active && view === 'overview'} onDaySelect={(idx) => setView({ type: 'stop', idx })} />
       ) : (
-        <DayDetailView stop={stops[view]} items={items} onItemTap={setSelectedItem} places={places} visible={active && view !== 'overview'} statusFilter={statusFilter} />
+        activeStops.map(stop => (
+          <StopSection
+            key={stop.id} stop={stop} items={items} onItemTap={setSelectedItem}
+            places={places} visible={active} statusFilter={statusFilter}
+            updateStop={updateStop} showTitle={activeStops.length > 1}
+          />
+        ))
+      )}
+
+      {activeStops.length === 0 && view !== 'overview' && (
+        <div className="itin-empty"><div className="itin-empty-text">No stops for this date.</div></div>
       )}
 
       {selectedItem && (() => {
