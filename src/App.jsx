@@ -80,7 +80,7 @@ export default function App() {
         <TodayPage
           active={activeTab === 'itinerary'}
           items={items} stops={stops} livePrices={livePrices} expenses={expenses}
-          updateItem={updateItem} updateStop={updateStop} deleteStop={deleteStop} setStatus={setStatus} addExpense={addExpense}
+          updateItem={updateItem} updateStop={updateStop} deleteStop={deleteStop} setStatus={setStatus} addExpense={addExpense} addItem={addItem}
           files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
         />

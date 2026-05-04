@@ -156,6 +156,8 @@ export function useItems(currentUserEmail) {
       link: itemData.link || '',
       estimated_cost: itemData.estimated_cost || 0,
       dish: itemData.dish || '',
+      start_time: itemData.start_time || null,
+      end_time: itemData.end_time || null,
       stop_ids: itemData.stop_ids || [],
       status: 'sel',
       created_by: currentUserEmail,

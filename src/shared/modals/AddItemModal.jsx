@@ -101,6 +101,17 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
 
               <div className="edit-row-2">
                 <div>
+                  <label className="add-label">Start time</label>
+                  <input className="add-input" type="time" value={form.start_time || ''} onChange={(e) => updateForm('start_time', e.target.value)} />
+                </div>
+                <div>
+                  <label className="add-label">End time</label>
+                  <input className="add-input" type="time" value={form.end_time || ''} onChange={(e) => updateForm('end_time', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="edit-row-2">
+                <div>
                   <label className="add-label">Est. cost (USD)</label>
                   <input className="add-input" type="number" value={form.estimated_cost} onChange={(e) => updateForm('estimated_cost', e.target.value)} placeholder="0" />
                 </div>

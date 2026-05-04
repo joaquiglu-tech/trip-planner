@@ -640,6 +640,11 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .itin-nights { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 4px }
 .itin-general-stay { font-size: 13px; color: var(--text-secondary) }
 .itin-detail-sep { color: var(--text-muted); font-size: 12px }
+.itin-edit-hint { font-size: 10px; color: var(--accent); font-weight: 600; margin-left: 6px; opacity: 0.6 }
+.itin-general-dates:hover .itin-edit-hint { opacity: 1 }
+.itin-empty-action { margin-top: 8px; padding: 8px 16px; border-radius: var(--radius-pill); border: 1px solid var(--accent); background: none; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font) }
+.itin-add-item-btn { display: block; width: 100%; padding: 10px; border: 1.5px dashed var(--border); border-radius: var(--radius); background: none; color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; margin: 8px 0; font-family: var(--font) }
+.itin-add-item-btn:hover { border-color: var(--accent); color: var(--accent) }
 .itin-general-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-lighter); font-size: 13px }
 .itin-general-row:last-child { border-bottom: none }
 .itin-general-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; flex-shrink: 0; min-width: 80px }

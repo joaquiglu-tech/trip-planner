@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { $f, itemCost } from '../../shared/hooks/useItems';
 import DetailModal from '../../shared/components/DetailModal';
+import AddItemModal from '../../shared/modals/AddItemModal';
 
 function getTodayDayIndex(stops) {
   const now = new Date();
@@ -129,7 +130,7 @@ function ScheduleList({ items, stop, onItemTap }) {
 
 // ═══ PLAN SECTION — collapsible, filterable, with date/time/type on cards ═══
 function PlanSection({ planItems, onItemTap }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all');
 
   const types = useMemo(() => {
@@ -458,8 +459,9 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
 }
 
 // ═══ SINGLE STOP SECTION (reusable — shown once per stop) ═══
-function StopSection({ stop, items, onItemTap, places, visible, statusFilter, updateStop, deleteStop, showTitle }) {
+function StopSection({ stop, items, onItemTap, places, visible, statusFilter, updateStop, deleteStop, addItem, stops, showTitle }) {
   const [editing, setEditing] = useState(false);
+  const [showAddItem, setShowAddItem] = useState(false);
   const [draft, setDraft] = useState({});
 
   function startEdit() {
@@ -545,6 +547,7 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
             <div className="itin-general-dates" onClick={startEdit} style={{ cursor: 'pointer' }}>
               <span>{formatStopDate(stop)}</span>
               {nights > 1 && <span className="itin-nights">{nights}n</span>}
+              <span className="itin-edit-hint">Edit</span>
             </div>
             {stay && (
               <div className="itin-general-stay">
@@ -573,7 +576,10 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
             {scheduled.length > 0 ? (
               <ScheduleList items={scheduled} stop={stop} onItemTap={onItemTap} />
             ) : (
-              <div className="itin-empty"><div className="itin-empty-text">No items scheduled.</div></div>
+              <div className="itin-empty">
+                <div className="itin-empty-text">No items scheduled for {stop.name}.</div>
+                {addItem && <button className="itin-empty-action" onClick={() => setShowAddItem(true)}>Add an activity</button>}
+              </div>
             )}
           </div>
         </div>
@@ -589,6 +595,21 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
 
       {/* Plan — collapsible, filterable by type, sorted by time */}
       <PlanSection planItems={planItems} onItemTap={onItemTap} />
+
+      {/* Contextual add item button */}
+      {addItem && (
+        <button className="itin-add-item-btn" onClick={() => setShowAddItem(true)}>+ Add item to {stop.name}</button>
+      )}
+
+      {/* Contextual AddItemModal — pre-fills this stop */}
+      {showAddItem && (
+        <AddItemModal
+          onClose={() => setShowAddItem(false)}
+          onAdd={(data) => addItem({ ...data, stop_ids: [stop.id] })}
+          stops={stops}
+          userEmail=""
+        />
+      )}
     </div>
   );
 }
@@ -637,7 +658,7 @@ function getCalendarDates(stops) {
 }
 
 // ═══ MAIN ═══
-export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, updateStop, deleteStop, setStatus, addExpense, files, setFile, removeFile, places, getPlaceData }) {
+export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, updateStop, deleteStop, setStatus, addExpense, addItem, files, setFile, removeFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');
@@ -722,7 +743,7 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
           <StopSection
             key={stop.id} stop={stop} items={items} onItemTap={setSelectedItem}
             places={places} visible={active} statusFilter={statusFilter}
-            updateStop={updateStop} deleteStop={deleteStop} showTitle={activeStops.length > 1}
+            updateStop={updateStop} deleteStop={deleteStop} addItem={addItem} stops={stops} showTitle={activeStops.length > 1}
           />
         ))
       )}
