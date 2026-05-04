@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { $f } from '../hooks/useItems';
 import { uploadFile, deleteFile } from '../../services/storage';
 import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
@@ -150,9 +150,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
         {/* Photos */}
         {photoUrls.length > 1 ? (
-          <div className="detail-carousel"><div className="detail-carousel-track">
-            {photoUrls.map((url, i) => (<div key={i} className="detail-carousel-slide"><img src={url} alt={`${it.name} ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} onError={(e) => { e.target.style.display = 'none'; }} /></div>))}
-          </div></div>
+          <PhotoCarousel photos={photoUrls} name={it.name} />
         ) : heroImage ? (
           <div className="detail-hero"><img src={heroImage} alt={it.name} onError={(e) => { e.target.parentElement.style.display = 'none'; }} /><div className="detail-hero-gradient" /></div>
         ) : loadingPlace ? (<div className="detail-hero-loading" />) : null}
@@ -531,6 +529,51 @@ function PricingBlock({ it, livePrice, expenseAmount, paidInput, setPaidInput, h
           <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>Paid: {$f(expenseAmount)}</span>
           {onDeleteExpense && <button onClick={onDeleteExpense} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>Remove payment</button>}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ═══ PHOTO CAROUSEL — scroll-snap + arrow buttons for desktop ═══
+function PhotoCarousel({ photos, name }) {
+  const trackRef = useRef(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const scroll = useCallback((dir) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    el.scrollBy({ left: dir === 'next' ? w : -w, behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const idx = Math.round(el.scrollLeft / el.clientWidth);
+      setActiveIdx(idx);
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <div className="detail-carousel">
+      <div ref={trackRef} className="detail-carousel-track">
+        {photos.map((url, i) => (
+          <div key={i} className="detail-carousel-slide">
+            <img src={url} alt={`${name} ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} onError={(e) => { e.target.style.display = 'none'; }} />
+          </div>
+        ))}
+      </div>
+      {photos.length > 1 && (
+        <>
+          <button className="carousel-arrow carousel-arrow-left" onClick={() => scroll('prev')} aria-label="Previous photo" disabled={activeIdx === 0}>‹</button>
+          <button className="carousel-arrow carousel-arrow-right" onClick={() => scroll('next')} aria-label="Next photo" disabled={activeIdx >= photos.length - 1}>›</button>
+          <div className="detail-carousel-dots">
+            {photos.map((_, i) => (<span key={i} className={`carousel-dot ${i === activeIdx ? 'active' : ''}`} />))}
+          </div>
+        </>
       )}
     </div>
   );
