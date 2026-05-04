@@ -29,7 +29,6 @@ export default function AddStopModal({ onAdd, onClose }) {
           body: JSON.stringify({
             textQuery: query,
             maxResultCount: 5,
-            includedType: 'locality',
           }),
         });
         if (res.ok) {

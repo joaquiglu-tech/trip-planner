@@ -163,7 +163,6 @@ function PlanSection({ planItems, onItemTap }) {
                 <span className="icc-type-badge">{TYPE_LABEL_SHORT[it.type] || it.type}</span>
                 {it.start_time && <span> · {formatTime(it.start_time)}</span>}
                 {it.end_time && <span> – {formatTime(it.end_time)}</span>}
-                {it.dish && <span> · {it.dish}</span>}
               </div>
             </div>
             <div className="icc-right">
@@ -492,7 +491,7 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
       .sort((a, b) => (a.start_time || 'zz').localeCompare(b.start_time || 'zz') || (a.sort_order || 0) - (b.sort_order || 0));
   }, [items, stop.id, statusFilter]);
 
-  const allStopItems = useMemo(() => items.filter(it => itemInStop(it, stop.id) && it.type !== 'transport'), [items, stop.id]);
+  const allStopItems = useMemo(() => items.filter(it => itemInStop(it, stop.id)), [items, stop.id]);
   const stay = getStay(items, stop.id);
   const stayCoord = stay?.coord || null;
   const stayPlace = stay ? places?.[stay.id] : null;
@@ -554,8 +553,11 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
         )}
       </div>
 
-      {/* Schedule (left) + Map (right) — side by side on desktop */}
+      {/* Map (left) + Schedule (right) — map above schedule on mobile */}
       <div className="itin-map-schedule">
+        <div className="itin-map-col">
+          <DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} />
+        </div>
         <div className="itin-schedule-col">
           <div className="itin-section-title">Schedule</div>
           <div className="itin-schedule-scroll">
@@ -565,9 +567,6 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
               <div className="itin-empty"><div className="itin-empty-text">No items scheduled.</div></div>
             )}
           </div>
-        </div>
-        <div className="itin-map-col">
-          <DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} />
         </div>
       </div>
 
