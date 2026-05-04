@@ -140,7 +140,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .detail-carousel-slide { flex: 0 0 100%; scroll-snap-align: start; aspect-ratio: 3/2; overflow: hidden }
 .detail-carousel-slide img { width: 100%; height: 100%; object-fit: cover; display: block }
 .detail-carousel-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px }
-.carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5) }
+.carousel-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.4); transition: background .2s }
+.carousel-dot.active { background: #fff }
+.carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; background: rgba(0,0,0,.5); backdrop-filter: blur(4px); color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity .2s }
+.carousel-arrow:disabled { opacity: .2; cursor: default }
+.carousel-arrow-left { left: 8px }
+.carousel-arrow-right { right: 8px }
+@media (hover: none) { .carousel-arrow { display: none } }
 
 .detail-hero { aspect-ratio: 3/2; overflow: hidden; background: var(--bg-card-hd); position: relative }
 .detail-hero img { width: 100%; height: 100%; object-fit: cover; display: block }
