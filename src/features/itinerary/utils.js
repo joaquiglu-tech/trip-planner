@@ -29,12 +29,17 @@ export function calcNights(stop) {
 
 export function formatTime(t) {
   if (!t) return '';
-  const [h, m] = t.split(':');
+  // Handle datetime-local format "2026-07-20T14:00"
+  const timePart = t.includes('T') ? t.split('T')[1] : t;
+  const [h, m] = timePart.split(':');
   const hour = parseInt(h);
+  if (isNaN(hour)) return t;
   const ampm = hour >= 12 ? 'PM' : 'AM';
   const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   return `${h12}:${m} ${ampm}`;
 }
+
+export const TYPE_LABEL_SHORT = { stay: 'Stay', food: 'Food', activity: 'Activity', transport: 'Transport' };
 
 export function formatRelativeTime(ts) {
   if (!ts) return '';
