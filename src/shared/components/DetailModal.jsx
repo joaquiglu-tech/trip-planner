@@ -113,7 +113,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   if (editing) {
     return <EditMode it={it} stops={stops} livePrice={livePrice} livePriceRates={livePriceRates}
       expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur}
-      updateItem={updateItem} onClose={() => setEditing(false)} showSaved={showSaved} saved={saved} />;
+      updateItem={updateItem} onClose={() => setEditing(false)} showSaved={showSaved} saved={saved}
+      itemFiles={itemFiles} uploading={uploading} handleUpload={handleUpload} handleRemoveFile={handleRemoveFile} />;
   }
 
   // ═══ SUMMARY MODE — populated fields + read-only API data ═══
@@ -249,7 +250,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 }
 
 // ═══ EDIT MODE — batch save ═══
-function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInput, setPaidInput, handlePaidBlur, updateItem, onClose, showSaved, saved }) {
+function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInput, setPaidInput, handlePaidBlur, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile }) {
   const [draft, setDraft] = useState({
     name: it.name || '', type: it.type || 'food',
     description: it.description || '', dish: it.dish || '', link: it.link || '',
@@ -435,6 +436,26 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
           {/* Notes */}
           <div className="edit-section-title">Notes</div>
           <textarea className="edit-textarea" value={draft.notes} onChange={e => u('notes', e.target.value)} rows={3} placeholder="Any notes..." />
+
+          {/* Files */}
+          <div className="edit-section-title">Attachments</div>
+          {(itemFiles || []).length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {itemFiles.map((f, i) => (
+                <div key={i} className="file-chip" style={{ marginBottom: 4 }}>
+                  <span className="file-chip-name">{f.name}</span>
+                  <a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: '#1967d2' }}>Open</a>
+                  <button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="detail-upload-row">
+            <label className="detail-upload-btn">
+              {uploading ? 'Uploading...' : `Upload ${(itemFiles || []).length > 0 ? 'another ' : ''}file`}
+              <input type="file" accept="*/*" style={{ display: 'none' }} onChange={handleUpload} />
+            </label>
+          </div>
 
         </div>
         {/* Sticky Save/Cancel at bottom */}
