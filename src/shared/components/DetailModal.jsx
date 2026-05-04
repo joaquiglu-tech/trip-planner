@@ -206,17 +206,30 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           </details>)}
           {it.reserveNote && <div className="detail-reserve-note">{it.reserveNote}</div>}
 
-          {/* Pricing (read-only estimates + editable paid) */}
-          {(it.estimated_cost > 0 || livePrice > 0 || expenseAmount > 0) && (
-            <div className="detail-price-display">
-              {it.estimated_cost > 0 && <div className="detail-est-price"><span>Estimate: {$f(it.estimated_cost)}</span></div>}
-              {livePrice > 0 && it.type === 'stay' && <div className="detail-live-price"><span className="detail-live-label">Live price</span><span className="detail-live-value">{$f(livePrice)}/night</span></div>}
-            </div>
-          )}
-          <label className="edit-label">Confirmed cost (paid)</label>
-          <div className="cost-input-row" style={{ margin: 0 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} /></div>
+          {/* ═══ PRICING ═══ */}
+          <div className="detail-section" style={{ marginTop: 12 }}>
+            <div className="detail-section-title">Pricing</div>
+            {it.estimated_cost > 0 && (
+              <div className="detail-price-display">
+                <div className="detail-est-price"><span>Estimated total: {$f(it.estimated_cost)}</span></div>
+              </div>
+            )}
+            {livePrice > 0 && it.type === 'stay' && (
+              <div className="detail-price-display" style={{ marginTop: 4 }}>
+                <div className="detail-live-price"><span className="detail-live-label">Live price</span><span className="detail-live-value">{$f(livePrice)}/night</span></div>
+              </div>
+            )}
+            {expenseAmount > 0 && (
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)', marginTop: 4 }}>Paid: {$f(expenseAmount)}</div>
+            )}
+            {!it.estimated_cost && !livePrice && !expenseAmount && (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No pricing information yet</div>
+            )}
+            <label className="edit-label" style={{ marginTop: 10 }}>Confirmed cost (paid)</label>
+            <div className="cost-input-row" style={{ marginBottom: 12 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} /></div>
+          </div>
 
-          {/* Booking rates */}
+          {/* ═══ BOOKING ═══ */}
           {it.type === 'stay' && livePriceRates?.length > 0 && (
             <div className="detail-section"><div className="detail-section-title">Book — live prices per night</div>
               {livePriceRates.map((rate, i) => (<a key={i} href={getBookingUrl(rate.source, it.name, it.city)} target="_blank" rel="noopener" className="transport-option"><div className="transport-option-info"><span className="transport-option-name">{rate.source}</span><span className="transport-option-detail">Per night incl. tax</span></div><span className="transport-option-price">{$f(rate.per_night)}</span></a>))}
@@ -233,8 +246,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             </div>
           )}
 
-          {/* Links */}
-          {it.link && (<a href={it.link} target="_blank" rel="noopener" className="detail-book-link">{faviconUrl && <img src={faviconUrl} alt="" className="detail-favicon" />}<span>Book / Reserve</span></a>)}
+          {/* ═══ LINKS ═══ */}
+          {it.link && (<div style={{ marginTop: 8 }}><a href={it.link} target="_blank" rel="noopener" className="detail-book-link">{faviconUrl && <img src={faviconUrl} alt="" className="detail-favicon" />}<span>Book / Reserve</span></a></div>)}
           {it.src && <div className="detail-source-block"><span className="detail-source-label">Recommended by</span><div className="detail-source-val">{it.src}</div></div>}
           {it.notes && (<div className="detail-section" style={{ marginTop: 8 }}><div className="detail-section-title">Notes</div><p style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{it.notes}</p></div>)}
 
@@ -429,8 +442,11 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
 
           {/* Pricing */}
           <div className="edit-section-title">Pricing</div>
+          {draft.estimated_cost && (
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>Estimated total: <strong>${Number(draft.estimated_cost).toLocaleString()}</strong></div>
+          )}
           <label className="edit-label">Confirmed cost (paid)</label>
-          <div className="cost-input-row" style={{ margin: 0 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} /></div>
+          <div className="cost-input-row" style={{ marginBottom: 8 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} /></div>
 
           {/* Links */}
           <div className="edit-section-title">Links</div>

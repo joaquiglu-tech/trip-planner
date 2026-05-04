@@ -37,8 +37,28 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
         if (s1 && !next.origin) next.origin = { name: s1.name, lat: s1.lat, lng: s1.lng };
         if (s2 && !next.dest) next.dest = { name: s2.name, lat: s2.lat, lng: s2.lng };
       }
+      // Re-fetch Xotelo rates when stop changes and we have a key
+      if (key === 'stop_ids' && next.xotelo_key && next.type === 'stay') {
+        fetchXoteloPrices(next.xotelo_key, val);
+      }
       return next;
     });
+  }
+
+  // Fetch Xotelo prices for a key + stop dates
+  async function fetchXoteloPrices(key, stopIds) {
+    const firstStop = (stops || []).find(s => (stopIds || []).includes(s.id));
+    if (!firstStop) return;
+    const checkIn = String(firstStop.start_date).substring(0, 10);
+    const checkOut = String(firstStop.end_date).substring(0, 10);
+    setXoteloStatus('searching');
+    const estimate = await fetchStayEstimate(key, checkIn, checkOut);
+    if (estimate) {
+      setForm(f => ({ ...f, estimated_cost: String(Math.round(estimate.estimated_cost)) }));
+      setXoteloStatus('found');
+    } else {
+      setXoteloStatus('found');
+    }
   }
 
   // Handle TripAdvisor URL paste — extract key and fetch rates
@@ -51,22 +71,8 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
       return;
     }
     setForm(f => ({ ...f, xotelo_key: key }));
-    setXoteloStatus('searching');
-    // Get check-in/check-out from selected stop dates
-    const firstStop = (stops || []).find(s => form.stop_ids.includes(s.id));
-    const checkIn = firstStop ? String(firstStop.start_date).substring(0, 10) : null;
-    const checkOut = firstStop ? String(firstStop.end_date).substring(0, 10) : null;
-    if (checkIn && checkOut) {
-      const estimate = await fetchStayEstimate(key, checkIn, checkOut);
-      if (estimate) {
-        setForm(f => ({ ...f, estimated_cost: String(estimate.estimated_cost) }));
-        setXoteloStatus('found');
-      } else {
-        setXoteloStatus('found'); // key found but no rates for these dates
-      }
-    } else {
-      setXoteloStatus('found'); // key found, select a stop to get rates
-    }
+    // Try to fetch immediately with current stop selection
+    fetchXoteloPrices(key, form.stop_ids);
   }
 
   async function handleSave() {
@@ -147,7 +153,7 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
                 <label className="add-label">TripAdvisor link (for live prices)</label>
                 <input className="add-input" value={form.tripadvisor_url} onChange={(e) => handleTripAdvisorUrl(e.target.value)} placeholder="Paste TripAdvisor hotel URL..." />
                 {xoteloStatus === 'searching' && <div style={{ fontSize: 11, color: 'var(--accent)', padding: '4px 0' }}>Searching for live prices...</div>}
-                {xoteloStatus === 'found' && <div style={{ fontSize: 11, color: 'var(--green)', padding: '4px 0' }}>Live prices connected {form.estimated_cost && `· Est. $${form.estimated_cost}/night`}</div>}
+                {xoteloStatus === 'found' && <div style={{ fontSize: 11, color: 'var(--green)', padding: '4px 0' }}>Live prices connected{form.estimated_cost ? ` · Est. $${Number(form.estimated_cost).toLocaleString()} total` : ' · Select a stop to see prices'}</div>}
                 {xoteloStatus === 'not_found' && <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '4px 0' }}>No live prices found — you can enter an estimate manually</div>}
               </>
             )}
