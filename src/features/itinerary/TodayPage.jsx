@@ -379,7 +379,7 @@ function OverviewView({ items, stops, expenses, onItemTap, visible, onDaySelect 
     return { selected, booked, estimated, confirmed };
   }, [items, expenses]);
   const pct = stats.selected ? Math.round((stats.booked / stats.selected) * 100) : 0;
-  const needsAttention = useMemo(() => items.filter(it => it.status === 'sel' && it.urgent), [items]);
+  const needsAttention = useMemo(() => [], []);
   const recentItems = useMemo(() => items.filter(it => it.status && it.updated_by).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 8), [items]);
 
   return (
@@ -658,7 +658,7 @@ function getCalendarDates(stops) {
 }
 
 // ═══ MAIN ═══
-export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, updateStop, deleteStop, setStatus, addExpense, addItem, files, setFile, removeFile, places, getPlaceData }) {
+export default function TodayPage({ active, items, stops, livePrices, expenses, updateItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, files, setFile, removeFile, places, getPlaceData }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');
@@ -750,7 +750,8 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
       )}
 
       {selectedItem && (() => {
-        const exp = (expenses || []).filter(e => e.item_id === selectedItem.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+        const itemExpenses = (expenses || []).filter(e => e.item_id === selectedItem.id);
+        const exp = itemExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
         return <DetailModal
           it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
           updateItem={updateItem} stops={stops}
@@ -758,7 +759,7 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight}
           livePriceRates={livePrices?.[selectedItem.id]?.allRates}
-          expenseAmount={exp} addExpense={addExpense}
+          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
           onClose={() => setSelectedItem(null)}
         />;
       })()}

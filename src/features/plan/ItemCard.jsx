@@ -22,7 +22,6 @@ function ItemCard({ it, status, onTap, livePrice, expenseAmount }) {
       <div className="icc-left">
         <div className="icc-name">{it.name}</div>
         <div className="icc-sub">{timeInfo}</div>
-        {it.urgent && !st && <span className="icc-urgent">Book now</span>}
       </div>
       <div className="icc-right">
         {price.text && (

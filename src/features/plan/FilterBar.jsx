@@ -43,12 +43,6 @@ export default function FilterBar({ filters, setFilters, items }) {
       <select id="f-city" value={filters.city} onChange={(e) => update('city', e.target.value)}>
         {cities.map((c) => <option key={c} value={c}>{c === 'all' ? 'All cities' : c}</option>)}
       </select>
-      <button
-        className={`fp fp-urgent ${filters.urgent ? 'fp-urgent-active' : ''}`}
-        onClick={() => update('urgent', !filters.urgent)}
-      >
-        Must Book
-      </button>
       <input
         id="f-search" type="search" placeholder="Search…"
         value={filters.search} onChange={(e) => update('search', e.target.value)}

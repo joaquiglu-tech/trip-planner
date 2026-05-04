@@ -33,7 +33,7 @@ export default function App() {
   const { items, loaded, files, livePrices, toast, updateItem, setStatus, addItem, deleteItem, setFile, removeFile } = useItems(email);
   const { stops, loaded: stopsLoaded, updateStop, addStop, deleteStop } = useStops();
   const { places, getPlaceData } = usePlaceData();
-  const { expenses, addExpense, deleteExpense } = useExpenses();
+  const { expenses, addExpense, updateExpense, deleteExpense } = useExpenses();
 
   const navigateTab = useCallback((tab) => {
     setActiveTab(tab);
@@ -64,6 +64,7 @@ export default function App() {
           items={items} livePrices={livePrices} expenses={expenses}
           updateItem={updateItem} setStatus={setStatus}
           addItem={addItem} deleteItem={deleteItem}
+          addExpense={addExpense} updateExpense={updateExpense}
           userEmail={email} stops={stops} files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
           filterCity={filterCity} clearFilterCity={() => setFilterCity(null)}
@@ -74,13 +75,13 @@ export default function App() {
           updateItem={updateItem} setStatus={setStatus}
           files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
-          expenses={expenses} addExpense={addExpense} deleteExpense={deleteExpense}
+          expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
           userEmail={email}
         />
         <TodayPage
           active={activeTab === 'itinerary'}
           items={items} stops={stops} livePrices={livePrices} expenses={expenses}
-          updateItem={updateItem} updateStop={updateStop} deleteStop={deleteStop} setStatus={setStatus} addExpense={addExpense} addItem={addItem}
+          updateItem={updateItem} updateStop={updateStop} deleteStop={deleteStop} setStatus={setStatus} addExpense={addExpense} updateExpense={updateExpense} addItem={addItem}
           files={files} setFile={setFile} removeFile={removeFile}
           places={places} getPlaceData={getPlaceData}
         />

@@ -41,8 +41,9 @@ function mergeItem(row, stopName) {
     quoteSource: row.quote_source || '',
     options: row.booking_options?.length > 0 ? row.booking_options : null,
     reserveNote: row.reserve_note || '',
-    departTime: row.depart_time || '',
-    arriveTime: row.arrive_time || '',
+    // Fallback: old depart_time/arrive_time → start_time/end_time for transport
+    start_time: row.start_time || row.depart_time || '',
+    end_time: row.end_time || row.arrive_time || '',
   };
 }
 
@@ -181,8 +182,6 @@ export function useItems(currentUserEmail) {
       dest_lat: itemData.dest_lat || null,
       dest_lng: itemData.dest_lng || null,
       hrs: itemData.hrs || null,
-      depart_time: itemData.depart_time || '',
-      arrive_time: itemData.arrive_time || '',
       notes: itemData.notes || '',
       start_time: itemData.start_time || null,
       end_time: itemData.end_time || null,

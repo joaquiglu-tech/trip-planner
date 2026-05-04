@@ -9,8 +9,8 @@ import BudgetSummary from '../expenses/BudgetSummary';
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];
 
-export default function SelectPage({ active, items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, userEmail, stops, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
-  const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', urgent: false, search: '' });
+export default function SelectPage({ active, items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, addExpense, updateExpense, userEmail, stops, files, setFile, removeFile, places, getPlaceData, filterCity, clearFilterCity }) {
+  const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', search: '' });
 
   useEffect(() => {
     if (filterCity && active) {
@@ -31,7 +31,6 @@ export default function SelectPage({ active, items, livePrices, expenses, update
         else if (it.type !== filters.type) return false;
       }
       if (filters.city !== 'all' && it.city !== filters.city) return false;
-      if (filters.urgent && !it.urgent) return false;
       const st = it.status || '';
       if (filters.status === 'unbooked' && st !== 'sel') return false;
       if (filters.status === 'sel' && st !== 'sel') return false;
@@ -107,13 +106,15 @@ export default function SelectPage({ active, items, livePrices, expenses, update
       </div>
 
       {selectedItem && (() => {
-        const exp = (expenses || []).filter(e => e.item_id === selectedItem.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+        const itemExpenses = (expenses || []).filter(e => e.item_id === selectedItem.id);
+        const exp = itemExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
         return <DetailModal
           it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
           updateItem={updateItem} stops={stops}
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
-          livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates} expenseAmount={exp}
+          livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
+          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
           onClose={() => setSelectedItem(null)}
           onDelete={selectedItem.created_by ? () => { deleteItem(selectedItem.id); setSelectedItem(null); } : null}
         />;

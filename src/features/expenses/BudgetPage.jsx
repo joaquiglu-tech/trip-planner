@@ -3,7 +3,7 @@ import { $f, itemCost } from '../../shared/hooks/useItems';
 import DetailModal from '../../shared/components/DetailModal';
 import BudgetSummary from './BudgetSummary';
 
-export default function BudgetPage({ active, items, stops, livePrices, expenses, updateItem, setStatus, addExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData, userEmail }) {
+export default function BudgetPage({ active, items, stops, livePrices, expenses, updateItem, setStatus, addExpense, updateExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData, userEmail }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
 
@@ -156,7 +156,8 @@ export default function BudgetPage({ active, items, stops, livePrices, expenses,
 
       {/* Item detail modal */}
       {selectedItem && (() => {
-        const exp = (expenses || []).filter(e => e.item_id === selectedItem.id).reduce((s, e) => s + Number(e.amount || 0), 0);
+        const itemExpenses = (expenses || []).filter(e => e.item_id === selectedItem.id);
+        const exp = itemExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
         return <DetailModal
           it={selectedItem} status={selectedItem.status || ''} setStatus={setStatus}
           updateItem={updateItem} stops={stops}
@@ -164,7 +165,7 @@ export default function BudgetPage({ active, items, stops, livePrices, expenses,
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight}
           livePriceRates={livePrices?.[selectedItem.id]?.allRates}
-          expenseAmount={exp} addExpense={addExpense}
+          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
           onClose={() => setSelectedItem(null)}
         />;
       })()}

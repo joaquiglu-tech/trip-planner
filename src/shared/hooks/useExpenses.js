@@ -25,10 +25,17 @@ export function useExpenses() {
     return data;
   }, []);
 
+  const updateExpense = useCallback(async (id, changes) => {
+    const { data, error } = await supabase.from('expenses').update(changes).eq('id', id).select().single();
+    if (error) throw error;
+    setExpenses((prev) => prev.map((e) => e.id === id ? { ...e, ...data } : e));
+    return data;
+  }, []);
+
   const deleteExpense = useCallback(async (id) => {
     await supabase.from('expenses').delete().eq('id', id);
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  return { expenses, addExpense, deleteExpense };
+  return { expenses, addExpense, updateExpense, deleteExpense };
 }

@@ -37,7 +37,7 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
       desc_text: meta.description || '',
       dish: '', subcat: '', tier: '', hrs: '',
       transport_mode: '', is_rental: false, origin: null, dest: null,
-      depart_time: '', arrive_time: '',
+      start_time: '', end_time: '',
       link: url.trim(),
       estimated_cost: '', notes: '',
     });
@@ -173,10 +173,10 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
                   <PlaceSearch label="Destination" value={form.dest} onChange={v => updateForm('dest', v)} stops={stops} placeholder="Airport, station, city..." />
                   <div className="edit-row-2">
                     <div><label className="add-label">Depart</label>
-                      <input className="add-input" value={form.depart_time} onChange={(e) => updateForm('depart_time', e.target.value)} placeholder="10:30 AM" />
+                      <input className="add-input" type="time" value={form.start_time || ''} onChange={(e) => updateForm('start_time', e.target.value)} />
                     </div>
                     <div><label className="add-label">Arrive</label>
-                      <input className="add-input" value={form.arrive_time} onChange={(e) => updateForm('arrive_time', e.target.value)} placeholder="12:00 PM" />
+                      <input className="add-input" type="time" value={form.end_time || ''} onChange={(e) => updateForm('end_time', e.target.value)} />
                     </div>
                   </div>
                 </>
