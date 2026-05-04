@@ -400,21 +400,24 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
             </div>
           </>
         ) : (
-          <>
-            <div className="itin-general-row" onClick={startEdit} style={{ cursor: 'pointer' }}>
-              <span className="itin-general-label">Dates</span>
-              <span>{formatStopDate(stop)}{nights > 1 ? ` (${nights} nights)` : ''}</span>
+          <div className="itin-general-compact">
+            <div className="itin-general-dates" onClick={startEdit} style={{ cursor: 'pointer' }}>
+              <span>{formatStopDate(stop)}</span>
+              {nights > 1 && <span className="itin-nights">{nights}n</span>}
             </div>
             {stay && (
-              <>
-                <div className="itin-general-row"><span className="itin-general-label">Stay</span><span>{stay.name}</span></div>
-                {(stayPlace?.address || stay.address) && <div className="itin-general-row"><span className="itin-general-label">Address</span><span>{stayPlace?.address || stay.address}</span></div>}
-                {stayCoord && <div className="itin-general-row"><span className="itin-general-label">Directions</span><a href={`https://www.google.com/maps/dir/?api=1&destination=${stayCoord.lat},${stayCoord.lng}`} target="_blank" rel="noopener" className="itin-link">Google Maps</a></div>}
-                {stayPlace?.phone && <div className="itin-general-row"><span className="itin-general-label">Contact</span><a href={`tel:${stayPlace.phone}`} className="itin-link">{stayPlace.phone}</a></div>}
-                {(stay.check_in || stay.check_out) && <div className="itin-general-row"><span className="itin-general-label">Check-in/out</span><span>{stay.check_in && `In ${stay.check_in}`}{stay.check_in && stay.check_out && ' · '}{stay.check_out && `Out ${stay.check_out}`}</span></div>}
-              </>
+              <div className="itin-general-stay">
+                {stayCoord ? (
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${stayCoord.lat},${stayCoord.lng}`} target="_blank" rel="noopener" className="itin-link">{stay.name}</a>
+                ) : (
+                  <span>{stay.name}</span>
+                )}
+                {stay.check_in && <span className="itin-detail-sep"> · In {stay.check_in}</span>}
+                {stay.check_out && <span className="itin-detail-sep"> · Out {stay.check_out}</span>}
+                {stayPlace?.phone && <span className="itin-detail-sep"> · <a href={`tel:${stayPlace.phone}`} className="itin-link">{stayPlace.phone}</a></span>}
+              </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
@@ -496,10 +499,13 @@ function getCalendarDates(stops) {
   const [ey, em, ed] = endStr.split('-').map(Number);
   const start = new Date(sy, sm - 1, sd);
   const end = new Date(ey, em - 1, ed);
-  for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+  // Include the end date itself in the loop (use <= for the last day)
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const overlapping = stops.filter(s => {
-      return dateStr >= toDateStr(s.start_date) && dateStr < toDateStr(s.end_date);
+      const sd = toDateStr(s.start_date);
+      const ed = toDateStr(s.end_date);
+      return dateStr >= sd && dateStr <= ed;
     });
     const stop = overlapping[0] || null;
     const title = overlapping.length > 1 ? overlapping.map(s => s.name).join(' / ') : (stop?.name || '');
@@ -535,9 +541,9 @@ export default function TodayPage({ active, items, stops, livePrices, expenses, 
     if (view.type === 'stop') return stops[view.idx] ? [stops[view.idx]] : [];
     if (view.type === 'date') {
       return stops.filter(s => {
-        const sd = s.start_date?.split('T')[0];
-        const ed = s.end_date?.split('T')[0];
-        return view.date >= sd && view.date < ed;
+        const sd = toDateStr(s.start_date);
+        const ed = toDateStr(s.end_date);
+        return view.date >= sd && view.date <= ed;
       });
     }
     return [];
