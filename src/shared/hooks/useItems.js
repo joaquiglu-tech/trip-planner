@@ -41,7 +41,7 @@ function mergeItem(row, stopName) {
     quoteSource: row.quote_source || '',
     options: row.booking_options?.length > 0 ? row.booking_options : null,
     reserveNote: row.reserve_note || '',
-    // Fallback: old depart_time/arrive_time → start_time/end_time for transport
+    // Fallback: old depart/arrive/check_in/check_out → start_time/end_time
     start_time: row.start_time || row.depart_time || '',
     end_time: row.end_time || row.arrive_time || '',
   };

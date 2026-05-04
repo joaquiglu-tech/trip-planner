@@ -98,7 +98,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   }, [onClose]);
 
   useEffect(() => {
-    if (!it || it.type === 'transport' || place?.photo_url) return;
+    if (!it || place?.photo_url) return;
     if (!getPlaceData) return;
     setLoadingPlace(true);
     getPlaceData(it.id, it.name, it.city).then((result) => { if (result) setPlace(result); setLoadingPlace(false); });
@@ -273,14 +273,6 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                 </div>
                 <div></div>
               </div>
-              <div className="edit-row-2">
-                <div><label className="edit-label">Check-in</label>
-                  <input className="edit-input" defaultValue={it.check_in || ''} onBlur={e => saveField('check_in', e.target.value)} placeholder="3:00 PM" />
-                </div>
-                <div><label className="edit-label">Check-out</label>
-                  <input className="edit-input" defaultValue={it.check_out || ''} onBlur={e => saveField('check_out', e.target.value)} placeholder="11:00 AM" />
-                </div>
-              </div>
               {it.highlights && <ul className="detail-tips">{it.highlights.map((h, i) => <li key={i}>{h}</li>)}</ul>}
             </>
           )}
@@ -345,33 +337,32 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           {/* Schedule — all types */}
           <div className="edit-section-title">Schedule</div>
           <div className="edit-row-2">
-            <div><label className="edit-label">{it.type === 'transport' ? 'Depart' : 'Start time'}</label>
-              <input className="edit-input" defaultValue={it.start_time || ''} onBlur={e => saveField('start_time', e.target.value || null)} type="time" />
+            <div><label className="edit-label">Start</label>
+              <input className="edit-input" defaultValue={it.start_time || ''} onBlur={e => saveField('start_time', e.target.value || null)} type="datetime-local" />
             </div>
-            <div><label className="edit-label">{it.type === 'transport' ? 'Arrive' : 'End time'}</label>
-              <input className="edit-input" defaultValue={it.end_time || ''} onBlur={e => saveField('end_time', e.target.value || null)} type="time" />
+            <div><label className="edit-label">End</label>
+              <input className="edit-input" defaultValue={it.end_time || ''} onBlur={e => saveField('end_time', e.target.value || null)} type="datetime-local" />
             </div>
           </div>
 
           {/* Pricing */}
           <div className="edit-section-title">Pricing</div>
-          <div className="edit-row-2">
-            <div><label className="edit-label">Estimated cost</label>
-              <input className="edit-input" defaultValue={it.estimated_cost ? String(Number(it.estimated_cost)) : ''} onBlur={e => { const v = parseFloat(e.target.value); saveField('estimated_cost', isNaN(v) ? 0 : v); }} type="number" placeholder="0" />
-            </div>
-            <div><label className="edit-label">Paid (expense)</label>
-              <div className="cost-input-row" style={{ margin: 0 }}>
-                <span className="cost-input-prefix">$</span>
-                <input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} />
+          <div className="detail-price-display">
+            {it.estimated_cost > 0 && (
+              <div className="detail-est-price"><span>Estimate: {$f(it.estimated_cost)}</span></div>
+            )}
+            {livePrice > 0 && it.type === 'stay' && (
+              <div className="detail-live-price">
+                <span className="detail-live-label">Live price</span>
+                <span className="detail-live-value">{$f(livePrice)}/night</span>
               </div>
-            </div>
+            )}
           </div>
-          {livePrice > 0 && it.type === 'stay' && (
-            <div className="detail-live-price" style={{ marginTop: 4 }}>
-              <span className="detail-live-label">Live price</span>
-              <span className="detail-live-value">{$f(livePrice)}/night</span>
-            </div>
-          )}
+          <label className="edit-label">Confirmed cost (paid)</label>
+          <div className="cost-input-row" style={{ margin: 0 }}>
+            <span className="cost-input-prefix">$</span>
+            <input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} />
+          </div>
 
           {/* Stay: booking rates */}
           {it.type === 'stay' && livePriceRates && livePriceRates.length > 0 && (

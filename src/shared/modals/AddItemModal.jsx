@@ -171,14 +171,6 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
                   </div>
                   <PlaceSearch label="Origin" value={form.origin} onChange={v => updateForm('origin', v)} stops={stops} placeholder="Airport, station, city..." />
                   <PlaceSearch label="Destination" value={form.dest} onChange={v => updateForm('dest', v)} stops={stops} placeholder="Airport, station, city..." />
-                  <div className="edit-row-2">
-                    <div><label className="add-label">Depart</label>
-                      <input className="add-input" type="time" value={form.start_time || ''} onChange={(e) => updateForm('start_time', e.target.value)} />
-                    </div>
-                    <div><label className="add-label">Arrive</label>
-                      <input className="add-input" type="time" value={form.end_time || ''} onChange={(e) => updateForm('end_time', e.target.value)} />
-                    </div>
-                  </div>
                 </>
               )}
               {form.type === 'activity' && (
@@ -194,11 +186,11 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
 
               {/* Common fields */}
               <div className="edit-row-2">
-                <div><label className="add-label">Start time</label>
-                  <input className="add-input" type="time" value={form.start_time || ''} onChange={(e) => updateForm('start_time', e.target.value)} />
+                <div><label className="add-label">Start</label>
+                  <input className="add-input" type="datetime-local" value={form.start_time || ''} onChange={(e) => updateForm('start_time', e.target.value)} />
                 </div>
-                <div><label className="add-label">End time</label>
-                  <input className="add-input" type="time" value={form.end_time || ''} onChange={(e) => updateForm('end_time', e.target.value)} />
+                <div><label className="add-label">End</label>
+                  <input className="add-input" type="datetime-local" value={form.end_time || ''} onChange={(e) => updateForm('end_time', e.target.value)} />
                 </div>
               </div>
 
