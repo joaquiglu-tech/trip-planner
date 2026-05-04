@@ -102,7 +102,7 @@ export default function App() {
         </>
       )}
 
-      {showAddItem && <AddItemModal onClose={() => setShowAddItem(false)} onAdd={addItem} userEmail={email} />}
+      {showAddItem && <AddItemModal onClose={() => setShowAddItem(false)} onAdd={addItem} stops={stops} userEmail={email} />}
       {showAddExpense && <AddExpenseModal items={items} stops={stops} onAdd={addExpense} onClose={() => setShowAddExpense(false)} userEmail={email} />}
 
       {!isProfile && <BottomTabs activeTab={activeTab} setActiveTab={navigateTab} />}

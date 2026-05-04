@@ -171,10 +171,14 @@ function RouteMap({ visible, stops, items }) {
   const mapsReady = useGoogleMapsReady();
   useEffect(() => {
     if (!visible || !mapsReady || !mapRef.current || mapInstance.current) return;
-    // Get stay coords for each stop
+    // Get coords for each stop — from stay, or any item with coords, or stop's google place
     const points = stops.map(s => {
       const stay = getStay(items, s.id);
-      return { stop: s, coord: stay?.coord || null };
+      if (stay?.coord) return { stop: s, coord: stay.coord };
+      // Fallback: any item in this stop with coords
+      const anyItem = items.find(it => itemInStop(it, s.id) && it.coord);
+      if (anyItem?.coord) return { stop: s, coord: anyItem.coord };
+      return { stop: s, coord: null };
     }).filter(p => p.coord);
     if (!points.length) return;
     const avgLat = points.reduce((s, p) => s + p.coord.lat, 0) / points.length;

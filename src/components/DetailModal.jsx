@@ -39,11 +39,11 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
   function startEdit() {
     setDraft({
-      name: it.name || '', type: it.type || 'food', city: it.city || '',
+      name: it.name || '', type: it.type || 'food',
       description: it.description || '', dish: it.dish || '', link: it.link || '',
       notes: it.notes || '',
-      estimated_cost: it.estimated_cost ? String(it.estimated_cost) : '',
-      day_n: it.day_n ? String(it.day_n) : '', start_time: it.start_time || '', end_time: it.end_time || '',
+      estimated_cost: it.estimated_cost ? String(Number(it.estimated_cost)) : '',
+      start_time: it.start_time || '', end_time: it.end_time || '',
       check_in: it.check_in || '', check_out: it.check_out || '',
       urgent: !!it.urgent, src: it.src || '',
     });
@@ -54,15 +54,12 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
     const changes = {};
     if (draft.name !== (it.name || '')) changes.name = draft.name;
     if (draft.type !== (it.type || 'food')) changes.type = draft.type;
-    if (draft.city !== (it.city || '')) changes.city = draft.city;
     if (draft.description !== (it.description || '')) changes.description = draft.description;
     if (draft.dish !== (it.dish || '')) changes.dish = draft.dish;
     if (draft.link !== (it.link || '')) changes.link = draft.link;
     if (draft.notes !== (it.notes || '')) changes.notes = draft.notes;
     const ec = parseFloat(draft.estimated_cost);
-    if (!isNaN(ec) && ec !== (it.estimated_cost || 0)) changes.estimated_cost = ec;
-    const dn = draft.day_n ? parseInt(draft.day_n) : null;
-    if (dn !== it.day_n) changes.day_n = dn;
+    if (!isNaN(ec) && ec !== (Number(it.estimated_cost) || 0)) changes.estimated_cost = ec;
     if (draft.start_time !== (it.start_time || '')) changes.start_time = draft.start_time || null;
     if (draft.end_time !== (it.end_time || '')) changes.end_time = draft.end_time || null;
     if (draft.check_in !== (it.check_in || '')) changes.check_in = draft.check_in;
@@ -148,9 +145,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                   {TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
-              <div><label className="edit-label">City</label>
-                <input className="edit-input" value={draft.city} onChange={e => u('city', e.target.value)} />
-              </div>
+              <div></div>
             </div>
             <label className="edit-label">Description</label>
             <textarea className="edit-textarea" value={draft.description} onChange={e => u('description', e.target.value)} rows={3} />
@@ -173,11 +168,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
             {/* Schedule */}
             <div className="edit-section-title">Schedule</div>
-            <div className="edit-row-3">
-              <div><label className="edit-label">Day #</label>
-                <input className="edit-input" value={draft.day_n} onChange={e => u('day_n', e.target.value)} type="number" placeholder="1-17" />
-              </div>
-              <div><label className="edit-label">Start</label>
+            <div className="edit-row-2">
+              <div><label className="edit-label">Start time</label>
                 <input className="edit-input" value={draft.start_time} onChange={e => u('start_time', e.target.value)} type="time" />
               </div>
               <div><label className="edit-label">End</label>
