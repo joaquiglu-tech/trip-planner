@@ -57,6 +57,57 @@ function formatRelativeTime(ts) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+const TYPE_LABEL_SHORT = { stay: 'Stay', food: 'Food', activity: 'Activity', transport: 'Transport' };
+
+// ═══ PLAN SECTION — collapsible, filterable, with date/time/type on cards ═══
+function PlanSection({ planItems, onItemTap }) {
+  const [expanded, setExpanded] = useState(false);
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  const types = useMemo(() => {
+    const set = new Set(planItems.map(it => it.type));
+    return ['all', ...Array.from(set)];
+  }, [planItems]);
+
+  const filtered = useMemo(() => {
+    let items = typeFilter === 'all' ? planItems : planItems.filter(it => it.type === typeFilter);
+    return items.sort((a, b) => (a.start_time || 'zz').localeCompare(b.start_time || 'zz'));
+  }, [planItems, typeFilter]);
+
+  if (planItems.length === 0) return null;
+
+  return (
+    <details className="itin-plan-details" open={expanded} onToggle={e => setExpanded(e.target.open)}>
+      <summary className="itin-plan-summary">Plan ({planItems.length})</summary>
+      <div className="itin-plan-filters">
+        {types.map(t => (
+          <button key={t} className={`fp ${typeFilter === t ? 'fp-active' : ''}`} onClick={() => setTypeFilter(t)}>
+            {t === 'all' ? 'All' : (TYPE_LABEL_SHORT[t] || t)}
+          </button>
+        ))}
+      </div>
+      <div className="itin-plan-list">
+        {filtered.map(it => (
+          <div key={it.id} className={`item-card-compact ${it.status === 'conf' ? 'confirmed' : it.status === 'sel' ? 'selected' : ''}`} onClick={() => onItemTap(it)}>
+            <div className="icc-left">
+              <div className="icc-name">{it.name}</div>
+              <div className="icc-sub">
+                <span className="icc-type-badge">{TYPE_LABEL_SHORT[it.type] || it.type}</span>
+                {it.start_time && <span> · {formatTime(it.start_time)}</span>}
+                {it.end_time && <span> – {formatTime(it.end_time)}</span>}
+                {it.dish && <span> · {it.dish}</span>}
+              </div>
+            </div>
+            <div className="icc-right">
+              <div className={`icc-status ${it.status}`}>{it.status === 'conf' ? 'Booked' : it.status === 'sel' ? 'Added' : ''}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function useGoogleMapsReady() {
   const [ready, setReady] = useState(!!window.google?.maps);
   useEffect(() => {
@@ -435,36 +486,36 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
         )}
       </div>
 
-      {/* Map + Schedule — side by side on desktop */}
+      {/* Schedule (left) + Map (right) — side by side on desktop */}
       <div className="itin-map-schedule">
-        <div className="itin-map-col">
-          <DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} />
-        </div>
         <div className="itin-schedule-col">
           <div className="itin-section-title">Schedule</div>
-      {scheduled.length > 0 ? (
-        <div className="itin-schedule">
-          {scheduled.map(it => (
-            <div key={it.id} className={`itin-sched-row ${it.status}`} onClick={() => onItemTap(it)}>
-              <div className="itin-sched-time">
-                {it.start_time ? formatTime(it.start_time) : ''}
-                {it.end_time && <span className="itin-sched-end">{formatTime(it.end_time)}</span>}
-              </div>
-              <div className="itin-sched-dot-col"><div className={`itin-sched-dot ${it.status}`} /><div className="itin-sched-line" /></div>
-              <div className="itin-sched-info">
-                <div className="itin-sched-name">{it.name}</div>
-                <div className="itin-sched-sub">{it.dish ? it.dish : it.hrs ? `${it.hrs}h` : ''}</div>
-              </div>
-              <div className="itin-sched-actions">
-                {it.status === 'conf' && <span className="itin-sched-check">Booked</span>}
-                {it.coord && <a href={`https://www.google.com/maps/dir/?api=1&destination=${it.coord.lat},${it.coord.lng}`} target="_blank" rel="noopener" className="itin-action-sm" onClick={e => e.stopPropagation()}>Go</a>}
-              </div>
+          {scheduled.length > 0 ? (
+            <div className="itin-schedule">
+              {scheduled.map(it => (
+                <div key={it.id} className={`itin-sched-row ${it.status}`} onClick={() => onItemTap(it)}>
+                  <div className="itin-sched-time">
+                    {it.start_time ? formatTime(it.start_time) : ''}
+                    {it.end_time && <span className="itin-sched-end">{formatTime(it.end_time)}</span>}
+                  </div>
+                  <div className="itin-sched-dot-col"><div className={`itin-sched-dot ${it.status}`} /><div className="itin-sched-line" /></div>
+                  <div className="itin-sched-info">
+                    <div className="itin-sched-name">{it.name}</div>
+                    <div className="itin-sched-sub">{it.dish ? it.dish : it.hrs ? `${it.hrs}h` : ''}</div>
+                  </div>
+                  <div className="itin-sched-actions">
+                    {it.status === 'conf' && <span className="itin-sched-check">Booked</span>}
+                    {it.coord && <a href={`https://www.google.com/maps/dir/?api=1&destination=${it.coord.lat},${it.coord.lng}`} target="_blank" rel="noopener" className="itin-action-sm" onClick={e => e.stopPropagation()}>Go</a>}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="itin-empty"><div className="itin-empty-text">No items scheduled.</div></div>
+          )}
         </div>
-      ) : (
-        <div className="itin-empty"><div className="itin-empty-text">No items scheduled.</div></div>
-      )}
+        <div className="itin-map-col">
+          <DayMap stop={stop} mapItems={scheduled} stayCoord={stayCoord} visible={visible} />
         </div>
       </div>
 
@@ -476,23 +527,8 @@ function StopSection({ stop, items, onItemTap, places, visible, statusFilter, up
         </details>
       )}
 
-      {/* Plan cards */}
-      {planItems.length > 0 && (
-        <div className="itin-plan-section">
-          <div className="itin-section-title">Plan ({planItems.length})</div>
-          {planItems.map(it => (
-            <div key={it.id} className={`item-card-compact ${it.status === 'conf' ? 'confirmed' : it.status === 'sel' ? 'selected' : ''}`} onClick={() => onItemTap(it)}>
-              <div className="icc-left">
-                <div className="icc-name">{it.name}</div>
-                <div className="icc-sub">{it.dish || (it.hrs ? `${it.hrs}h` : '')}</div>
-              </div>
-              <div className="icc-right">
-                <div className={`icc-status ${it.status}`}>{it.status === 'conf' ? 'Booked' : it.status === 'sel' ? 'Added' : ''}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Plan — collapsible, filterable by type, sorted by time */}
+      <PlanSection planItems={planItems} onItemTap={onItemTap} />
     </div>
   );
 }
