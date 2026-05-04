@@ -102,10 +102,6 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .bd-row.bd-total { font-weight: 800; color: var(--accent-bright); font-size: 13px }
 
 /* ═══ GRIDS ═══ */
-.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
-@media(max-width:620px) { .g2 { grid-template-columns: 1fr } }
-.g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px }
-@media(max-width:620px) { .g3 { grid-template-columns: 1fr } }
 .items-grid { display: flex; flex-direction: column; gap: 6px }
 @media(min-width:768px) { .items-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px } }
 @media(min-width:1200px) { .items-grid { grid-template-columns: 1fr 1fr 1fr } }
@@ -265,28 +261,6 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 [data-theme="dark"] .fp-urgent-active { background: #DC2626; border-color: #DC2626; color: #fff }
 .planner-sticky-bar { position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 6px 0; margin: -6px -16px 6px; padding-left: 16px; padding-right: 16px }
 
-/* ═══ TIMELINE ═══ */
-#timeline { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 0 8px; margin-bottom: 14px }
-#timeline-inner { display: flex; align-items: center; gap: 0; min-width: max-content }
-.tl-stop { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 8px; border-radius: var(--radius); min-width: 72px; cursor: pointer }
-.tl-stop:hover { background: var(--surface-hover) }
-.tl-city { font-size: 11px; font-weight: 700; text-align: center }
-.tl-nights { font-size: 9px; text-align: center; color: var(--text-muted) }
-.tl-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg-card); box-shadow: 0 0 0 2px currentColor }
-.tl-dot.none { background: var(--border); color: var(--border) }
-.tl-dot.sel { background: var(--accent-bright); color: var(--accent-bright) }
-.tl-dot.conf { background: var(--green); color: var(--green) }
-.tl-arrow { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 3px; margin-top: -8px }
-.tl-transport { font-size: 10px; padding: 2px 5px; border-radius: 3px; font-weight: 600; white-space: nowrap }
-.tl-tr-none { background: var(--bg-card-hd); color: var(--text-muted) }
-.tl-tr-sel { background: var(--accent-light); color: var(--accent) }
-.tl-tr-conf { background: var(--green-light); color: var(--green) }
-.tl-line { width: 18px; height: 2px; border-radius: 1px }
-.tl-line.none { background: var(--border) }
-.tl-line.sel { background: var(--accent-bright) }
-.tl-line.conf { background: var(--green) }
-.tl-legend { display: flex; gap: 10px; font-size: 11px; margin-bottom: 8px; flex-wrap: wrap; align-items: center }
-.leg-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 3px }
 
 /* ═══ TOAST ═══ */
 .toast-container { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 400; pointer-events: none }
@@ -312,20 +286,9 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .toggle-switch input:checked + .toggle-slider { background: var(--accent) }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px) }
 
-/* ═══ MISC ═══ */
-.note { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius); padding: 10px 12px; font-size: 12px; margin-bottom: 10px }
-[data-theme="dark"] .note { background: #422006; border-color: #92400E }
-.note strong { color: #92400E }
-[data-theme="dark"] .note strong { color: #FBBF24 }
-.info-row { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-lighter); font-size: 13px }
-.info-row:last-child { border-bottom: none }
-.info-date { font-weight: 700; font-size: 11px; color: var(--text-muted); min-width: 90px; flex-shrink: 0 }
 .map-wrap { width: 100%; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border) }
 .gmaps-btn { display: flex; align-items: center; justify-content: center; gap: 5px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); padding: 8px 12px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; min-height: 40px }
 .gmaps-btn.dark { background: var(--summary-bg) }
-.eat-line { padding: 4px 0; border-bottom: 1px solid var(--border-lighter); font-size: 12px; color: var(--text-secondary) }
-.eat-line:last-child { border-bottom: none }
-.eat-line::before { content: "• "; color: var(--accent) }
 a.ext { color: var(--accent); font-size: 12px; text-decoration: none; font-weight: 600 }
 hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 }
 .prog-bar { width: 100%; background: var(--border); border-radius: 2px; height: 3px; margin-top: 4px }
@@ -341,49 +304,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 /* (old itin-selector removed — replaced by today-selector) */
 .today-pill-accent { background: var(--accent-light) !important; color: var(--accent) !important; border-color: var(--accent) !important }
 .today-pill-accent.active, .today-sel-pill.is-today { border-color: var(--accent) }
-.phase-header { font-size: 13px; font-weight: 700; padding: 10px 14px; margin: 10px 0 6px; border-left: 3px solid; border-radius: 0 var(--radius) var(--radius) 0; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-left-width: 3px }
-.full-trip-day { padding: 10px 14px; border-bottom: 1px solid var(--border-lighter); background: var(--bg-card); margin-bottom: 1px; display: flex; justify-content: space-between; align-items: center; gap: 8px }
-.full-trip-day:last-child { border-bottom: none; margin-bottom: 10px }
-.ftd-left { min-width: 0 }
-.ftd-date { font-size: 10px; font-weight: 700; color: var(--text-muted) }
-.ftd-title { font-size: 13px; font-weight: 600; margin: 1px 0 }
-.ftd-sleep { font-size: 11px; color: var(--text-muted) }
-.ftd-badges { display: flex; flex-wrap: wrap; gap: 3px; flex-shrink: 0; max-width: 50% }
-.ftd-badge { font-size: 9px; font-weight: 500; padding: 2px 6px; border-radius: var(--radius-pill); background: var(--bg-card-hd); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px }
-.ftd-badge.sel { background: var(--accent-light); color: var(--accent) }
-.ftd-badge.conf { background: var(--green-light); color: var(--green) }
-.day-phase-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: middle }
-.trip-countdown { text-align: center; font-size: 18px; font-weight: 700; color: var(--accent); padding: 14px 0 6px; letter-spacing: -.02em }
 
-/* Day detail */
-.day-detail { display: flex; flex-direction: column; gap: 10px }
-.day-detail-header { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0 }
-.day-detail-date { font-size: 11px; font-weight: 700; color: var(--text-muted) }
-.day-detail-title { font-size: 16px; font-weight: 700; line-height: 1.3; letter-spacing: -.01em }
-.day-detail-sleep { font-size: 12px; color: var(--text-muted) }
-.day-section { background: var(--bg-card); border-radius: var(--radius-lg); padding: 14px; border: 1px solid var(--border) }
-.day-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 8px }
-.day-plan-step { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.5 }
-.day-plan-step:last-child { margin-bottom: 0 }
-.day-step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px }
-.day-item-card { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; background: var(--bg-card); cursor: pointer; transition: background var(--duration) }
-.day-item-card:hover { background: var(--surface-hover) }
-.day-item-card.sel { border-color: var(--accent) }
-.day-item-card.conf { border-color: var(--green) }
-.day-item-card:last-child { margin-bottom: 0 }
-.dic-icon { font-size: 20px; flex-shrink: 0 }
-.dic-info { flex: 1; min-width: 0 }
-.dic-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.dic-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.dic-right { text-align: right; flex-shrink: 0 }
-.dic-price { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums }
-.dic-status { font-size: 12px }
-.dic-status.conf { color: var(--green) }
-.dic-status.sel { color: var(--accent) }
-.dic-actions { display: flex; gap: 4px; flex-shrink: 0 }
-.dic-action-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-card-hd); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 14px }
-.drive-info-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; font-weight: 600; color: var(--accent) }
-.drive-info-dist { color: var(--text-muted); font-weight: 400 }
 
 /* ═══ MAP ═══ */
 .map-chip { padding: 8px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; color: var(--text-secondary); min-height: 40px; display: flex; align-items: center }
@@ -510,34 +431,8 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 [data-theme="dark"] .login-error { background: #450a0a; color: #fca5a5 }
 
 /* ═══ TODAY PAGE ═══ */
-.today-countdown { text-align: center; padding: 32px 16px 16px }
-.today-countdown-num { font-size: 48px; font-weight: 800; letter-spacing: -.04em; color: var(--accent); line-height: 1 }
-.today-countdown-label { font-size: 14px; color: var(--text-muted); margin-top: 4px }
-
-.today-progress-card { display: flex; align-items: center; gap: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 16px }
-.today-progress-ring { width: 48px; height: 48px; position: relative; flex-shrink: 0 }
-.today-ring-svg { width: 100%; height: 100%; transform: rotate(-90deg) }
-.today-ring-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700 }
-.today-progress-info { flex: 1; min-width: 0 }
-.today-progress-title { font-size: 14px; font-weight: 700 }
-.today-progress-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px }
-
 .today-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px }
 .today-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 8px }
-
-.today-attention-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border-lighter); cursor: pointer; font-size: 13px }
-.today-attention-item:last-child { border-bottom: none }
-.today-attention-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill); background: #FEF2F2; color: #DC2626; flex-shrink: 0 }
-.today-attention-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500 }
-.today-attention-arrow { color: var(--text-muted); flex-shrink: 0 }
-
-.today-booking-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-lighter); cursor: pointer }
-.today-booking-item:last-child { border-bottom: none }
-.today-booking-icon { font-size: 18px; flex-shrink: 0 }
-.today-booking-info { flex: 1; min-width: 0 }
-.today-booking-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.today-booking-city { font-size: 11px; color: var(--text-muted) }
-.today-booking-check { color: var(--green); font-size: 14px; flex-shrink: 0 }
 
 /* Day selector strip */
 .today-selector { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 4px 0 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none }
@@ -551,47 +446,6 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .pill-stop-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100% }
 .pill-stop-date { font-size: 9px; font-weight: 500; opacity: .6; white-space: nowrap }
 
-.today-day-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px }
-.today-day-badge { padding: 4px 10px; border-radius: var(--radius-pill); color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0 }
-.today-day-date { font-size: 11px; color: var(--text-muted); font-weight: 600 }
-.today-day-title { font-size: 16px; font-weight: 700; letter-spacing: -.01em }
-
-.today-stay-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px; cursor: pointer }
-.today-stay-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 4px }
-.today-stay-name { font-size: 16px; font-weight: 700; letter-spacing: -.01em }
-.today-stay-address { font-size: 12px; color: var(--text-muted); margin-top: 2px }
-.today-stay-actions { display: flex; gap: 6px; margin-top: 8px }
-.today-action-btn { padding: 6px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center }
-.today-stay-times { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); margin-top: 4px }
-.today-stay-status { font-size: 11px; font-weight: 700; margin-top: 8px; color: var(--text-muted) }
-.today-stay-status.booked { color: var(--green) }
-
-/* Timeline schedule */
-.today-timeline { position: relative; padding-left: 20px }
-.tl-step { position: relative; padding-bottom: 16px; padding-left: 16px }
-.tl-step:last-child { padding-bottom: 0 }
-.tl-step-dot { position: absolute; left: -20px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-card) }
-.tl-step-line { position: absolute; left: -16px; top: 16px; bottom: -2px; width: 2px; background: var(--border) }
-.tl-step-text { font-size: 13px; line-height: 1.5; color: var(--text) }
-
-/* Stay card top row */
-.today-stay-top { display: flex; justify-content: space-between; align-items: flex-start }
-.today-stay-badge { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); flex-shrink: 0 }
-.today-stay-badge.booked { border-color: var(--green); color: var(--green); background: var(--green-light) }
-
-/* Item right side with status + actions */
-.today-item-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0 }
-.today-item-status { font-size: 12px; color: var(--text-muted) }
-.today-item-status.booked { color: var(--green) }
-
-.today-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-lighter); cursor: pointer }
-.today-item:last-child { border-bottom: none }
-.today-item-icon { font-size: 18px; flex-shrink: 0 }
-.today-item-info { flex: 1; min-width: 0 }
-.today-item-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.today-item-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.today-item-actions { display: flex; gap: 4px; flex-shrink: 0 }
-.today-action-btn-sm { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-card-hd); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 14px }
 
 /* ═══ ITINERARY — NEW COMPONENTS ═══ */
 .itin-mode-toggle { display: flex; gap: 4px; margin-bottom: 8px }
