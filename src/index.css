@@ -328,7 +328,7 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .ml-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 3px }
 
 /* ═══ BUDGET ═══ */
-.budget-summary { background: var(--summary-bg); color: #fff; border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; width: 100% }
+.budget-summary { background: var(--summary-bg); color: #fff; border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; width: 100%; max-width: 480px }
 .summary-breakdown { margin-top: 10px; background: rgba(255,255,255,.06); border-radius: var(--radius); overflow: hidden }
 .summary-bd-header, .summary-bd-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 4px; padding: 6px 10px; align-items: center }
 .summary-bd-header { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666 }
