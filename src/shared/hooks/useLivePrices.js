@@ -1,56 +1,66 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../services/supabase';
 import { fetchHotelPrice } from '../../services/hotelPrices';
 
-// Fetches live hotel prices for all stays with xotelo_key.
-// Writes estimated_cost back to DB so it's always fresh.
-// Re-fetches when stop dates change.
 export function useLivePrices(staysWithKeys, stops) {
   const [livePrices, setLivePrices] = useState({});
+  const fetchedRef = useRef(new Set());
 
   const stopsDateKey = useMemo(() =>
     (stops || []).map(s => `${s.id}:${s.start_date}:${s.end_date}`).join(','),
   [stops]);
 
-  // Key that changes when stays list changes (new item added, key updated)
   const staysKey = useMemo(() =>
     staysWithKeys.map(s => `${s.id}:${s.xotelo_key}`).join(','),
   [staysWithKeys]);
 
   useEffect(() => {
     if (!staysWithKeys.length || !stops.length) return;
+
+    // Reset fetched set when deps change (dates changed, new stays)
+    fetchedRef.current = new Set();
     let cancelled = false;
 
-    (async () => {
+    async function fetchAll() {
       for (const stay of staysWithKeys) {
         if (cancelled) break;
+
+        // Skip if already fetched this session with same key
+        const fetchKey = `${stay.id}:${stay.xotelo_key}:${stopsDateKey}`;
+        if (fetchedRef.current.has(fetchKey)) continue;
+
         try {
           const dates = getStayDates(stay, stops);
           const price = await fetchHotelPrice(stay.xotelo_key, dates.checkIn, dates.checkOut);
           if (cancelled) break;
+
           if (price) {
             const perNight = price.per_night;
             const total = price.total;
+            fetchedRef.current.add(fetchKey);
 
-            // Update React state for live display
             setLivePrices(prev => ({ ...prev, [stay.id]: {
-              perNight, total, nights: price.nights, source: price.source, allRates: price.all_rates,
-              lastUpdated: new Date().toISOString(),
+              perNight, total, nights: price.nights, source: price.source,
+              allRates: price.all_rates, lastUpdated: new Date().toISOString(),
             }}));
 
-            // Write estimated_cost to DB if it changed
+            // Write to DB
             if (total !== Number(stay.estimated_cost || 0)) {
-              await supabase.from('items').update({
+              const { error } = await supabase.from('items').update({
                 estimated_cost: total,
                 updated_at: new Date().toISOString(),
               }).eq('id', stay.id);
+              if (error) console.warn('Failed to update estimated_cost for', stay.name, error);
             }
           }
-        } catch { /* skip individual hotel errors */ }
+        } catch (err) {
+          console.warn('Xotelo fetch error for', stay.name, err);
+        }
         await new Promise(r => setTimeout(r, 500));
       }
-    })();
+    }
 
+    fetchAll();
     return () => { cancelled = true; };
   }, [staysKey, stopsDateKey]);
 
