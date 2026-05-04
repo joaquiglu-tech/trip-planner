@@ -70,21 +70,31 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
     });
   }, [filtered, sortField, sortDir]);
 
-  const { sections, groupByCity } = useMemo(() => {
-    const isTypeFilter = filters.type !== 'all';
-    if (isTypeFilter) {
+  // Dynamic grouping based on sort field and type filter
+  const sections = useMemo(() => {
+    // When a specific type is filtered, group by city
+    if (filters.type !== 'all') {
       const byCity = {};
       sorted.forEach((it) => { const c = it.city || 'Other'; if (!byCity[c]) byCity[c] = []; byCity[c].push(it); });
-      const cities = Object.keys(byCity).sort();
-      return { sections: cities.map(c => ({ key: c, label: c, items: byCity[c] })), groupByCity: true };
+      return Object.keys(byCity).sort().map(c => ({ key: c, label: `${c} (${byCity[c].length})`, items: byCity[c] }));
     }
+    // Group by status when sorting by status
+    if (sortField === 'status') {
+      const STATUS_LABEL = { conf: 'Booked', sel: 'Selected', '': 'Not added' };
+      const STATUS_ORDER = ['conf', 'sel', ''];
+      const byStatus = {};
+      sorted.forEach((it) => { const s = it.status || ''; if (!byStatus[s]) byStatus[s] = []; byStatus[s].push(it); });
+      return STATUS_ORDER.filter(s => byStatus[s]?.length).map(s => ({ key: s, label: `${STATUS_LABEL[s]} (${byStatus[s].length})`, items: byStatus[s] }));
+    }
+    // No grouping for name, price, date sorts — flat list with a single section
+    if (sortField === 'name' || sortField === 'price' || sortField === 'date') {
+      return [{ key: 'all', label: `All items (${sorted.length})`, items: sorted }];
+    }
+    // Default: group by type
     const byType = {};
     sorted.forEach((it) => { const k = it.type; if (!byType[k]) byType[k] = []; byType[k].push(it); });
-    return {
-      sections: TYPE_ORDER.filter(k => byType[k]?.length).map(k => ({ key: k, label: (TYPE_LABEL[k] || k) + ' (' + byType[k].length + ')', items: byType[k] })),
-      groupByCity: false,
-    };
-  }, [sorted, filters.type]);
+    return TYPE_ORDER.filter(k => byType[k]?.length).map(k => ({ key: k, label: (TYPE_LABEL[k] || k) + ' (' + byType[k].length + ')', items: byType[k] }));
+  }, [sorted, filters.type, sortField]);
 
   return (
     <div id="page-select" className={`page ${active ? "active" : ""}`}>
@@ -103,7 +113,7 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
         )}
         {sections.map(({ key, label, items: sectionItems }) => (
           <div key={key}>
-            <div className="sect-title">{groupByCity ? `${label} (${sectionItems.length})` : label}</div>
+            <div className="sect-title">{label}</div>
             <div className="items-grid">
               {sectionItems.map((it) => (
                 <ItemCard key={it.id} it={it} onTap={setSelectedItem} livePrice={livePrices?.[it.id]?.perNight} expenseAmount={expenseMap[it.id] || 0} />
