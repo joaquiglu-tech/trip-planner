@@ -5,10 +5,10 @@ import DetailModal from '../../shared/components/DetailModal';
 import BudgetSummary from './BudgetSummary';
 
 export default function BudgetPage({ active }) {
-  const { items, stops, livePrices, expenses, updateItem, deleteItem, setStatus, addExpense, updateExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData, email: userEmail } = useTrip();
+  const { items, stops, livePrices, expenses, updateItem, deleteItem, setStatus, addExpense, updateExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData } = useTrip();
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedExpense, setSelectedExpense] = useState(null);
 
-  // Confirmed: expenses linked to items
   const confirmedExpenses = useMemo(() => {
     return (expenses || []).filter(e => e.item_id).map(e => {
       const item = items.find(it => it.id === e.item_id);
@@ -17,31 +17,22 @@ export default function BudgetPage({ active }) {
     }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [expenses, items, stops]);
 
-  // Unlinked expenses (should be linked — flagged)
   const unlinkedExpenses = useMemo(() => {
     return (expenses || []).filter(e => !e.item_id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [expenses]);
 
-  // Planned: selected items not yet confirmed
   const planned = useMemo(() => items.filter(it => it.status === 'sel'), [items]);
-
-  // Click confirmed expense → open linked item's DetailModal
-  function handleExpenseClick(expense) {
-    if (expense.item) {
-      setSelectedItem(expense.item);
-    }
-  }
 
   return (
     <div id="page-budget" className={`page ${active ? "active" : ""}`}>
       <BudgetSummary items={items} expenses={expenses} />
 
-      {/* CONFIRMED — expenses with linked items */}
+      {/* CONFIRMED */}
       <div className="sect-title">Confirmed ({confirmedExpenses.length})</div>
       {confirmedExpenses.length > 0 ? (
         <div className="budget-list">
           {confirmedExpenses.map(e => (
-            <div key={e.id} className="budget-item budget-item-conf" onClick={() => handleExpenseClick(e)} style={{ cursor: 'pointer' }}>
+            <div key={e.id} className="budget-item budget-item-conf" onClick={() => setSelectedExpense(e)} style={{ cursor: 'pointer' }}>
               <div className="bi-left">
                 <div className="bi-name">{e.item?.name || e.note || 'Expense'}</div>
                 <div className="bi-meta">
@@ -60,7 +51,7 @@ export default function BudgetPage({ active }) {
         <div className="itin-empty"><div className="itin-empty-text">No confirmed expenses yet.</div></div>
       )}
 
-      {/* UNLINKED — flagged, should be linked to an item */}
+      {/* UNLINKED */}
       {unlinkedExpenses.length > 0 && (
         <>
           <div className="sect-title">Unlinked ({unlinkedExpenses.length})</div>
@@ -84,7 +75,7 @@ export default function BudgetPage({ active }) {
         </>
       )}
 
-      {/* PLANNED — selected items not yet confirmed */}
+      {/* PLANNED */}
       <div className="sect-title">Planned ({planned.length})</div>
       {planned.length > 0 ? (
         <div className="budget-list">
@@ -107,7 +98,18 @@ export default function BudgetPage({ active }) {
         <div className="itin-empty"><div className="itin-empty-text">No planned items.</div></div>
       )}
 
-      {/* Item DetailModal — used for both confirmed expenses and planned items */}
+      {/* EXPENSE DETAIL CARD */}
+      {selectedExpense && (
+        <ExpenseCard
+          expense={selectedExpense}
+          onClose={() => setSelectedExpense(null)}
+          onViewItem={() => { setSelectedExpense(null); setSelectedItem(selectedExpense.item); }}
+          updateExpense={updateExpense}
+          deleteExpense={deleteExpense}
+        />
+      )}
+
+      {/* ITEM DETAIL MODAL */}
       {selectedItem && (() => {
         const liveItem = items.find(i => i.id === selectedItem.id) || selectedItem;
         const itemExpenses = (expenses || []).filter(e => e.item_id === liveItem.id);
@@ -124,6 +126,93 @@ export default function BudgetPage({ active }) {
           onDelete={liveItem.created_by ? () => { deleteItem(liveItem.id); setSelectedItem(null); } : null}
         />;
       })()}
+    </div>
+  );
+}
+
+// ═══ EXPENSE CARD — separate from DetailModal ═══
+function ExpenseCard({ expense, onClose, onViewItem, updateExpense, deleteExpense }) {
+  const [amountInput, setAmountInput] = useState(String(Number(expense.amount)));
+  const [saving, setSaving] = useState(false);
+
+  function handleSave() {
+    const val = parseFloat(amountInput);
+    if (isNaN(val) || val <= 0) return;
+    if (val !== Number(expense.amount)) {
+      setSaving(true);
+      updateExpense(expense.id, { amount: val });
+      setSaving(false);
+    }
+    onClose();
+  }
+
+  function handleDelete() {
+    if (confirm('Delete this expense? This cannot be undone.')) {
+      deleteExpense(expense.id);
+      onClose();
+    }
+  }
+
+  return (
+    <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Expense details">
+      <div className="detail-sheet" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+        <div className="detail-handle" />
+        <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
+        <div className="detail-content">
+          <div className="detail-section-title">Expense</div>
+          <h2 className="detail-name" style={{ fontSize: 18 }}>{expense.item?.name || expense.note || 'Expense'}</h2>
+
+          <div className="itin-general" style={{ marginTop: 12 }}>
+            <div className="itin-general-row">
+              <span className="itin-general-label">Amount</span>
+              <div className="cost-input-row" style={{ flex: 1, justifyContent: 'flex-end' }}>
+                <span className="cost-input-prefix">$</span>
+                <input type="number" className="cost-input" style={{ fontSize: 14, maxWidth: 120, textAlign: 'right' }}
+                  value={amountInput} onChange={e => setAmountInput(e.target.value)} />
+              </div>
+            </div>
+            <div className="itin-general-row">
+              <span className="itin-general-label">Date</span>
+              <span>{new Date(expense.created_at).toLocaleDateString()}</span>
+            </div>
+            {expense.item?.type && (
+              <div className="itin-general-row">
+                <span className="itin-general-label">Type</span>
+                <span style={{ textTransform: 'capitalize' }}>{expense.item.type}</span>
+              </div>
+            )}
+            {expense.stop?.name && (
+              <div className="itin-general-row">
+                <span className="itin-general-label">Stop</span>
+                <span>{expense.stop.name}</span>
+              </div>
+            )}
+            {expense.note && (
+              <div className="itin-general-row">
+                <span className="itin-general-label">Note</span>
+                <span>{expense.note}</span>
+              </div>
+            )}
+            {expense.created_by && (
+              <div className="itin-general-row">
+                <span className="itin-general-label">Paid by</span>
+                <span>{expense.created_by.split('@')[0]}</span>
+              </div>
+            )}
+          </div>
+
+          {expense.item && (
+            <button className="detail-btn" onClick={onViewItem} style={{ marginTop: 12 }}>
+              View {expense.item.name}
+            </button>
+          )}
+        </div>
+
+        <div className="detail-edit-actions">
+          <button className="detail-btn-delete" onClick={handleDelete} style={{ flex: 1 }}>Delete expense</button>
+          <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
+        </div>
+      </div>
     </div>
   );
 }

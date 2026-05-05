@@ -320,8 +320,10 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
 
     if (Object.keys(changes).length > 0) {
       updateItem(it.id, changes);
-      showSaved('Saved');
     }
+    // Also save expense if paidInput changed
+    handlePaidBlur();
+    showSaved('Saved');
     setSaving(false);
     onClose();
   }
