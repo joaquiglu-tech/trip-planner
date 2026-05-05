@@ -3,6 +3,7 @@ import { $f } from '../hooks/useItems';
 import { uploadFile, deleteFile } from '../../services/storage';
 import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
 import PlaceSearch from './PlaceSearch';
+import ExpenseCard from './ExpenseCard';
 
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_OPTIONS = [
@@ -40,34 +41,17 @@ function formatDatetime(dt) {
   } catch { return dt; }
 }
 
-export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, itemExpenses, addExpense, updateExpense, stops }) {
+export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, itemExpenses, addExpense, updateExpense, deleteExpense, stops }) {
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [showExpenseCard, setShowExpenseCard] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [costInput, setCostInput] = useState('');
   const [place, setPlace] = useState(placeData || null);
   const [loadingPlace, setLoadingPlace] = useState(false);
   const [saved, setSaved] = useState('');
-  const [paidInput, setPaidInput] = useState(expenseAmount > 0 ? String(expenseAmount) : '');
   const itemFiles = files || [];
 
   function showSaved(label) { setSaved(label); setTimeout(() => setSaved(''), 1500); }
-
-  // Expense: create or update on blur
-  function handlePaidBlur() {
-    const val = parseFloat(paidInput);
-    if (isNaN(val) || val < 0) { setPaidInput(expenseAmount > 0 ? String(expenseAmount) : ''); return; }
-    const existing = (itemExpenses || [])[0];
-    if (existing && val > 0) {
-      if (val !== Number(existing.amount)) updateExpense(existing.id, { amount: val });
-    } else if (!existing && val > 0) {
-      addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || '', created_by: '' });
-    }
-    showSaved('Saved');
-  }
-
-  useEffect(() => { setPaidInput(expenseAmount > 0 ? String(expenseAmount) : ''); }, [expenseAmount]);
 
   useEffect(() => {
     window.history.pushState({ modal: true }, '', '');
@@ -112,7 +96,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   // ═══ EDIT MODE — all fields, batch save ═══
   if (editing) {
     return <EditMode it={it} stops={stops} livePrice={livePrice} livePriceRates={livePriceRates}
-      expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur}
+      expenseAmount={expenseAmount} onExpenseClick={() => { setEditing(false); setShowExpenseCard(true); }}
       updateItem={updateItem} onClose={() => setEditing(false)} showSaved={showSaved} saved={saved}
       itemFiles={itemFiles} uploading={uploading} handleUpload={handleUpload} handleRemoveFile={handleRemoveFile} />;
   }
@@ -141,7 +125,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                     onClick={() => {
                       if (opt.value === st) return;
                       if (navigator.vibrate) navigator.vibrate(15);
-                      if (opt.value === 'conf' && st !== 'conf') { setConfirming(true); return; }
+                      if (opt.value === 'conf' && st !== 'conf') { setShowExpenseCard(true); return; }
                       if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) { if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will keep the expenses. Continue?`)) return; }
                       setStatus(it.id, opt.value);
                     }}>
@@ -149,22 +133,6 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                   </button>
                 ))}
               </div>
-              {confirming && (
-                <div className="detail-booking-prompt" style={{ marginTop: 8 }}>
-                  <div className="detail-section-title" style={{ marginBottom: 8 }}>How much did you pay?</div>
-                  <div className="cost-input-row" style={{ marginBottom: 8 }}><span className="cost-input-prefix">$</span><input type="number" className="cost-input" placeholder="0 (optional)" value={costInput} onChange={e => setCostInput(e.target.value)} autoFocus /></div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="detail-btn" onClick={() => setConfirming(false)} style={{ flex: 1 }}>Cancel</button>
-                    <button className="detail-btn conf" onClick={async () => {
-                      const val = parseFloat(costInput);
-                      if (val > 0 && addExpense) await addExpense({ amount: val, category: it.type === 'food' ? 'food' : it.type, note: it.name, item_id: it.id, stop_id: it.stop_ids?.[0] || '', created_by: '' });
-                      setStatus(it.id, 'conf');
-                      setCostInput(''); setConfirming(false);
-                      showSaved(val > 0 ? 'Confirmed & paid' : 'Booked');
-                    }} style={{ flex: 1 }}>Confirm{costInput ? ` & pay ${$f(parseFloat(costInput) || 0)}` : ''}</button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -205,7 +173,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           {it.reserveNote && <div className="detail-reserve-note">{it.reserveNote}</div>}
 
           {/* ═══ PRICING ═══ */}
-          <PricingBlock it={it} livePrice={livePrice} expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} />
+          <PricingBlock it={it} livePrice={livePrice} expenseAmount={expenseAmount} onExpenseClick={() => setShowExpenseCard(true)} />
 
           {/* ═══ BOOKING ═══ */}
           {it.type === 'stay' && livePriceRates?.length > 0 && (
@@ -245,12 +213,22 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
         </div>
         {onDelete && (<div style={{ padding: '0 16px 16px' }}><button className="detail-btn-delete" onClick={() => { if (confirm('Delete this item permanently? This cannot be undone.')) onDelete(); }}>Delete permanently</button></div>)}
       </div>
+
+      {/* ExpenseCard overlay — opened from PricingBlock or confirm flow */}
+      {showExpenseCard && (
+        <ExpenseCard
+          expense={(itemExpenses || [])[0] || null}
+          item={it} stops={stops}
+          onClose={() => setShowExpenseCard(false)}
+          addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} setStatus={setStatus}
+        />
+      )}
     </div>
   );
 }
 
 // ═══ EDIT MODE — batch save ═══
-function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInput, setPaidInput, handlePaidBlur, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile }) {
+function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpenseClick, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile }) {
   const [draft, setDraft] = useState({
     name: it.name || '', type: it.type || 'food',
     description: it.description || '', dish: it.dish || '', link: it.link || '',
@@ -320,10 +298,8 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
 
     if (Object.keys(changes).length > 0) {
       updateItem(it.id, changes);
+      showSaved('Saved');
     }
-    // Also save expense if paidInput changed
-    handlePaidBlur();
-    showSaved('Saved');
     setSaving(false);
     onClose();
   }
@@ -424,7 +400,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
           </div>
 
           {/* Pricing — same component as summary for consistency */}
-          <PricingBlock it={{ ...it, estimated_cost: draft.estimated_cost ? Number(draft.estimated_cost) : it.estimated_cost }} livePrice={livePrice} expenseAmount={expenseAmount} paidInput={paidInput} setPaidInput={setPaidInput} handlePaidBlur={handlePaidBlur} />
+          <PricingBlock it={{ ...it, estimated_cost: draft.estimated_cost ? Number(draft.estimated_cost) : it.estimated_cost }} livePrice={livePrice} expenseAmount={expenseAmount} onExpenseClick={onExpenseClick} />
 
           {/* Links */}
           <div className="edit-section-title">Links</div>
@@ -471,7 +447,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, paidInp
 }
 
 // ═══ SHARED PRICING BLOCK — used in both Summary and Edit modes ═══
-function PricingBlock({ it, livePrice, expenseAmount, paidInput, setPaidInput, handlePaidBlur }) {
+function PricingBlock({ it, livePrice, expenseAmount, onExpenseClick }) {
   return (
     <div className="detail-section" style={{ marginTop: 12 }}>
       <div className="detail-section-title">Pricing</div>
@@ -493,14 +469,16 @@ function PricingBlock({ it, livePrice, expenseAmount, paidInput, setPaidInput, h
           </div>
         )}
       </div>
-      <label className="edit-label" style={{ marginTop: 10 }}>Confirmed cost (paid)</label>
-      <div className="cost-input-row" style={{ marginBottom: 0 }}>
-        <span className="cost-input-prefix">$</span>
-        <input type="number" className="cost-input" style={{ fontSize: 13 }} placeholder="0" value={paidInput} onChange={e => setPaidInput(e.target.value)} onBlur={handlePaidBlur} />
+      <div onClick={onExpenseClick} style={{ cursor: 'pointer', marginTop: 10, padding: '10px 12px', background: 'var(--bg-card-hd)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+        {expenseAmount > 0 ? (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Confirmed cost</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--green)' }}>{$f(expenseAmount)}</span>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, textAlign: 'center' }}>+ Add confirmed cost</div>
+        )}
       </div>
-      {expenseAmount > 0 && (
-        <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600, marginTop: 4 }}>Paid: {$f(expenseAmount)}</div>
-      )}
     </div>
   );
 }

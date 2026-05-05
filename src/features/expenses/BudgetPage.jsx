@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { $f, itemCost } from '../../shared/hooks/useItems';
 import { useTrip } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
+import ExpenseCard from '../../shared/components/ExpenseCard';
 import BudgetSummary from './BudgetSummary';
 
 export default function BudgetPage({ active }) {
@@ -102,10 +103,11 @@ export default function BudgetPage({ active }) {
       {selectedExpense && (
         <ExpenseCard
           expense={selectedExpense}
+          item={selectedExpense.item}
+          stops={stops}
           onClose={() => setSelectedExpense(null)}
           onViewItem={() => { setSelectedExpense(null); setSelectedItem(selectedExpense.item); }}
-          updateExpense={updateExpense}
-          deleteExpense={deleteExpense}
+          addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
         />
       )}
 
@@ -130,89 +132,3 @@ export default function BudgetPage({ active }) {
   );
 }
 
-// ═══ EXPENSE CARD — separate from DetailModal ═══
-function ExpenseCard({ expense, onClose, onViewItem, updateExpense, deleteExpense }) {
-  const [amountInput, setAmountInput] = useState(String(Number(expense.amount)));
-  const [saving, setSaving] = useState(false);
-
-  function handleSave() {
-    const val = parseFloat(amountInput);
-    if (isNaN(val) || val <= 0) return;
-    if (val !== Number(expense.amount)) {
-      setSaving(true);
-      updateExpense(expense.id, { amount: val });
-      setSaving(false);
-    }
-    onClose();
-  }
-
-  function handleDelete() {
-    if (confirm('Delete this expense? This cannot be undone.')) {
-      deleteExpense(expense.id);
-      onClose();
-    }
-  }
-
-  return (
-    <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Expense details">
-      <div className="detail-sheet" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-        <div className="detail-handle" />
-        <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
-        <div className="detail-content">
-          <div className="detail-section-title">Expense</div>
-          <h2 className="detail-name" style={{ fontSize: 18 }}>{expense.item?.name || expense.note || 'Expense'}</h2>
-
-          <div className="itin-general" style={{ marginTop: 12 }}>
-            <div className="itin-general-row">
-              <span className="itin-general-label">Amount</span>
-              <div className="cost-input-row" style={{ flex: 1, justifyContent: 'flex-end' }}>
-                <span className="cost-input-prefix">$</span>
-                <input type="number" className="cost-input" style={{ fontSize: 14, maxWidth: 120, textAlign: 'right' }}
-                  value={amountInput} onChange={e => setAmountInput(e.target.value)} />
-              </div>
-            </div>
-            <div className="itin-general-row">
-              <span className="itin-general-label">Date</span>
-              <span>{new Date(expense.created_at).toLocaleDateString()}</span>
-            </div>
-            {expense.item?.type && (
-              <div className="itin-general-row">
-                <span className="itin-general-label">Type</span>
-                <span style={{ textTransform: 'capitalize' }}>{expense.item.type}</span>
-              </div>
-            )}
-            {expense.stop?.name && (
-              <div className="itin-general-row">
-                <span className="itin-general-label">Stop</span>
-                <span>{expense.stop.name}</span>
-              </div>
-            )}
-            {expense.note && (
-              <div className="itin-general-row">
-                <span className="itin-general-label">Note</span>
-                <span>{expense.note}</span>
-              </div>
-            )}
-            {expense.created_by && (
-              <div className="itin-general-row">
-                <span className="itin-general-label">Paid by</span>
-                <span>{expense.created_by.split('@')[0]}</span>
-              </div>
-            )}
-          </div>
-
-          {expense.item && (
-            <button className="detail-btn" onClick={onViewItem} style={{ marginTop: 12 }}>
-              View {expense.item.name}
-            </button>
-          )}
-        </div>
-
-        <div className="detail-edit-actions">
-          <button className="detail-btn-delete" onClick={handleDelete} style={{ flex: 1 }}>Delete expense</button>
-          <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
