@@ -51,7 +51,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   const [saved, setSaved] = useState('');
   const itemFiles = files || [];
 
-  function showSaved(label) { setSaved(label); setTimeout(() => setSaved(''), 1500); }
+  const savedTimerRef = useRef(null);
+  function showSaved(label) { setSaved(label); clearTimeout(savedTimerRef.current); savedTimerRef.current = setTimeout(() => setSaved(''), 1500); }
 
   useEffect(() => {
     window.history.pushState({ modal: true }, '', '');
@@ -64,7 +65,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
     if (!it || place?.photo_url) return;
     if (!getPlaceData) return;
     setLoadingPlace(true);
-    getPlaceData(it.id, it.name, it.city).then((result) => { if (result) setPlace(result); setLoadingPlace(false); });
+    getPlaceData(it.id, it.name, it.city).then((result) => { if (result) setPlace(result); }).catch(err => console.warn('getPlaceData failed:', err)).finally(() => setLoadingPlace(false));
   }, [it?.id]);
 
   if (!it) return null;
@@ -89,7 +90,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   }
 
   async function handleRemoveFile(filePath) {
-    try { await deleteFile(filePath); } catch {}
+    try { await deleteFile(filePath); } catch (err) { console.warn('File delete failed:', err); alert('Failed to delete file.'); return; }
     if (removeFile) removeFile(it.id, filePath);
   }
 
@@ -126,7 +127,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                       if (opt.value === st) return;
                       if (navigator.vibrate) navigator.vibrate(15);
                       if (opt.value === 'conf' && st !== 'conf') { setShowExpenseCard(true); return; }
-                      if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) { if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will keep the expenses. Continue?`)) return; }
+                      if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) { if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`)) return; if (itemExpenses?.length > 0) { for (const exp of itemExpenses) { try { deleteExpense(exp.id); } catch {} } } }
                       setStatus(it.id, opt.value);
                     }}>
                     {opt.value === 'conf' ? '✓' : opt.value === 'sel' ? '●' : '○'} {opt.label}
@@ -265,7 +266,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
 
   const u = (key, val) => setDraft(d => ({ ...d, [key]: val }));
 
-  function handleSave() {
+  async function handleSave() {
     setSaving(true);
     const changes = {};
     if (draft.name !== (it.name || '')) changes.name = draft.name;
@@ -297,8 +298,15 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
     if (derivedRoute && derivedRoute !== (it.route || '')) changes.route = derivedRoute;
 
     if (Object.keys(changes).length > 0) {
-      updateItem(it.id, changes);
-      showSaved('Saved');
+      try {
+        await updateItem(it.id, changes);
+        showSaved('Saved');
+      } catch (err) {
+        console.warn('Save failed:', err);
+        alert('Failed to save changes.');
+        setSaving(false);
+        return;
+      }
     }
     setSaving(false);
     onClose();

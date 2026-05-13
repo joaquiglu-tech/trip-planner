@@ -31,6 +31,7 @@ export function useLivePrices(staysWithKeys, stops) {
 
         try {
           const dates = getStayDates(stay, stops);
+          if (!dates) continue;
           const price = await fetchHotelPrice(stay.xotelo_key, dates.checkIn, dates.checkOut);
           if (cancelled) break;
 
@@ -49,6 +50,7 @@ export function useLivePrices(staysWithKeys, stops) {
               const { error } = await supabase.from('items').update({
                 estimated_cost: total,
                 updated_at: new Date().toISOString(),
+                updated_by: 'xotelo-sync',
               }).eq('id', stay.id);
               if (error) console.warn('Failed to update estimated_cost for', stay.name, error);
             }
@@ -74,5 +76,5 @@ function getStayDates(stay, stops) {
     if (byId) return { checkIn: String(byId.start_date).substring(0, 10), checkOut: String(byId.end_date).substring(0, 10) };
   }
   if (stops.length > 0) return { checkIn: String(stops[0].start_date).substring(0, 10), checkOut: String(stops[stops.length - 1].end_date).substring(0, 10) };
-  return { checkIn: '2026-07-20', checkOut: '2026-08-02' };
+  return null;
 }

@@ -7,27 +7,39 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
   const isNew = !expense;
   const [amountInput, setAmountInput] = useState(expense ? String(Number(expense.amount)) : '');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const stop = item?.stop_ids?.[0] ? (stops || []).find(s => s.id === item.stop_ids[0]) : null;
 
-  function handleSave() {
+  async function handleSave() {
     const val = parseFloat(amountInput);
     if (isNaN(val) || val <= 0) return;
     setSaving(true);
-    if (isNew && item) {
-      addExpense({ amount: val, category: item.type === 'food' ? 'food' : item.type, note: item.name, item_id: item.id, stop_id: item.stop_ids?.[0] || '', created_by: '' });
-      if (item.status !== 'conf' && setStatus) setStatus(item.id, 'conf');
-    } else if (expense) {
-      if (val !== Number(expense.amount)) updateExpense(expense.id, { amount: val });
+    setError('');
+    try {
+      if (isNew && item) {
+        await addExpense({ amount: val, category: item.type === 'food' ? 'food' : item.type, note: item.name, item_id: item.id, stop_id: item.stop_ids?.[0] || '', created_by: '' });
+        if (item.status !== 'conf' && setStatus) await setStatus(item.id, 'conf');
+      } else if (expense) {
+        if (val !== Number(expense.amount)) await updateExpense(expense.id, { amount: val });
+      }
+      onClose();
+    } catch (err) {
+      console.warn('ExpenseCard save failed:', err);
+      setError('Failed to save. Please try again.');
+      setSaving(false);
     }
-    setSaving(false);
-    onClose();
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!expense) return;
     if (confirm('Delete this expense? This cannot be undone.')) {
-      deleteExpense(expense.id);
-      onClose();
+      try {
+        await deleteExpense(expense.id);
+        onClose();
+      } catch (err) {
+        console.warn('ExpenseCard delete failed:', err);
+        setError('Failed to delete. Please try again.');
+      }
     }
   }
 
@@ -42,6 +54,8 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
         <div className="detail-content">
           <div className="detail-section-title">{isNew ? 'New Expense' : 'Expense'}</div>
           <h2 className="detail-name" style={{ fontSize: 18 }}>{displayItem?.name || expense?.note || 'Expense'}</h2>
+
+          {error && <div style={{ color: '#ef4444', fontSize: 12, marginBottom: 8 }}>{error}</div>}
 
           <div className="itin-general" style={{ marginTop: 12 }}>
             <div className="itin-general-row">

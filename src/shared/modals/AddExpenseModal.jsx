@@ -7,6 +7,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
   const [search, setSearch] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Items that can have expenses — selected or confirmed
   const availableItems = useMemo(() => {
@@ -19,7 +20,8 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
 
   async function handleSave() {
     const val = parseFloat(amount);
-    if (!val || val <= 0 || !selectedItem) return;
+    if (!val || val <= 0 || !selectedItem || saving) return;
+    setSaving(true);
     try {
       await onAdd({
         amount: val,
@@ -32,6 +34,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
       onClose();
     } catch (err) {
       alert('Error: ' + err.message);
+      setSaving(false);
     }
   }
 
@@ -101,7 +104,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
               />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="detail-btn" onClick={() => setStep('select')} style={{ flex: 1 }}>Back</button>
-                <button className="detail-btn sel" onClick={handleSave} style={{ flex: 1 }}>Add Expense</button>
+                <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Add Expense'}</button>
               </div>
             </>
           )}

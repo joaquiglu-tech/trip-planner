@@ -21,10 +21,11 @@ export async function enrichItem(item) {
 
   // Save enrichment to DB if we found anything
   if (Object.keys(changes).length > 0) {
-    await supabase.from('items').update({
+    const { error } = await supabase.from('items').update({
       ...changes,
       updated_at: new Date().toISOString(),
     }).eq('id', item.id);
+    if (error) console.warn('enrichItem DB update failed for', item.name, error);
   }
 
   return changes;

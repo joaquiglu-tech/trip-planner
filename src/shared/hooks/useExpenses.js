@@ -3,11 +3,16 @@ import { supabase } from '../../services/supabase';
 
 export function useExpenses() {
   const [expenses, setExpenses] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
-      const { data } = await supabase.from('expenses').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('expenses').select('*').order('created_at', { ascending: false });
+      if (cancelled) return;
+      if (error) { console.warn('Failed to load expenses:', error); setLoaded(true); return; }
       if (data) setExpenses(data);
+      setLoaded(true);
     }
     load();
 
@@ -26,13 +31,16 @@ export function useExpenses() {
         }
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { cancelled = true; supabase.removeChannel(channel); };
   }, []);
 
   const addExpense = useCallback(async (expense) => {
     const { data, error } = await supabase.from('expenses').insert(expense).select().single();
     if (error) throw error;
-    setExpenses((prev) => [data, ...prev]);
+    setExpenses((prev) => {
+      if (prev.some(e => e.id === data.id)) return prev;
+      return [data, ...prev];
+    });
     return data;
   }, []);
 
@@ -44,9 +52,10 @@ export function useExpenses() {
   }, []);
 
   const deleteExpense = useCallback(async (id) => {
-    await supabase.from('expenses').delete().eq('id', id);
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    if (error) throw error;
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  return { expenses, addExpense, updateExpense, deleteExpense };
+  return { expenses, loaded, addExpense, updateExpense, deleteExpense };
 }
