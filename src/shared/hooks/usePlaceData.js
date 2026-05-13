@@ -20,7 +20,7 @@ export function usePlaceData() {
         setPlaces(prev => ({ ...prev, [itemId]: cached }));
         return cached;
       }
-    } catch { /* not cached yet */ }
+    } catch (err) { if (err?.code !== 'PGRST116') console.warn('place_cache lookup failed:', err); }
 
     // Fetch from Google Places API
     try {
@@ -29,7 +29,7 @@ export function usePlaceData() {
         setPlaces(prev => ({ ...prev, [itemId]: result }));
         return result;
       }
-    } catch { /* skip */ }
+    } catch (err) { console.warn('Places API fetch failed:', err); }
     return null;
   }, [places]);
 

@@ -16,7 +16,7 @@ export function priceLabel(it, livePrice, expenseAmount) {
   return { text: '', type: 'none' };
 }
 
-function mergeItem(row, stopName) {
+function mergeItem(row, stopName, existingCity) {
   const coord = (row.lat && row.lng) ? { lat: Number(row.lat), lng: Number(row.lng) } : null;
   const originCoord = (row.origin_lat && row.origin_lng) ? { lat: Number(row.origin_lat), lng: Number(row.origin_lng) } : null;
   const destCoord = (row.dest_lat && row.dest_lng) ? { lat: Number(row.dest_lat), lng: Number(row.dest_lng) } : null;
@@ -26,7 +26,7 @@ function mergeItem(row, stopName) {
   return {
     ...row,
     coord, originCoord, destCoord, routeLabel,
-    city: stopName || '',
+    city: stopName || existingCity || '',
     whatToExpect: row.what_to_expect ? row.what_to_expect.split('|').map(s => s.trim()).filter(Boolean) : null,
     proTips: row.pro_tips ? row.pro_tips.split('|').map(s => s.trim()).filter(Boolean) : null,
     highlights: row.highlights ? row.highlights.split('|').map(s => s.trim()).filter(Boolean) : null,
@@ -61,7 +61,7 @@ export function useItems(currentUserEmail, showToast) {
       const merged = (itemsRes.data || []).map(row => {
         const firstStopId = row.stop_ids?.[0];
         const stop = firstStopId ? stopsMap[firstStopId] : null;
-        return mergeItem(row, stop?.name || '');
+        return mergeItem(row, stop?.name || '', '');
       });
       setItems(merged);
       setLoaded(true);
@@ -80,9 +80,10 @@ export function useItems(currentUserEmail, showToast) {
         } else {
           const firstStopId = payload.new.stop_ids?.[0];
           const stopName = firstStopId ? stopsMapRef.current[firstStopId]?.name || '' : '';
-          const merged = mergeItem(payload.new, stopName);
           setItems(prev => {
-            const idx = prev.findIndex(it => it.id === merged.id);
+            const idx = prev.findIndex(it => it.id === payload.new.id);
+            const existingCity = idx >= 0 ? prev[idx].city : '';
+            const merged = mergeItem(payload.new, stopName, existingCity);
             if (idx >= 0) { const next = [...prev]; next[idx] = { ...prev[idx], ...merged }; return next; }
             return [...prev, merged];
           });
@@ -102,7 +103,10 @@ export function useItems(currentUserEmail, showToast) {
     const { error } = await supabase.from('items').update({
       ...changes, updated_at: new Date().toISOString(), updated_by: currentUserEmail,
     }).eq('id', id);
-    if (error) console.warn('Failed to update item:', error);
+    if (error) {
+      console.warn('Failed to update item:', error);
+      throw error;
+    }
   }, [currentUserEmail]);
 
   const setStatus = useCallback(async (id, status) => {
@@ -113,7 +117,11 @@ export function useItems(currentUserEmail, showToast) {
       const others = items.filter(it => it.type === 'stay' && it.id !== id && (it.status === 'sel' || it.status === 'conf') && it.stop_ids?.some(s => itemStops.includes(s)));
       if (others.length > 0) {
         setItems(prev => prev.map(it => others.some(o => o.id === it.id) ? { ...it, status: '' } : it));
-        await Promise.all(others.map(o => supabase.from('items').update({ status: '', updated_at: new Date().toISOString(), updated_by: currentUserEmail }).eq('id', o.id)));
+        try {
+          await Promise.all(others.map(o => supabase.from('items').update({ status: '', updated_at: new Date().toISOString(), updated_by: currentUserEmail }).eq('id', o.id)));
+        } catch (err) {
+          console.warn('Failed to deselect conflicting stays:', err);
+        }
       }
     }
     await updateItem(id, { status });
@@ -142,27 +150,37 @@ export function useItems(currentUserEmail, showToast) {
     };
     const { data, error } = await supabase.from('items').insert(newItem).select().single();
     if (error) throw error;
-    const merged = mergeItem(data, '');
+    const firstStopId = data.stop_ids?.[0];
+    const stopName = firstStopId ? stopsMapRef.current[firstStopId]?.name || '' : '';
+    const merged = mergeItem(data, stopName, '');
     setItems(prev => [...prev, merged]);
     enrichItem(data).then(changes => {
       if (Object.keys(changes).length > 0) {
         setItems(prev => prev.map(it => it.id === data.id ? { ...it, ...changes } : it));
       }
-    });
+    }).catch(err => console.warn('enrichItem failed for', data.name, err));
     return data;
   }, [currentUserEmail]);
 
   const deleteItem = useCallback(async (id) => {
     setItems(prev => prev.filter(it => it.id !== id));
-    await supabase.from('expenses').delete().eq('item_id', id);
-    await supabase.from('place_cache').delete().eq('item_id', id);
     try {
-      const { data: storageFiles } = await supabase.storage.from('reservations').list(id);
-      if (storageFiles?.length > 0) {
-        await supabase.storage.from('reservations').remove(storageFiles.map(f => `${id}/${f.name}`));
+      await supabase.from('expenses').delete().eq('item_id', id);
+      await supabase.from('place_cache').delete().eq('item_id', id);
+      try {
+        const { data: storageFiles } = await supabase.storage.from('reservations').list(id);
+        if (storageFiles?.length > 0) {
+          await supabase.storage.from('reservations').remove(storageFiles.map(f => `${id}/${f.name}`));
+        }
+      } catch (storageErr) { console.warn('Storage cleanup failed for item', id, storageErr); }
+      const { error } = await supabase.from('items').delete().eq('id', id);
+      if (error) {
+        console.warn('Failed to delete item:', error);
+        // Item already removed from UI; realtime will re-add if delete failed
       }
-    } catch { /* skip storage cleanup errors */ }
-    await supabase.from('items').delete().eq('id', id);
+    } catch (err) {
+      console.warn('deleteItem cascade error:', err);
+    }
   }, []);
 
   // Memoized derived data for live prices hook

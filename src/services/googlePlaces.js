@@ -56,7 +56,8 @@ export async function fetchPlaceData(itemId, name, city) {
     };
 
     // Cache in Supabase
-    await supabase.from('place_cache').upsert(result, { onConflict: 'item_id' });
+    const { error: cacheErr } = await supabase.from('place_cache').upsert(result, { onConflict: 'item_id' });
+    if (cacheErr) console.warn('place_cache upsert failed for', itemId, cacheErr);
 
     // Return with parsed photo_urls for immediate use
     result.photo_urls = photoUrls;

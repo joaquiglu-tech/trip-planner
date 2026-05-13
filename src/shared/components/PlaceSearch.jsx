@@ -44,7 +44,7 @@ export default function PlaceSearch({ value, onChange, stops, placeholder, label
             isStop: false,
           })));
         }
-      } catch { /* skip */ }
+      } catch (err) { console.warn('Place search failed:', err); }
       setSearching(false);
     }, 400);
     return () => clearTimeout(debounceRef.current);

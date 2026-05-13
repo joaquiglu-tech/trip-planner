@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, GOOGLE_MAPS_API_KEY as API_KEY } from '../../services/supabase';
 
 // Fetch Google Place ID for a city name
@@ -18,16 +18,21 @@ async function fetchPlaceId(name) {
     const place = data.places?.[0];
     if (!place) return null;
     return { placeId: place.id, lat: place.location?.latitude, lng: place.location?.longitude };
-  } catch { return null; }
+  } catch (err) { console.warn('fetchPlaceId failed for', name, err); return null; }
 }
 
 export function useStops() {
   const [stops, setStops] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const enrichCancelledRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+    enrichCancelledRef.current = false;
+
     async function load() {
       const { data, error } = await supabase.from('stops').select('*').order('sort_order');
+      if (cancelled) return;
       if (error) { console.warn('Failed to load stops:', error); setLoaded(true); return; }
       setStops(data || []);
       setLoaded(true);
@@ -38,14 +43,16 @@ export function useStops() {
       const toFetch = [...needsPlaceId, ...needsCoords];
       if (toFetch.length > 0) {
         for (const stop of toFetch) {
+          if (enrichCancelledRef.current) break;
           const result = await fetchPlaceId(stop.name);
           if (result) {
             const updates = {};
             if (!stop.google_place_id) updates.google_place_id = result.placeId;
             if (!stop.lat && result.lat) { updates.lat = result.lat; updates.lng = result.lng; }
             if (Object.keys(updates).length > 0) {
-              await supabase.from('stops').update(updates).eq('id', stop.id);
-              setStops(prev => prev.map(s => s.id === stop.id ? { ...s, ...updates } : s));
+              const { error: updateErr } = await supabase.from('stops').update(updates).eq('id', stop.id);
+              if (updateErr) console.warn('Failed to enrich stop', stop.name, updateErr);
+              else setStops(prev => prev.map(s => s.id === stop.id ? { ...s, ...updates } : s));
             }
           }
           await new Promise(r => setTimeout(r, 300));
@@ -54,25 +61,40 @@ export function useStops() {
     }
     load();
 
+    // Incremental realtime — merge individual changes instead of full reload
     const channel = supabase
       .channel('stops-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stops' }, () => { load(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stops' }, (payload) => {
+        if (payload.eventType === 'DELETE') {
+          setStops(prev => prev.filter(s => s.id !== payload.old.id));
+        } else if (payload.eventType === 'INSERT') {
+          setStops(prev => {
+            if (prev.some(s => s.id === payload.new.id)) return prev;
+            return [...prev, payload.new].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setStops(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s));
+        }
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { cancelled = true; enrichCancelledRef.current = true; supabase.removeChannel(channel); };
   }, []);
 
   const updateStop = useCallback(async (id, changes) => {
     setStops(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
     const { error } = await supabase.from('stops').update(changes).eq('id', id);
-    if (error) console.warn('Failed to update stop:', error);
+    if (error) {
+      console.warn('Failed to update stop:', error);
+      throw error;
+    }
     // If name changed, re-fetch google place ID + coords
     if (changes.name) {
       const result = await fetchPlaceId(changes.name);
       if (result) {
         const updates = { google_place_id: result.placeId };
         if (result.lat) { updates.lat = result.lat; updates.lng = result.lng; }
-        await supabase.from('stops').update(updates).eq('id', id);
-        setStops(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+        const { error: enrichErr } = await supabase.from('stops').update(updates).eq('id', id);
+        if (!enrichErr) setStops(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
       }
     }
   }, []);
@@ -99,7 +121,11 @@ export function useStops() {
 
   const deleteStop = useCallback(async (id) => {
     setStops(prev => prev.filter(s => s.id !== id));
-    await supabase.from('stops').delete().eq('id', id);
+    const { error } = await supabase.from('stops').delete().eq('id', id);
+    if (error) {
+      console.warn('Failed to delete stop:', error);
+      // Realtime will re-add if delete failed
+    }
   }, []);
 
   return { stops, loaded, updateStop, addStop, deleteStop };

@@ -40,7 +40,7 @@ export default function AddStopModal({ onAdd, onClose }) {
             lng: p.location?.longitude,
           })));
         }
-      } catch { /* skip */ }
+      } catch (err) { console.warn('Stop search failed:', err); }
       setSearching(false);
     }, 400);
     return () => clearTimeout(debounceRef.current);
