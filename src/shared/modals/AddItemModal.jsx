@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import PlaceSearch from '../components/PlaceSearch';
 import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
+import { uploadFile } from '../../services/storage';
 
 const TYPES = [
   { value: 'food', label: 'Food' }, { value: 'stay', label: 'Stay' },
@@ -22,12 +23,14 @@ const TRANSPORT_MODES = [
 
 const EMPTY_FORM = { name: '', type: 'food', stop_ids: [], desc_text: '', dish: '', subcat: '', tier: '', hrs: '',
   transport_mode: '', is_rental: false, origin: null, dest: null, start_time: '', end_time: '',
-  link: '', estimated_cost: '', notes: '', tripadvisor_url: '', xotelo_key: '' };
+  link: '', estimated_cost: '', notes: '', tripadvisor_url: '', xotelo_key: '',
+  status: 'sel', confirmed_cost: '', expense_note: '' };
 
-export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
+export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stops, userEmail }) {
   const trapRef = useFocusTrap();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [pendingFiles, setPendingFiles] = useState([]);
   const [xoteloStatus, setXoteloStatus] = useState(''); // '' | 'searching' | 'found' | 'not_found'
 
   useEffect(() => {
@@ -95,8 +98,9 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
     try {
       const originName = form.origin?.name || '';
       const destName = form.dest?.name || '';
-      await onAdd({
+      const newItem = await onAdd({
         ...form,
+        status: form.status,
         estimated_cost: parseFloat(form.estimated_cost) || 0,
         hrs: parseFloat(form.hrs) || null,
         stop_ids: form.stop_ids,
@@ -105,6 +109,32 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
         dest_name: destName, dest_lat: form.dest?.lat || null, dest_lng: form.dest?.lng || null,
         route: [originName, destName].filter(Boolean).join(' \u2192 '),
       });
+
+      // Create expense if confirmed with a cost
+      const cost = parseFloat(form.confirmed_cost);
+      if (form.status === 'conf' && cost > 0 && addExpense) {
+        await addExpense({
+          amount: cost,
+          category: form.type,
+          note: form.expense_note || form.name,
+          item_id: newItem.id,
+          stop_id: form.stop_ids[0] || '',
+          created_by: userEmail,
+        });
+      }
+
+      // Upload pending files
+      if (pendingFiles.length > 0 && setFile) {
+        for (const file of pendingFiles) {
+          try {
+            const result = await uploadFile(newItem.id, file);
+            setFile(newItem.id, result);
+          } catch (err) {
+            console.warn('File upload failed:', err);
+          }
+        }
+      }
+
       onClose();
     } catch (err) {
       alert('Error saving: ' + err.message);
@@ -139,6 +169,47 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
                 );
               })}
             </div>
+
+            <label className="add-label">Status</label>
+            <div className="status-selector">
+              {[{ value: '', label: 'Not added', cls: '' }, { value: 'sel', label: 'Selected', cls: 'sel' }, { value: 'conf', label: 'Confirmed', cls: 'conf' }].map(opt => (
+                <button key={opt.value} type="button"
+                  className={`status-option ${opt.cls} ${form.status === opt.value ? 'active' : ''}`}
+                  onClick={() => updateForm('status', opt.value)}>
+                  {opt.value === 'conf' ? '✓' : opt.value === 'sel' ? '●' : '○'} {opt.label}
+                </button>
+              ))}
+            </div>
+            {form.status === 'conf' && (
+              <>
+                <label className="add-label">Confirmed cost</label>
+                <div className="cost-input-row" style={{ marginBottom: 8 }}>
+                  <span className="cost-input-prefix">€</span>
+                  <input type="number" className="cost-input" placeholder="0"
+                    value={form.confirmed_cost} onChange={e => updateForm('confirmed_cost', e.target.value)} />
+                </div>
+                <input className="add-input" placeholder="Expense note (optional)"
+                  value={form.expense_note} onChange={e => updateForm('expense_note', e.target.value)}
+                  style={{ marginBottom: 8 }} />
+                <label className="add-label">Attachments</label>
+                {pendingFiles.length > 0 && (
+                  <div style={{ marginBottom: 8 }}>
+                    {pendingFiles.map((f, i) => (
+                      <div key={i} className="file-chip" style={{ marginBottom: 4 }}>
+                        <span className="file-chip-name">{f.name}</span>
+                        <button type="button" className="file-remove-btn"
+                          onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}>x</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <label className="detail-upload-btn" style={{ marginBottom: 8 }}>
+                  Upload file
+                  <input type="file" accept="image/*,.pdf,.doc,.docx" className="hidden-input"
+                    onChange={e => { if (e.target.files[0]) { setPendingFiles(prev => [...prev, e.target.files[0]]); e.target.value = ''; } }} />
+                </label>
+              </>
+            )}
 
             <label className="add-label">Description</label>
             <textarea className="add-input" rows={2} value={form.desc_text} onChange={(e) => updateForm('desc_text', e.target.value)} placeholder="What is it? Why go?" />
@@ -216,7 +287,9 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
             <label className="add-label">Notes</label>
             <textarea className="add-input" rows={2} value={form.notes} onChange={(e) => updateForm('notes', e.target.value)} placeholder="Any notes..." />
 
-            <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ marginTop: 14 }}>{saving ? 'Saving...' : 'Save Item'}</button>
+            <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ marginTop: 14 }}>
+              {saving ? 'Saving...' : form.status === 'conf' && form.confirmed_cost ? 'Save & Confirm' : 'Save Item'}
+            </button>
           </div>
         </div>
       </div>
