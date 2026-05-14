@@ -179,7 +179,7 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
                     </select>
                   </div>
                   <div><label className="add-label">Rental</label>
-                    <button type="button" className={`fp ${form.is_rental ? 'fp-urgent-active' : 'fp-urgent'}`} onClick={() => updateForm('is_rental', !form.is_rental)} style={{ width: '100%' }}>
+                    <button type="button" className={`fp ${form.is_rental ? 'fp-urgent-active' : 'fp-urgent'}`} disabled style={{ width: '100%', opacity: form.transport_mode === 'rental' ? 1 : 0.5 }}>
                       {form.is_rental ? 'Yes — booking' : 'No — route'}
                     </button>
                   </div>

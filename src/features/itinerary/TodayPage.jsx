@@ -40,6 +40,13 @@ export default function TodayPage() {
   const isDateActive = (date) => view !== 'overview' && view.type === 'date' && view.date === date;
 
   useEffect(() => {
+    if (stops.length > 0 && view === 'overview') {
+      const idx = getTodayDayIndex(stops);
+      if (idx !== null) setView({ type: 'stop', idx });
+    }
+  }, [stops.length]); // only run when stops first load
+
+  useEffect(() => {
     if (selectorRef.current && view !== 'overview') {
       const sel = selectorRef.current.querySelector('[data-active="true"]');
       if (sel) sel.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });

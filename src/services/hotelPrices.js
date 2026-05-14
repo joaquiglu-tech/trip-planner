@@ -1,4 +1,4 @@
-const XOTELO_BASE = 'https://data.xotelo.com/api/rates';
+const XOTELO_BASE = '/api/xotelo';
 
 // Fetch live hotel prices from Xotelo (pulls from Booking.com, Expedia, Agoda, etc.)
 export async function fetchHotelPrice(xoteloKey, checkIn, checkOut) {

@@ -5,7 +5,7 @@ import { formatStopDate, calcNights, formatRelativeTime, getStay, getStopStats }
 
 export default function OverviewView({ items, stops, expenses, onItemTap, onDaySelect }) {
   const daysLeft = useMemo(() => {
-    if (!stops.length) return 0;
+    if (!stops || !stops.length) return 0;
     return Math.ceil((new Date(stops[0].start_date) - new Date()) / 86400000);
   }, [stops]);
 
@@ -30,6 +30,15 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
       .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
       .slice(0, 8),
   [items]);
+
+  if (!stops || stops.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-title">No stops yet</div>
+        <div className="empty-state-text">Add your first destination to start planning</div>
+      </div>
+    );
+  }
 
   return (
     <>

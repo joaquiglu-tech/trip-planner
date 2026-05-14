@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { $f } from '../hooks/useItems';
+import { useConfirm } from '../hooks/useConfirm';
+import ConfirmModal from './ConfirmModal';
 
 // Shared expense card — used from BudgetPage and DetailModal
 // mode: 'edit' (existing expense) or 'create' (new expense for an item)
 export default function ExpenseCard({ expense, item, stops, onClose, onViewItem, addExpense, updateExpense, deleteExpense, setStatus, email }) {
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
   const isNew = !expense;
   const [amountInput, setAmountInput] = useState(expense ? String(Number(expense.amount)) : '');
   const [saving, setSaving] = useState(false);
@@ -32,14 +35,14 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
 
   async function handleDelete() {
     if (!expense) return;
-    if (confirm('Delete this expense? This cannot be undone.')) {
-      try {
-        await deleteExpense(expense.id);
-        onClose();
-      } catch (err) {
-        console.warn('ExpenseCard delete failed:', err);
-        setError('Failed to delete. Please try again.');
-      }
+    const confirmed = await confirm('Delete this expense? This cannot be undone.', { destructive: true, confirmLabel: 'Delete' });
+    if (!confirmed) return;
+    try {
+      await deleteExpense(expense.id);
+      onClose();
+    } catch (err) {
+      console.warn('ExpenseCard delete failed:', err);
+      setError('Failed to delete. Please try again.');
     }
   }
 
@@ -109,6 +112,7 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
           <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : isNew ? 'Add Expense' : 'Save'}</button>
         </div>
       </div>
+      <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </div>
   );
 }

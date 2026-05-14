@@ -110,12 +110,12 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 
 /* Summary */
 .summary-card { background: var(--summary-bg); color: #fff; cursor: pointer }
-.summary-label { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; letter-spacing: .05em }
+.summary-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: .05em }
 .summary-val { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums }
 .summary-val.accent { color: var(--accent-bright) }
 .summary-val.green { color: var(--green-bright) }
 .breakdown-grid { margin-top: 8px; background: rgba(255,255,255,.05); border-radius: var(--radius); overflow: hidden }
-.bd-row { display: flex; justify-content: space-between; padding: 6px 10px; font-size: 12px; color: #888; border-bottom: 1px solid rgba(255,255,255,.05) }
+.bd-row { display: flex; justify-content: space-between; padding: 6px 10px; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,.05) }
 .bd-row:last-child { border-bottom: none }
 .bd-row.bd-total { font-weight: 800; color: var(--accent-bright); font-size: 13px }
 
@@ -349,20 +349,20 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .budget-summary { background: var(--summary-bg); color: #fff; border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; width: 100% }
 .summary-breakdown { margin-top: 10px; background: rgba(255,255,255,.06); border-radius: var(--radius); overflow: hidden }
 .summary-bd-header, .summary-bd-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 4px; padding: 6px 10px; align-items: center }
-.summary-bd-header { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666 }
+.summary-bd-header { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted) }
 .summary-bd-header span:nth-child(2), .summary-bd-header span:nth-child(3) { text-align: right }
 .summary-bd-row { font-size: 12px; border-top: 1px solid rgba(255,255,255,.05) }
-.summary-bd-label { color: #999 }
+.summary-bd-label { color: var(--text-muted) }
 .summary-bd-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600 }
 .summary-bd-val.conf { color: var(--green-bright) }
 .summary-bd-total { font-weight: 700; border-top: 1px solid rgba(255,255,255,.15) }
 .summary-bd-total .summary-bd-label { color: #ccc }
 .summary-bd-total .summary-bd-val { color: var(--accent-bright) }
 .budget-row-main { display: flex; justify-content: space-around; text-align: center }
-.budget-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #888 }
+.budget-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted) }
 .budget-amount { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px }
 .budget-amount.green { color: var(--green-bright) }
-.budget-meta { text-align: center; font-size: 10px; color: #666; margin-top: 6px }
+.budget-meta { text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 6px }
 .budget-filters { display: flex; gap: 4px; margin-bottom: 10px; overflow-x: auto; scrollbar-width: none }
 .budget-filters::-webkit-scrollbar { display: none }
 .budget-list { display: flex; flex-direction: column; gap: 4px }
@@ -578,3 +578,9 @@ hr.sep { border: none; border-top: 1px solid var(--border-light); margin: 8px 0 
 .itin-recent-action { color: var(--text-muted); flex-shrink: 0 }
 .itin-recent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500 }
 .itin-recent-time { color: var(--text-light); font-size: 10px; flex-shrink: 0 }
+
+/* ═══ CONFIRM MODAL ═══ */
+.confirm-sheet { background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px; max-width: 340px; margin: auto; margin-top: 30vh; }
+.confirm-message { font-size: 14px; color: var(--text); margin: 0 0 20px; line-height: 1.5; }
+.confirm-actions { display: flex; gap: 8px; }
+.confirm-actions .detail-btn { flex: 1; }

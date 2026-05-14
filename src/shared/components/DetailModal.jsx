@@ -3,6 +3,8 @@ import { $f } from '../hooks/useItems';
 import { useTripData } from '../hooks/TripContext';
 import { uploadFile, deleteFile } from '../../services/storage';
 import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
+import { useConfirm } from '../hooks/useConfirm';
+import ConfirmModal from './ConfirmModal';
 import PlaceSearch from './PlaceSearch';
 import ExpenseCard from './ExpenseCard';
 
@@ -44,6 +46,7 @@ function formatDatetime(dt) {
 
 export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, itemExpenses, addExpense, updateExpense, deleteExpense, stops }) {
   const { email } = useTripData();
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
   const [showExpenseCard, setShowExpenseCard] = useState(false);
@@ -129,7 +132,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                       if (navigator.vibrate) navigator.vibrate(15);
                       if (opt.value === 'conf' && st !== 'conf') { setStatus(it.id, 'conf'); setShowExpenseCard(true); return; }
                       if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) {
-                        if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`)) return;
+                        const confirmed = await confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`, { destructive: true, confirmLabel: 'Continue' });
+                        if (!confirmed) return;
                         if (itemExpenses?.length > 0) {
                           let failed = false;
                           for (const exp of itemExpenses) {
@@ -215,14 +219,14 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
             </div>
           )}
           {(st === 'sel' || st === 'conf') && (
-            <div className="detail-upload-row"><label className="detail-upload-btn">{uploading ? 'Uploading...' : `Upload ${itemFiles.length > 0 ? 'another ' : ''}file`}<input type="file" accept="*/*" style={{ display: 'none' }} onChange={handleUpload} /></label></div>
+            <div className="detail-upload-row"><label className="detail-upload-btn">{uploading ? 'Uploading...' : `Upload ${itemFiles.length > 0 ? 'another ' : ''}file`}<input type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleUpload} /></label></div>
           )}
         </div>
 
         <div className="detail-edit-actions">
           <button className="detail-btn sel" onClick={() => setEditing(true)} style={{ flex: 1 }}>Edit</button>
         </div>
-        {onDelete && (<div style={{ padding: '0 16px 16px' }}><button className="detail-btn-delete" onClick={() => { if (confirm('Delete this item permanently? This cannot be undone.')) onDelete(); }}>Delete permanently</button></div>)}
+        {onDelete && (<div style={{ padding: '0 16px 16px' }}><button className="detail-btn-delete" onClick={async () => { const confirmed = await confirm('Delete this item permanently? This cannot be undone.', { destructive: true, confirmLabel: 'Delete' }); if (confirmed) onDelete(); }}>Delete permanently</button></div>)}
       </div>
 
       {/* ExpenseCard overlay — opened from PricingBlock or confirm flow */}
@@ -235,12 +239,14 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           email={email}
         />
       )}
+      <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </div>
   );
 }
 
 // ═══ EDIT MODE — batch save ═══
 function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpenseClick, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile }) {
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
   const [draft, setDraft] = useState({
     name: it.name || '', type: it.type || 'food',
     description: it.description || '', dish: it.dish || '', link: it.link || '',
@@ -286,7 +292,8 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
     if (Number(it.estimated_cost) !== Number(baseItem.estimated_cost)) conflicts.push('estimated cost');
     if (JSON.stringify(it.stop_ids) !== JSON.stringify(baseItem.stop_ids)) conflicts.push('stops');
     if (conflicts.length > 0) {
-      if (!confirm(`This item was updated by someone else (${conflicts.join(', ')} changed). Save anyway?`)) return;
+      const confirmed = await confirm(`This item was updated by someone else (${conflicts.join(', ')} changed). Save anyway?`, { confirmLabel: 'Save anyway' });
+      if (!confirmed) return;
     }
 
     setSaving(true);
@@ -404,7 +411,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
                   </select>
                 </div>
                 <div><label className="edit-label">Rental</label>
-                  <button className={`fp ${draft.is_rental ? 'fp-urgent-active' : 'fp-urgent'}`} onClick={() => u('is_rental', !draft.is_rental)} style={{ width: '100%' }}>
+                  <button className={`fp ${draft.is_rental ? 'fp-urgent-active' : 'fp-urgent'}`} disabled style={{ width: '100%', opacity: draft.transport_mode === 'rental' ? 1 : 0.5 }}>
                     {draft.is_rental ? 'Yes — booking' : 'No — route'}
                   </button>
                 </div>
@@ -460,7 +467,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
           <div className="detail-upload-row">
             <label className="detail-upload-btn">
               {uploading ? 'Uploading...' : `Upload ${(itemFiles || []).length > 0 ? 'another ' : ''}file`}
-              <input type="file" accept="*/*" style={{ display: 'none' }} onChange={handleUpload} />
+              <input type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleUpload} />
             </label>
           </div>
 
@@ -471,6 +478,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
           <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
         </div>
       </div>
+      <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
     </div>
   );
 }

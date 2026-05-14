@@ -18,10 +18,12 @@ export default function ProfilePage({ session }) {
 
   async function handleSave() {
     setSaving(true);
-    await supabase.auth.updateUser({ data: { display_name: displayName } });
+    const { error } = await supabase.auth.updateUser({ data: { display_name: displayName } });
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    if (!error) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
   }
 
   async function handleSignOut() {
