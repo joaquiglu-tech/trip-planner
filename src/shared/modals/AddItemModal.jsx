@@ -26,10 +26,24 @@ const EMPTY_FORM = { name: '', type: 'food', stop_ids: [], desc_text: '', dish: 
   link: '', estimated_cost: '', notes: '', tripadvisor_url: '', xotelo_key: '',
   status: 'sel', confirmed_cost: '', expense_note: '' };
 
-export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stops, userEmail }) {
+export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stops, userEmail, defaultStopId }) {
   const trapRef = useFocusTrap();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState(() => {
+    const base = { ...EMPTY_FORM };
+    if (defaultStopId) {
+      const stop = (stops || []).find(s => s.id === defaultStopId);
+      if (stop) {
+        base.stop_ids = [defaultStopId];
+        const dateStr = String(stop.start_date).substring(0, 10);
+        if (dateStr && dateStr !== 'undefined') {
+          base.start_time = `${dateStr}T10:00`;
+          base.end_time = `${dateStr}T11:00`;
+        }
+      }
+    }
+    return base;
+  });
   const [pendingFiles, setPendingFiles] = useState([]);
   const [xoteloStatus, setXoteloStatus] = useState(''); // '' | 'searching' | 'found' | 'not_found'
 
