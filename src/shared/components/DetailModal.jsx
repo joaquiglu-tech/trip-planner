@@ -108,7 +108,6 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   return (
     <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Item details">
       <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="detail-handle" />
         <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
 
         {/* Photos */}
@@ -327,7 +326,6 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
   return (
     <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Edit item">
       <div className="detail-sheet">
-        <div className="detail-handle" />
         <div className="detail-action-top">
           <div style={{ fontSize: 14, fontWeight: 700 }}>Edit {it.name}</div>
         </div>

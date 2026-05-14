@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTrip } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
 import OverviewView from './OverviewView';
@@ -22,6 +22,7 @@ export default function TodayPage({ active }) {
   const selectorRef = useRef(null);
   const calendarDates = useMemo(() => getCalendarDates(stops), [stops]);
   const todayDateStr = new Date().toISOString().split('T')[0];
+  const handleCloseDetail = useCallback(() => setSelectedItem(null), []);
 
   // Resolve which stops to display based on view
   const activeStops = useMemo(() => {
@@ -116,7 +117,7 @@ export default function TodayPage({ active }) {
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
           expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
-          onClose={() => setSelectedItem(null)}
+          onClose={handleCloseDetail}
           onDelete={liveItem.created_by ? () => { deleteItem(liveItem.id); setSelectedItem(null); } : null}
         />;
       })()}

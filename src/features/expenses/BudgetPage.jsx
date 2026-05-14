@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { $f, itemCost } from '../../shared/hooks/useItems';
 import { useTrip } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
@@ -9,6 +9,7 @@ export default function BudgetPage({ active }) {
   const { items, stops, livePrices, expenses, updateItem, deleteItem, setStatus, addExpense, updateExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData } = useTrip();
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
+  const handleCloseDetail = useCallback(() => setSelectedItem(null), []);
 
   const confirmedExpenses = useMemo(() => {
     return (expenses || []).filter(e => e.item_id).map(e => {
@@ -132,7 +133,7 @@ export default function BudgetPage({ active }) {
           livePrice={livePrices?.[selectedItem.id]?.perNight}
           livePriceRates={livePrices?.[selectedItem.id]?.allRates}
           expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
-          onClose={() => setSelectedItem(null)}
+          onClose={handleCloseDetail}
           onDelete={liveItem.created_by ? () => { deleteItem(liveItem.id); setSelectedItem(null); } : null}
         />;
       })()}

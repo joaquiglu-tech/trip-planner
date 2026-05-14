@@ -49,7 +49,6 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
   return (
     <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Expense">
       <div className="detail-sheet" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-        <div className="detail-handle" />
         <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
         <div className="detail-content">
           <div className="detail-section-title">{isNew ? 'New Expense' : 'Expense'}</div>

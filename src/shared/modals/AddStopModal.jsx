@@ -11,6 +11,18 @@ export default function AddStopModal({ onAdd, onClose }) {
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef(null);
 
+  useEffect(() => {
+    window.history.pushState({ modal: true }, '', '');
+    function handlePop() { onClose(); }
+    function handleKey(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('popstate', handlePop);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('popstate', handlePop);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [onClose]);
+
   // Debounced Google Places search
   useEffect(() => {
     if (!query.trim() || query.length < 2) { setResults([]); return; }

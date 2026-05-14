@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { itemCost } from '../../shared/hooks/useItems';
 import { useTrip } from '../../shared/hooks/TripContext';
 import FilterBar from './FilterBar';
@@ -23,6 +23,7 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const handleCloseDetail = useCallback(() => setSelectedItem(null), []);
   const [sortBy, setSortBy] = useState('default');
 
   // Parse sort value into field + direction
@@ -134,7 +135,7 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
           expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
-          onClose={() => setSelectedItem(null)}
+          onClose={handleCloseDetail}
           onDelete={selectedItem.created_by ? () => { deleteItem(selectedItem.id); setSelectedItem(null); } : null}
         />;
       })()}

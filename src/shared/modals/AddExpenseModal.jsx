@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { $f } from '../hooks/useItems';
 
 export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmail }) {
@@ -8,6 +8,18 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    window.history.pushState({ modal: true }, '', '');
+    function handlePop() { onClose(); }
+    function handleKey(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('popstate', handlePop);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('popstate', handlePop);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [onClose]);
 
   // Items that can have expenses — selected or confirmed
   const availableItems = useMemo(() => {
