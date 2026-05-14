@@ -129,7 +129,7 @@ button:focus-visible, [role="button"]:focus-visible, a:focus-visible, input:focu
 /* ═══ APP SHELL ═══ */
 .app-shell { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden }
 @media(min-width:960px) { .app-shell { overflow: auto } }
-.page-container { flex: 1; position: relative; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 56px; max-width: 1200px; width: 100%; margin: 0 auto }
+.page-container { flex: 1; position: relative; overflow: hidden; padding-bottom: 56px; max-width: 1200px; width: 100%; margin: 0 auto }
 @media(min-width:960px) { .page-container { overflow-y: auto; overflow-x: hidden } }
 .loading-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); font-size: var(--text-base); color: var(--text-muted) }
 .error-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); color: var(--text); text-align: center; padding: 24px }
@@ -156,7 +156,7 @@ button:focus-visible, [role="button"]:focus-visible, a:focus-visible, input:focu
 .btab-label { font-size: 11px; font-weight: 600 }
 
 /* ═══ PAGES ═══ */
-.page { display: none; padding: 16px; padding-bottom: 24px; min-height: 100%; overflow: visible }
+.page { display: none; padding: 16px; padding-bottom: 24px; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain }
 .page.active { display: block }
 @media(min-width:768px) { .page { padding: 24px 32px } }
 @media(min-width:1200px) { .page { padding: 24px 48px } }
