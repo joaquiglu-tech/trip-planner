@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { toDateStr, formatStopDate, calcNights, itemInStop, getStay } from './utils';
+import { toDateStr, formatStopDate, calcNights, itemInStop, getStay, detectConflicts } from './utils';
 import { DayMap } from './MapComponents';
 import ScheduleList from './ScheduleList';
 import PlanSection from './PlanSection';
@@ -82,6 +82,11 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
     return allStopItems.filter(it => it.status === statusFilter);
   }, [allStopItems, statusFilter]);
 
+  const conflicts = useMemo(() => {
+    const { itemConflicts } = detectConflicts(items, [stop]);
+    return itemConflicts.filter(c => c.stopId === stop.id);
+  }, [items, stop]);
+
   return (
     <div className={showTitle ? 'stop-section' : ''}>
       {showTitle && <div className="stop-section-title">{stop.name}</div>}
@@ -129,6 +134,13 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
           </div>
         )}
       </div>
+      {conflicts.length > 0 && (
+        <div className="conflict-banner">
+          {conflicts.map((c, i) => (
+            <div key={i} className="conflict-item">Time overlap: {c.item1.name} and {c.item2.name}</div>
+          ))}
+        </div>
+      )}
       <div className="itin-map-schedule">
         <div className="itin-map-col">
           <div className="itin-col-header">
@@ -160,7 +172,7 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
       {tips && (<details className="today-section"><summary className="today-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>Travel tips</summary><ul className="detail-tips" style={{ marginTop: 6 }}>{tips.map((t, i) => <li key={i}>{t}</li>)}</ul></details>)}
       <PlanSection planItems={planItems} onItemTap={onItemTap} livePrices={livePrices} expenseMap={expenseMap} />
       {addItem && (<button className="itin-add-item-btn" onClick={() => setShowAddItem(true)}>+ Add item to {stop.name}</button>)}
-      {showAddItem && (<AddItemModal onClose={() => setShowAddItem(false)} onAdd={(data) => addItem({ ...data, stop_ids: [stop.id] })} stops={stops} userEmail="" />)}
+      {showAddItem && (<AddItemModal onClose={() => setShowAddItem(false)} onAdd={(data) => addItem({ ...data, stop_ids: data.stop_ids?.length ? data.stop_ids : [stop.id] })} stops={stops} userEmail="" defaultStopId={stop.id} />)}
     </div>
   );
 }
