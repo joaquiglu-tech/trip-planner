@@ -106,7 +106,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
     return <EditMode it={it} stops={stops} livePrice={livePrice} livePriceRates={livePriceRates}
       expenseAmount={expenseAmount} onExpenseClick={() => { setEditing(false); setShowExpenseCard(true); }}
       updateItem={updateItem} onClose={() => setEditing(false)} showSaved={showSaved} saved={saved}
-      itemFiles={itemFiles} uploading={uploading} handleUpload={handleUpload} handleRemoveFile={handleRemoveFile} />;
+      itemFiles={itemFiles} uploading={uploading} handleUpload={handleUpload} handleRemoveFile={handleRemoveFile}
+      setStatus={setStatus} status={st} itemExpenses={itemExpenses} deleteExpense={deleteExpense} />;
   }
 
   // ═══ SUMMARY MODE — populated fields + read-only API data ═══
@@ -247,7 +248,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 }
 
 // ═══ EDIT MODE — batch save ═══
-function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpenseClick, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile }) {
+function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpenseClick, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile, setStatus, status, itemExpenses, deleteExpense }) {
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
   const trapRef = useFocusTrap();
   const [draft, setDraft] = useState({
@@ -353,6 +354,29 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
         </div>
         <div className="detail-content">
           {saved && <div className="detail-saved">{saved}</div>}
+
+          {/* Status — saves immediately, not batched */}
+          {setStatus && (
+            <div className="status-selector" style={{ margin: '12px 0' }}>
+              {[{ value: '', label: 'Not added', cls: '' }, { value: 'sel', label: 'Selected', cls: 'sel' }, { value: 'conf', label: 'Confirmed', cls: 'conf' }].map(opt => (
+                <button key={opt.value} className={`status-option ${opt.cls} ${(status || '') === opt.value ? 'active' : ''}`}
+                  onClick={async () => {
+                    if (opt.value === (status || '')) return;
+                    if (navigator.vibrate) navigator.vibrate(15);
+                    if ((status || '') === 'conf' && opt.value !== 'conf' && expenseAmount > 0) {
+                      if (itemExpenses?.length > 0) {
+                        for (const exp of itemExpenses) {
+                          try { await deleteExpense(exp.id); } catch (err) { console.warn('Failed to delete expense:', err); }
+                        }
+                      }
+                    }
+                    setStatus(it.id, opt.value);
+                  }}>
+                  {opt.value === 'conf' ? '\u2713' : opt.value === 'sel' ? '\u25CF' : '\u25CB'} {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Basic */}
           <div className="edit-section-title">Basic Info</div>

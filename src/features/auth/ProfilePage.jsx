@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useSettings } from '../../shared/hooks/useSettings';
 
-export default function ProfilePage({ session }) {
+export default function ProfilePage({ session, onBack }) {
   const { darkMode, setDarkMode } = useSettings();
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -32,6 +32,11 @@ export default function ProfilePage({ session }) {
 
   return (
     <div id="page-profile" className="page active">
+      {onBack && (
+        <button className="profile-back-btn" onClick={onBack}>
+          <span aria-hidden="true">&larr;</span> Back
+        </button>
+      )}
       <div className="card">
         <div className="card-hd">Profile</div>
         <div className="card-bd" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 24 }}>

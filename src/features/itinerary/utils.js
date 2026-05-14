@@ -90,6 +90,42 @@ export function getStopStats(stop, items) {
   return { stayBooked, staySelected, hasTransport: transports.length > 0, transportBooked, actSelected, actTotal: activities.length, foodSelected, foodTotal: food.length, status, hasStays: stays.length > 0 };
 }
 
+export function detectConflicts(items, stops) {
+  const stopConflicts = [];
+  const itemConflicts = [];
+  for (let i = 0; i < stops.length; i++) {
+    for (let j = i + 1; j < stops.length; j++) {
+      const aStart = toDateStr(stops[i].start_date);
+      const aEnd = toDateStr(stops[i].end_date);
+      const bStart = toDateStr(stops[j].start_date);
+      const bEnd = toDateStr(stops[j].end_date);
+      if (aStart && aEnd && bStart && bEnd && aStart <= bEnd && bStart <= aEnd) {
+        stopConflicts.push({ stop1: stops[i], stop2: stops[j] });
+      }
+    }
+  }
+  const itemsByStop = {};
+  items.forEach(it => {
+    if (!it.start_time || !it.end_time) return;
+    if (it.status !== 'sel' && it.status !== 'conf') return;
+    (it.stop_ids || []).forEach(sid => {
+      if (!itemsByStop[sid]) itemsByStop[sid] = [];
+      itemsByStop[sid].push(it);
+    });
+  });
+  Object.entries(itemsByStop).forEach(([stopId, stopItems]) => {
+    for (let i = 0; i < stopItems.length; i++) {
+      for (let j = i + 1; j < stopItems.length; j++) {
+        const a = stopItems[i], b = stopItems[j];
+        if (a.start_time < b.end_time && b.start_time < a.end_time) {
+          itemConflicts.push({ item1: a, item2: b, stopId });
+        }
+      }
+    }
+  });
+  return { stopConflicts, itemConflicts };
+}
+
 export function getCalendarDates(stops) {
   if (!stops.length) return [];
   const startStr = toDateStr(stops[0].start_date);
