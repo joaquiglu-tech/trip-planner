@@ -344,8 +344,9 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
   return (
     <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Edit item">
       <div className="detail-sheet">
-        <div className="detail-action-top">
+        <div className="detail-action-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 14, fontWeight: 700 }}>Edit {it.name}</div>
+          <button className="detail-close" onClick={onClose} aria-label="Cancel edit">✕</button>
         </div>
         <div className="detail-content">
           {saved && <div className="detail-saved">{saved}</div>}

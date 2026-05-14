@@ -11,7 +11,7 @@ const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity',
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];
 
 export default function SelectPage({ filterCity, clearFilterCity }) {
-  const { items, livePrices, expenses, email: userEmail, stops, files, places } = useTripData();
+  const { items, livePrices, expenses, expenseMap, email: userEmail, stops, files, places } = useTripData();
   const { updateItem, setStatus, addItem, deleteItem, addExpense, updateExpense, setFile, removeFile, getPlaceData } = useTripActions();
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', search: '' });
 
@@ -30,12 +30,6 @@ export default function SelectPage({ filterCity, clearFilterCity }) {
   // Parse sort value into field + direction
   const sortField = sortBy.includes('-') ? sortBy.split('-')[0] : sortBy;
   const sortDir = sortBy.includes('-desc') ? 'desc' : 'asc';
-
-  const expenseMap = useMemo(() => {
-    const map = {};
-    (expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
-    return map;
-  }, [expenses]);
 
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase();

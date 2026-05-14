@@ -55,6 +55,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0 }
 body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased }
+button:focus-visible, [role="button"]:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex="0"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* ═══ UTILITIES ═══ */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0 }
@@ -62,6 +66,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 @keyframes shimmer { 0% { background-position: 100% 50% } 100% { background-position: 0% 50% } }
 @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
 @keyframes sheet-up { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@keyframes sheet-down { from { transform: translateY(0); opacity: 1 } to { transform: translateY(100%); opacity: 0 } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important } }
 

@@ -67,14 +67,17 @@ function AppShell({ session }) {
 
   return (
     <div className="app-shell">
+      <a href="#main-content" className="sr-only" style={{ position: 'absolute', top: -9999 }} onFocus={e => e.target.style.top = '0'}>Skip to content</a>
       <TopBar items={items} stops={stops} session={session} onProfileClick={() => navigateTab('profile')} />
       {!online && <div className="offline-banner">You're offline — changes won't save until you reconnect</div>}
+      <main id="main-content">
       <div className="page-container">
         {activeTab === 'plan' && <SelectPage filterCity={filterCity} clearFilterCity={() => setFilterCity(null)} />}
         {activeTab === 'expenses' && <BudgetPage />}
         {activeTab === 'itinerary' && <TodayPage />}
         {isProfile && <ProfilePage session={session} />}
       </div>
+      </main>
       <Toast message={toast} />
 
       {!isProfile && (

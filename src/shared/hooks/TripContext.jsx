@@ -26,6 +26,13 @@ export function TripProvider({ email, children }) {
     expensesHook.retry();
   }, [itemsHook.retry, stopsHook.retry, expensesHook.retry]);
 
+  // Memoized expense-per-item lookup — used by multiple pages
+  const expenseMap = useMemo(() => {
+    const map = {};
+    (expensesHook.expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
+    return map;
+  }, [expensesHook.expenses]);
+
   // Data changes frequently — items, expenses, prices update via realtime
   const data = useMemo(() => ({
     items: itemsHook.items,
@@ -39,8 +46,9 @@ export function TripProvider({ email, children }) {
     stopsLoaded: stopsHook.loaded,
     places,
     expenses: expensesHook.expenses,
+    expenseMap,
     email,
-  }), [itemsHook.items, itemsHook.loaded, dataError, retryAll, files, livePrices, toast, stopsHook.stops, stopsHook.loaded, places, expensesHook.expenses, email]);
+  }), [itemsHook.items, itemsHook.loaded, dataError, retryAll, files, livePrices, toast, stopsHook.stops, stopsHook.loaded, places, expensesHook.expenses, expenseMap, email]);
 
   // Actions are stable callbacks — rarely change
   const actions = useMemo(() => ({

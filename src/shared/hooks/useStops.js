@@ -103,7 +103,7 @@ export function useStops() {
 
   const addStop = useCallback(async (stopData) => {
     const newStop = {
-      id: `stop-${stopData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`,
+      id: crypto.randomUUID(),
       name: stopData.name,
       start_date: stopData.start_date,
       end_date: stopData.end_date,

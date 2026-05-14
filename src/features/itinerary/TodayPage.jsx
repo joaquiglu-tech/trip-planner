@@ -7,13 +7,8 @@ import StatusFilter from './StatusFilter';
 import { toDateStr, formatStopDate, getTodayDayIndex, getCalendarDates } from './utils';
 
 export default function TodayPage() {
-  const { items, stops, livePrices, expenses, files, places } = useTripData();
+  const { items, stops, livePrices, expenses, files, places, expenseMap } = useTripData();
   const { updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, setFile, removeFile, getPlaceData } = useTripActions();
-  const expenseMap = useMemo(() => {
-    const map = {};
-    (expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
-    return map;
-  }, [expenses]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');
