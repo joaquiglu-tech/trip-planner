@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { $f } from '../hooks/useItems';
 import { useTripData } from '../hooks/TripContext';
 import { uploadFile, deleteFile } from '../../services/storage';
@@ -47,6 +48,7 @@ function formatDatetime(dt) {
 export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, itemExpenses, addExpense, updateExpense, deleteExpense, stops }) {
   const { email } = useTripData();
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
+  const trapRef = useFocusTrap();
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
   const [showExpenseCard, setShowExpenseCard] = useState(false);
@@ -110,7 +112,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   // ═══ SUMMARY MODE — populated fields + read-only API data ═══
   return (
     <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Item details">
-      <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="detail-sheet" ref={trapRef} onClick={(e) => e.stopPropagation()}>
         <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
 
         {/* Photos */}
@@ -122,8 +124,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 
         {/* Status selector — saves immediately */}
         <div className="detail-action-top">
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
+          <div className="flex-center gap-2">
+            <div className="flex-1">
               <div className="status-selector">
                 {[{ value: '', label: 'Not added', cls: '' }, { value: 'sel', label: 'Selected', cls: 'sel' }, { value: 'conf', label: 'Confirmed', cls: 'conf' }].map(opt => (
                   <button key={opt.value} className={`status-option ${opt.cls} ${st === opt.value ? 'active' : ''}`}
@@ -159,8 +161,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           <div className="detail-badges">
             <span className={`badge b-${it.type}`}>{TYPE_LABEL[it.type] || it.type}</span>
             {it.city && <span className="badge b-city">{it.city}</span>}
-            {googleRating && <span className="badge" style={{ background: 'var(--badge-rating-bg)', color: 'var(--badge-rating-text)' }}>Rating {googleRating}</span>}
-            {priceLvl && <span className="badge" style={{ background: 'var(--badge-price-bg)', color: 'var(--badge-price-text)' }}>{priceLvl}</span>}
+            {googleRating && <span className="badge badge-rating">Rating {googleRating}</span>}
+            {priceLvl && <span className="badge badge-price">{priceLvl}</span>}
             {it.subcat && SUBCAT_BADGE[it.subcat] && <span className="badge">{SUBCAT_BADGE[it.subcat]}</span>}
             {it.tier && <span className="badge b-bar">{it.tier}</span>}
             {it.transport_mode && <span className="badge">{TRANSPORT_ICON[it.transport_mode] || ''} {TRANSPORT_MODES.find(m => m.value === it.transport_mode)?.label}</span>}
@@ -178,12 +180,12 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           {it.type === 'food' && it.dish && (<div className="detail-dish-block"><span className="detail-dish-label">What to order</span><span className="detail-dish-text">{it.dish}</span></div>)}
           {it.type === 'transport' && (it.routeLabel || it.route) && (<div className="detail-times-bar"><span className="detail-route">{it.routeLabel || it.route}</span></div>)}
           {(it.start_time || it.end_time) && (<div className="detail-times-bar">{it.start_time && <span className="detail-time">Start: {formatDatetime(it.start_time)}</span>}{it.end_time && <span className="detail-time">End: {formatDatetime(it.end_time)}</span>}</div>)}
-          {it.type === 'activity' && it.hrs && <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>Duration: {it.hrs}h</div>}
+          {it.type === 'activity' && it.hrs && <div className="detail-duration">Duration: {it.hrs}h</div>}
           {it.highlights && <ul className="detail-tips">{it.highlights.map((h, i) => <li key={i}>{h}</li>)}</ul>}
           {it.type === 'food' && it.quote && (<blockquote className="detail-quote">"{it.quote}"{it.quoteSource && <cite>— {it.quoteSource}</cite>}</blockquote>)}
-          {(it.whatToExpect || it.proTips) && (<details className="detail-section detail-collapsible"><summary className="detail-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>More details</summary>
-            {it.whatToExpect && <ul className="detail-tips" style={{ marginTop: 6 }}>{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>}
-            {it.proTips && <ul className="detail-tips" style={{ marginTop: 6 }}>{it.proTips.map((t, i) => <li key={i}>{t}</li>)}</ul>}
+          {(it.whatToExpect || it.proTips) && (<details className="detail-section detail-collapsible"><summary className="detail-section-title detail-collapsible-summary">More details</summary>
+            {it.whatToExpect && <ul className="detail-tips mt-2">{it.whatToExpect.map((w, i) => <li key={i}>{w}</li>)}</ul>}
+            {it.proTips && <ul className="detail-tips mt-2">{it.proTips.map((t, i) => <li key={i}>{t}</li>)}</ul>}
           </details>)}
           {it.reserveNote && <div className="detail-reserve-note">{it.reserveNote}</div>}
 
@@ -208,23 +210,23 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           )}
 
           {/* ═══ LINKS ═══ */}
-          {it.link && (<div style={{ marginTop: 8 }}><a href={it.link} target="_blank" rel="noopener" className="detail-book-link">{faviconUrl && <img src={faviconUrl} alt="" className="detail-favicon" />}<span>Book / Reserve</span></a></div>)}
+          {it.link && (<div className="mt-3"><a href={it.link} target="_blank" rel="noopener" className="detail-book-link">{faviconUrl && <img src={faviconUrl} alt="" className="detail-favicon" />}<span>Book / Reserve</span></a></div>)}
           {it.src && <div className="detail-source-block"><span className="detail-source-label">Recommended by</span><div className="detail-source-val">{it.src}</div></div>}
-          {it.notes && (<div className="detail-section" style={{ marginTop: 8 }}><div className="detail-section-title">Notes</div><p style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{it.notes}</p></div>)}
+          {it.notes && (<div className="detail-section mt-3"><div className="detail-section-title">Notes</div><p className="text-sm2 text-secondary whitespace-pre">{it.notes}</p></div>)}
 
           {/* Files */}
           {itemFiles.length > 0 && (
             <div className="detail-section"><div className="detail-section-title">Attachments ({itemFiles.length})</div>
-              {itemFiles.map((f, i) => (<div key={i} className="file-chip" style={{ marginBottom: 4 }}><span className="file-chip-name">{f.name}</span><a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: 'var(--link-blue)' }}>Open</a><button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button></div>))}
+              {itemFiles.map((f, i) => (<div key={i} className="file-chip mb-2"><span className="file-chip-name">{f.name}</span><a href={f.url} target="_blank" rel="noopener" className="file-action-link">Open</a><button onClick={() => handleRemoveFile(f.path)} className="file-remove-btn">x</button></div>))}
             </div>
           )}
           {(st === 'sel' || st === 'conf') && (
-            <div className="detail-upload-row"><label className="detail-upload-btn">{uploading ? 'Uploading...' : `Upload ${itemFiles.length > 0 ? 'another ' : ''}file`}<input type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleUpload} /></label></div>
+            <div className="detail-upload-row"><label className="detail-upload-btn">{uploading ? 'Uploading...' : `Upload ${itemFiles.length > 0 ? 'another ' : ''}file`}<input type="file" accept="image/*,.pdf,.doc,.docx" className="hidden-input" onChange={handleUpload} /></label></div>
           )}
         </div>
 
         <div className="detail-edit-actions">
-          <button className="detail-btn sel" onClick={() => setEditing(true)} style={{ flex: 1 }}>Edit</button>
+          <button className="detail-btn sel flex-1" onClick={() => setEditing(true)}>Edit</button>
         </div>
         {onDelete && (<div style={{ padding: '0 16px 16px' }}><button className="detail-btn-delete" onClick={async () => { const confirmed = await confirm('Delete this item permanently? This cannot be undone.', { destructive: true, confirmLabel: 'Delete' }); if (confirmed) onDelete(); }}>Delete permanently</button></div>)}
       </div>
@@ -247,6 +249,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 // ═══ EDIT MODE — batch save ═══
 function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpenseClick, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile }) {
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
+  const trapRef = useFocusTrap();
   const [draft, setDraft] = useState({
     name: it.name || '', type: it.type || 'food',
     description: it.description || '', dish: it.dish || '', link: it.link || '',
@@ -343,8 +346,8 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
 
   return (
     <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Edit item">
-      <div className="detail-sheet">
-        <div className="detail-action-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="detail-sheet" ref={trapRef}>
+        <div className="detail-action-top flex-between">
           <div style={{ fontSize: 14, fontWeight: 700 }}>Edit {it.name}</div>
           <button className="detail-close" onClick={onClose} aria-label="Cancel edit">✕</button>
         </div>
@@ -396,9 +399,9 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
               </select>
               <label className="edit-label">TripAdvisor link (for live prices)</label>
               <input className="edit-input" value={tripadvisorUrl} onChange={e => handleTripAdvisorUrl(e.target.value)} placeholder="Paste TripAdvisor hotel URL..." />
-              {xoteloStatus === 'searching' && <div style={{ fontSize: 11, color: 'var(--accent)', padding: '4px 0' }}>Searching for live prices...</div>}
-              {xoteloStatus === 'found' && <div style={{ fontSize: 11, color: 'var(--green)', padding: '4px 0' }}>Live prices connected{draft.xotelo_key && ` (${draft.xotelo_key})`}</div>}
-              {xoteloStatus === 'not_found' && <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '4px 0' }}>No live prices found — enter estimate manually</div>}
+              {xoteloStatus === 'searching' && <div className="xotelo-status text-accent">Searching for live prices...</div>}
+              {xoteloStatus === 'found' && <div className="xotelo-status text-green">Live prices connected{draft.xotelo_key && ` (${draft.xotelo_key})`}</div>}
+              {xoteloStatus === 'not_found' && <div className="xotelo-status text-muted">No live prices found — enter estimate manually</div>}
             </>
           )}
           {draft.type === 'transport' && (
@@ -455,12 +458,12 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
           {/* Files */}
           <div className="edit-section-title">Attachments</div>
           {(itemFiles || []).length > 0 && (
-            <div style={{ marginBottom: 8 }}>
+            <div className="mb-3">
               {itemFiles.map((f, i) => (
-                <div key={i} className="file-chip" style={{ marginBottom: 4 }}>
+                <div key={i} className="file-chip mb-2">
                   <span className="file-chip-name">{f.name}</span>
-                  <a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: 'var(--link-blue)' }}>Open</a>
-                  <button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button>
+                  <a href={f.url} target="_blank" rel="noopener" className="file-action-link">Open</a>
+                  <button onClick={() => handleRemoveFile(f.path)} className="file-remove-btn">x</button>
                 </div>
               ))}
             </div>
@@ -468,15 +471,15 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
           <div className="detail-upload-row">
             <label className="detail-upload-btn">
               {uploading ? 'Uploading...' : `Upload ${(itemFiles || []).length > 0 ? 'another ' : ''}file`}
-              <input type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleUpload} />
+              <input type="file" accept="image/*,.pdf,.doc,.docx" className="hidden-input" onChange={handleUpload} />
             </label>
           </div>
 
         </div>
         {/* Sticky Save/Cancel at bottom */}
         <div className="detail-edit-actions">
-          <button className="detail-btn" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
-          <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
+          <button className="detail-btn flex-1" onClick={onClose}>Cancel</button>
+          <button className="detail-btn sel flex-1" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
         </div>
       </div>
       <ConfirmModal state={confirmState} onConfirm={handleConfirm} onCancel={handleCancel} />
@@ -487,34 +490,34 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
 // ═══ SHARED PRICING BLOCK — used in both Summary and Edit modes ═══
 function PricingBlock({ it, livePrice, expenseAmount, onExpenseClick }) {
   return (
-    <div className="detail-section" style={{ marginTop: 12 }}>
+    <div className="detail-section mt-5">
       <div className="detail-section-title">Pricing</div>
       <div className="detail-price-display">
         {Number(it.estimated_cost) > 0 ? (
           <div className="detail-est-price">
             <span>Estimated total: <strong>{$f(it.estimated_cost)}</strong></span>
-            {it.xotelo_key && <span style={{ fontSize: 10, color: 'var(--accent)', marginLeft: 6 }}>via Xotelo</span>}
+            {it.xotelo_key && <span className="text-xs text-accent" style={{ marginLeft: 6 }}>via Xotelo</span>}
           </div>
         ) : it.xotelo_key ? (
-          <div style={{ fontSize: 12, color: 'var(--accent)' }}>Xotelo connected — price updating...</div>
+          <div className="text-sm text-accent">Xotelo connected — price updating...</div>
         ) : (
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No estimated price</div>
+          <div className="text-sm text-muted">No estimated price</div>
         )}
         {livePrice > 0 && it.type === 'stay' && (
-          <div className="detail-live-price" style={{ marginTop: 4 }}>
+          <div className="detail-live-price mt-1">
             <span className="detail-live-label">Live price</span>
             <span className="detail-live-value">{$f(livePrice)}/night</span>
           </div>
         )}
       </div>
-      <div onClick={onExpenseClick} style={{ cursor: 'pointer', marginTop: 10, padding: '10px 12px', background: 'var(--bg-card-hd)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+      <div onClick={onExpenseClick} className="expense-tap-row">
         {expenseAmount > 0 ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Confirmed cost</span>
+          <div className="flex-between">
+            <span className="text-sm text-muted">Confirmed cost</span>
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--green)' }}>{$f(expenseAmount)}</span>
           </div>
         ) : (
-          <div style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, textAlign: 'center' }}>+ Add confirmed cost</div>
+          <div className="text-sm text-accent" style={{ fontWeight: 600, textAlign: 'center' }}>+ Add confirmed cost</div>
         )}
       </div>
     </div>

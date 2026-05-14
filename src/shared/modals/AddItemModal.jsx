@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import PlaceSearch from '../components/PlaceSearch';
 import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
 
@@ -24,6 +25,7 @@ const EMPTY_FORM = { name: '', type: 'food', stop_ids: [], desc_text: '', dish: 
   link: '', estimated_cost: '', notes: '', tripadvisor_url: '', xotelo_key: '' };
 
 export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
+  const trapRef = useFocusTrap();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [xoteloStatus, setXoteloStatus] = useState(''); // '' | 'searching' | 'found' | 'not_found'
@@ -112,7 +114,7 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
 
   return (
     <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add new item" onClick={onClose}>
-      <div className="detail-sheet" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+      <div className="detail-sheet" ref={trapRef} style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
         <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">
           <h2 className="detail-name" style={{ fontSize: 18 }}>Add New Item</h2>

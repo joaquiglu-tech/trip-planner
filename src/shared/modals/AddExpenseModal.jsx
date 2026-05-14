@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { $f } from '../hooks/useItems';
 
 export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmail }) {
+  const trapRef = useFocusTrap();
   const [step, setStep] = useState('select'); // 'select' | 'amount'
   const [selectedItem, setSelectedItem] = useState(null);
   const [search, setSearch] = useState('');
@@ -52,7 +54,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
 
   return (
     <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add expense" onClick={onClose}>
-      <div className="detail-sheet" onClick={e => e.stopPropagation()}>
+      <div className="detail-sheet" ref={trapRef} onClick={e => e.stopPropagation()}>
         <div className="detail-handle" />
         <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { $f } from '../hooks/useItems';
 import { useConfirm } from '../hooks/useConfirm';
 import ConfirmModal from './ConfirmModal';
@@ -7,6 +8,7 @@ import ConfirmModal from './ConfirmModal';
 // mode: 'edit' (existing expense) or 'create' (new expense for an item)
 export default function ExpenseCard({ expense, item, stops, onClose, onViewItem, addExpense, updateExpense, deleteExpense, setStatus, email }) {
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
+  const trapRef = useFocusTrap();
   const isNew = !expense;
   const [amountInput, setAmountInput] = useState(expense ? String(Number(expense.amount)) : '');
   const [saving, setSaving] = useState(false);
@@ -51,7 +53,7 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
 
   return (
     <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Expense">
-      <div className="detail-sheet" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+      <div className="detail-sheet" ref={trapRef} style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
         <div className="detail-content">
           <div className="detail-section-title">{isNew ? 'New Expense' : 'Expense'}</div>

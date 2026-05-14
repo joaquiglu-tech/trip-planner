@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { GOOGLE_MAPS_API_KEY as API_KEY } from '../../services/supabase';
 
 export default function AddStopModal({ onAdd, onClose }) {
+  const trapRef = useFocusTrap();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -86,7 +88,7 @@ export default function AddStopModal({ onAdd, onClose }) {
 
   return (
     <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add stop" onClick={onClose}>
-      <div className="detail-sheet" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+      <div className="detail-sheet" ref={trapRef} style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
         <div className="detail-handle" />
         <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">
