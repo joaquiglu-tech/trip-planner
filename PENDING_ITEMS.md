@@ -13,5 +13,5 @@
 6. **Date preselection** — when creating/editing an item in a specific stop's context, preselect that stop's start date. End date defaults to start date + 1 hour. Also applies when creating from a stop page in itinerary.
 7. **Custom pull-to-refresh** — implement touch-event-based pull-to-refresh following Twitter/Instagram PWA pattern. Needed because the app-shell nested-scroller architecture blocks native pull-to-refresh.
 
-## Manual Actions (User)
-8. **Enable Google Directions API** — Go to Google Cloud Console → APIs & Services → Enable the Directions API for your project. The API key is already in the app, it just needs the Directions API enabled. This fixes 6 console errors on transport route rendering.
+### Investigate
+8. **Google Directions API still failing** — The API is enabled in Google Cloud Console but transport route rendering still shows errors. Investigate: check API key restrictions (HTTP referrer, API restrictions list), verify the Directions API is enabled for the correct project, test with a direct API call. The key is `AIzaSyD7cRriZQE319Gx9x84_HUSD_M9YNbHDWA`.
