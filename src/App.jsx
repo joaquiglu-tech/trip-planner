@@ -32,7 +32,7 @@ export default function App() {
 }
 
 function AppShell({ session }) {
-  const { items, loaded, stops, stopsLoaded, dataError, retryAll, toast, addItem, addStop, addExpense, expenses, email } = useTrip();
+  const { items, loaded, stops, stopsLoaded, dataError, retryAll, toast, addItem, addStop, addExpense, expenses, email, setFile } = useTrip();
   const online = useOnlineStatus();
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [showFab, setShowFab] = useState(null);
@@ -96,8 +96,8 @@ function AppShell({ session }) {
       )}
 
       {showAddStop && <AddStopModal onAdd={addStop} onClose={() => setShowAddStop(false)} />}
-      {showAddItem && <AddItemModal onClose={() => setShowAddItem(false)} onAdd={addItem} stops={stops} userEmail={email} />}
-      {showAddExpense && <AddExpenseModal items={items} stops={stops} onAdd={addExpense} onClose={() => setShowAddExpense(false)} userEmail={email} />}
+      {showAddItem && <AddItemModal onClose={() => setShowAddItem(false)} onAdd={addItem} addExpense={addExpense} setFile={setFile} stops={stops} userEmail={email} />}
+      {showAddExpense && <AddExpenseModal items={items} stops={stops} onAdd={addExpense} onClose={() => setShowAddExpense(false)} userEmail={email} addItem={addItem} addExpense={addExpense} setFile={setFile} />}
 
       {!isProfile && <BottomTabs activeTab={activeTab} setActiveTab={navigateTab} />}
     </div>

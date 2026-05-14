@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { $f } from '../hooks/useItems';
+import AddItemModal from './AddItemModal';
 
-export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmail }) {
+export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmail, addItem, addExpense, setFile }) {
   const trapRef = useFocusTrap();
   const [step, setStep] = useState('select'); // 'select' | 'amount'
   const [selectedItem, setSelectedItem] = useState(null);
@@ -10,6 +11,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showAddItem, setShowAddItem] = useState(false);
 
   useEffect(() => {
     window.history.pushState({ modal: true }, '', '');
@@ -55,7 +57,6 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
   return (
     <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add expense" onClick={onClose}>
       <div className="detail-sheet" ref={trapRef} onClick={e => e.stopPropagation()}>
-        <div className="detail-handle" />
         <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">
 
@@ -69,6 +70,10 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
                 style={{ marginBottom: 10 }}
                 autoFocus
               />
+              <button type="button" className="detail-btn" onClick={() => setShowAddItem(true)}
+                style={{ width: '100%', marginBottom: 10, color: 'var(--accent)', fontWeight: 600, fontSize: 13 }}>
+                + Create new item
+              </button>
               <div style={{ maxHeight: 300, overflowY: 'auto' }}>
                 {availableItems.length === 0 && (
                   <div className="itin-empty"><div className="itin-empty-text">No items found. Add items from the Plan tab first.</div></div>
@@ -125,6 +130,16 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
 
         </div>
       </div>
+      {showAddItem && (
+        <AddItemModal
+          onClose={() => { setShowAddItem(false); onClose(); }}
+          onAdd={addItem}
+          addExpense={addExpense}
+          setFile={setFile}
+          stops={stops}
+          userEmail={userEmail}
+        />
+      )}
     </div>
   );
 }
