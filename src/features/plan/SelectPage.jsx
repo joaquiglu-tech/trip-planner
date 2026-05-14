@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { itemCost } from '../../shared/hooks/useItems';
-import { useTrip } from '../../shared/hooks/TripContext';
+import { useTripData, useTripActions } from '../../shared/hooks/TripContext';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';
 import DetailModal from '../../shared/components/DetailModal';
@@ -10,16 +10,17 @@ import BudgetSummary from '../expenses/BudgetSummary';
 const TYPE_LABEL = { transport: 'Transport', stay: 'Stay', activity: 'Activity', food: 'Food' };
 const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];
 
-export default function SelectPage({ active, filterCity, clearFilterCity }) {
-  const { items, livePrices, expenses, updateItem, setStatus, addItem, deleteItem, addExpense, updateExpense, email: userEmail, stops, files, setFile, removeFile, places, getPlaceData } = useTrip();
+export default function SelectPage({ filterCity, clearFilterCity }) {
+  const { items, livePrices, expenses, email: userEmail, stops, files, places } = useTripData();
+  const { updateItem, setStatus, addItem, deleteItem, addExpense, updateExpense, setFile, removeFile, getPlaceData } = useTripActions();
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', search: '' });
 
   useEffect(() => {
-    if (filterCity && active) {
+    if (filterCity) {
       setFilters(f => ({ ...f, city: filterCity }));
       clearFilterCity();
     }
-  }, [filterCity, active]);
+  }, [filterCity]);
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -98,7 +99,7 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
   }, [sorted, filters.type, sortField]);
 
   return (
-    <div id="page-select" className={`page ${active ? "active" : ""}`}>
+    <div id="page-select" className="page active">
       <BudgetSummary items={items} expenses={expenses} />
 
       <div className="planner-sticky-bar">

@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useTrip } from '../../shared/hooks/TripContext';
+import { useTripData, useTripActions } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
 import OverviewView from './OverviewView';
 import StopSection from './StopSection';
 import StatusFilter from './StatusFilter';
 import { toDateStr, formatStopDate, getTodayDayIndex, getCalendarDates } from './utils';
 
-export default function TodayPage({ active }) {
-  const { items, stops, livePrices, expenses, updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, files, setFile, removeFile, places, getPlaceData } = useTrip();
+export default function TodayPage() {
+  const { items, stops, livePrices, expenses, files, places } = useTripData();
+  const { updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, setFile, removeFile, getPlaceData } = useTripActions();
   const expenseMap = useMemo(() => {
     const map = {};
     (expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
@@ -46,7 +47,7 @@ export default function TodayPage({ active }) {
   }, [view, selectorMode]);
 
   return (
-    <div className={`page ${active ? 'active' : ''}`}>
+    <div className="page active">
       {/* Stops/Dates toggle */}
       <div className="itin-mode-toggle">
         <button className={`fp ${selectorMode === 'stops' ? 'fp-active' : ''}`} onClick={() => setSelectorMode('stops')}>Stops</button>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useSettings } from '../../shared/hooks/useSettings';
 
-export default function ProfilePage({ active, session }) {
+export default function ProfilePage({ session }) {
   const { darkMode, setDarkMode } = useSettings();
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -29,7 +29,7 @@ export default function ProfilePage({ active, session }) {
   }
 
   return (
-    <div id="page-profile" className={`page ${active ? "active" : ""}`}>
+    <div id="page-profile" className="page active">
       <div className="card">
         <div className="card-hd">Profile</div>
         <div className="card-bd" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 24 }}>

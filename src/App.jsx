@@ -70,10 +70,10 @@ function AppShell({ session }) {
       <TopBar items={items} stops={stops} session={session} onProfileClick={() => navigateTab('profile')} />
       {!online && <div className="offline-banner">You're offline — changes won't save until you reconnect</div>}
       <div className="page-container">
-        <SelectPage active={activeTab === 'plan'} filterCity={filterCity} clearFilterCity={() => setFilterCity(null)} />
-        <BudgetPage active={activeTab === 'expenses'} />
-        <TodayPage active={activeTab === 'itinerary'} />
-        <ProfilePage active={isProfile} session={session} />
+        {activeTab === 'plan' && <SelectPage filterCity={filterCity} clearFilterCity={() => setFilterCity(null)} />}
+        {activeTab === 'expenses' && <BudgetPage />}
+        {activeTab === 'itinerary' && <TodayPage />}
+        {isProfile && <ProfilePage session={session} />}
       </div>
       <Toast message={toast} />
 
