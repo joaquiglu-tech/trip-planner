@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { $f } from '../hooks/useItems';
+import { useTripData } from '../hooks/TripContext';
 import { uploadFile, deleteFile } from '../../services/storage';
 import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
 import PlaceSearch from './PlaceSearch';
@@ -42,6 +43,7 @@ function formatDatetime(dt) {
 }
 
 export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, itemExpenses, addExpense, updateExpense, deleteExpense, stops }) {
+  const { email } = useTripData();
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
   const [showExpenseCard, setShowExpenseCard] = useState(false);
@@ -126,7 +128,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
                     onClick={() => {
                       if (opt.value === st) return;
                       if (navigator.vibrate) navigator.vibrate(15);
-                      if (opt.value === 'conf' && st !== 'conf') { setShowExpenseCard(true); return; }
+                      if (opt.value === 'conf' && st !== 'conf') { setStatus(it.id, 'conf'); setShowExpenseCard(true); return; }
                       if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) { if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`)) return; if (itemExpenses?.length > 0) { for (const exp of itemExpenses) { try { deleteExpense(exp.id); } catch {} } } }
                       setStatus(it.id, opt.value);
                     }}>
@@ -222,6 +224,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           item={it} stops={stops}
           onClose={() => setShowExpenseCard(false)}
           addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} setStatus={setStatus}
+          email={email}
         />
       )}
     </div>

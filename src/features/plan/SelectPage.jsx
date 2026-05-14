@@ -64,7 +64,7 @@ export default function SelectPage({ active, filterCity, clearFilterCity }) {
       if (sortField === 'date') return ((a.start_time || 'zz').localeCompare(b.start_time || 'zz')) * dir;
       if (sortField === 'status') {
         const order = { conf: 0, sel: 1, '': 2 };
-        return ((order[a.status] ?? 2) - (order[b.status] ?? 2));
+        return ((order[a.status] ?? 2) - (order[b.status] ?? 2)) * dir;
       }
       return 0;
     });
