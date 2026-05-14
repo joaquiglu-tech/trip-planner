@@ -75,7 +75,7 @@ function AppShell({ session }) {
         {activeTab === 'plan' && <SelectPage filterCity={filterCity} clearFilterCity={() => setFilterCity(null)} />}
         {activeTab === 'expenses' && <BudgetPage />}
         {activeTab === 'itinerary' && <TodayPage />}
-        {isProfile && <ProfilePage session={session} />}
+        {isProfile && <ProfilePage session={session} onBack={() => navigateTab('itinerary')} />}
       </div>
       </main>
       <Toast message={toast} />
