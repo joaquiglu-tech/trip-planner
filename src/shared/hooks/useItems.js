@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../../services/supabase';
 import { enrichItem } from '../../services/enrichItem';
 
-export const $f = (n) => '€' + (n || 0).toLocaleString();
+export const $f = (n) => '$' + (n || 0).toLocaleString();
 
 export function itemCost(it) {
   return Number(it.estimated_cost) || 0;

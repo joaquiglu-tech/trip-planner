@@ -184,7 +184,7 @@ export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stop
               <>
                 <label className="add-label">Confirmed cost</label>
                 <div className="cost-input-row" style={{ marginBottom: 8 }}>
-                  <span className="cost-input-prefix">€</span>
+                  <span className="cost-input-prefix">$</span>
                   <input type="number" className="cost-input" placeholder="0"
                     value={form.confirmed_cost} onChange={e => updateForm('confirmed_cost', e.target.value)} />
                 </div>
