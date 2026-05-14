@@ -67,7 +67,7 @@ export default function BudgetPage() {
                 <div className="bi-left">
                   <div className="bi-name">{e.note || e.category || 'Expense'}</div>
                   <div className="bi-meta">
-                    <span style={{ color: '#D97706', fontWeight: 600 }}>Not linked to an item</span>
+                    <span style={{ color: 'var(--warning)', fontWeight: 600 }}>Not linked to an item</span>
                     <span> · {new Date(e.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -81,7 +81,7 @@ export default function BudgetPage() {
                       console.warn('Failed to delete expense:', err);
                       alert('Failed to delete expense.');
                     }
-                  }} style={{ background: 'none', border: 'none', color: '#f87171', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>delete</button>
+                  }} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>delete</button>
                 </div>
               </div>
             ))}

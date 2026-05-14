@@ -73,6 +73,5 @@ function getStayDates(stay, stops) {
     const byId = stops.find(s => s.id === firstStopId);
     if (byId) return { checkIn: String(byId.start_date).substring(0, 10), checkOut: String(byId.end_date).substring(0, 10) };
   }
-  if (stops.length > 0) return { checkIn: String(stops[0].start_date).substring(0, 10), checkOut: String(stops[stops.length - 1].end_date).substring(0, 10) };
   return null;
 }

@@ -54,7 +54,7 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
           <div className="detail-section-title">{isNew ? 'New Expense' : 'Expense'}</div>
           <h2 className="detail-name" style={{ fontSize: 18 }}>{displayItem?.name || expense?.note || 'Expense'}</h2>
 
-          {error && <div style={{ color: '#ef4444', fontSize: 12, marginBottom: 8 }}>{error}</div>}
+          {error && <div style={{ color: 'var(--error)', fontSize: 12, marginBottom: 8 }}>{error}</div>}
 
           <div className="itin-general" style={{ marginTop: 12 }}>
             <div className="itin-general-row">

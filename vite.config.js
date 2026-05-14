@@ -65,6 +65,11 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: { cacheName: 'google-places', expiration: { maxEntries: 100, maxAgeSeconds: 30 * 86400 } },
           },
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
+            handler: 'CacheFirst',
+            options: { cacheName: 'cdn-fonts', expiration: { maxEntries: 10, maxAgeSeconds: 365 * 24 * 60 * 60 } },
+          },
         ],
       },
     }),

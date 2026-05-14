@@ -155,8 +155,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           <div className="detail-badges">
             <span className={`badge b-${it.type}`}>{TYPE_LABEL[it.type] || it.type}</span>
             {it.city && <span className="badge b-city">{it.city}</span>}
-            {googleRating && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>Rating {googleRating}</span>}
-            {priceLvl && <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a' }}>{priceLvl}</span>}
+            {googleRating && <span className="badge" style={{ background: 'var(--badge-rating-bg)', color: 'var(--badge-rating-text)' }}>Rating {googleRating}</span>}
+            {priceLvl && <span className="badge" style={{ background: 'var(--badge-price-bg)', color: 'var(--badge-price-text)' }}>{priceLvl}</span>}
             {it.subcat && SUBCAT_BADGE[it.subcat] && <span className="badge">{SUBCAT_BADGE[it.subcat]}</span>}
             {it.tier && <span className="badge b-bar">{it.tier}</span>}
             {it.transport_mode && <span className="badge">{TRANSPORT_ICON[it.transport_mode] || ''} {TRANSPORT_MODES.find(m => m.value === it.transport_mode)?.label}</span>}
@@ -211,7 +211,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           {/* Files */}
           {itemFiles.length > 0 && (
             <div className="detail-section"><div className="detail-section-title">Attachments ({itemFiles.length})</div>
-              {itemFiles.map((f, i) => (<div key={i} className="file-chip" style={{ marginBottom: 4 }}><span className="file-chip-name">{f.name}</span><a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: '#1967d2' }}>Open</a><button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button></div>))}
+              {itemFiles.map((f, i) => (<div key={i} className="file-chip" style={{ marginBottom: 4 }}><span className="file-chip-name">{f.name}</span><a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: 'var(--link-blue)' }}>Open</a><button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button></div>))}
             </div>
           )}
           {(st === 'sel' || st === 'conf') && (
@@ -451,8 +451,8 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
               {itemFiles.map((f, i) => (
                 <div key={i} className="file-chip" style={{ marginBottom: 4 }}>
                   <span className="file-chip-name">{f.name}</span>
-                  <a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: '#1967d2' }}>Open</a>
-                  <button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button>
+                  <a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: 'var(--link-blue)' }}>Open</a>
+                  <button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button>
                 </div>
               ))}
             </div>

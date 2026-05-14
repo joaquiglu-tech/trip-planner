@@ -36,7 +36,8 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
       {daysLeft > 0 && (
         <div className="home-header">
           <div className="home-trip-name">{(() => {
-            const tripStops = stops.filter(s => s.name !== 'Lima');
+            const homeCity = stops.length > 0 ? stops[0].name : '';
+            const tripStops = stops.filter(s => s.name !== homeCity);
             return tripStops.length > 1 ? `${tripStops[0]?.name} to ${tripStops[tripStops.length - 1]?.name}` : (tripStops[0]?.name || 'Trip');
           })()}</div>
           <div className="home-countdown">{daysLeft} days away</div>
@@ -51,7 +52,8 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
           <div className="itin-col-header">
             <div className="itin-section-title" style={{ margin: 0 }}>Route</div>
             {(() => {
-              const tripStops = stops.filter(s => s.lat && s.lng && s.name !== 'Lima');
+              const homeCity = stops.length > 0 ? stops[0].name : '';
+              const tripStops = stops.filter(s => s.lat && s.lng && s.name !== homeCity);
               const mapsUrl = tripStops.length > 1
                 ? `https://www.google.com/maps/dir/${tripStops.map(s => `${s.lat},${s.lng}`).join('/')}`
                 : null;
