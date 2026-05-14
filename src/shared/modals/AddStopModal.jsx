@@ -65,6 +65,7 @@ export default function AddStopModal({ onAdd, onClose }) {
   }
 
   async function handleSave() {
+    if (new Date(endDate) < new Date(startDate)) { alert('End date must be after start date'); return; }
     if (!selected || !startDate || !endDate) return;
     setSaving(true);
     try {
@@ -84,10 +85,10 @@ export default function AddStopModal({ onAdd, onClose }) {
   }
 
   return (
-    <div className="detail-overlay" onClick={onClose}>
+    <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add stop" onClick={onClose}>
       <div className="detail-sheet" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
         <div className="detail-handle" />
-        <button className="detail-close" onClick={onClose}>✕</button>
+        <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">
           <h2 className="detail-name" style={{ fontSize: 18 }}>Add Stop</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>Search for a city, town, or place.</p>

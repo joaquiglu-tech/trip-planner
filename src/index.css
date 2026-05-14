@@ -296,7 +296,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 
 /* ═══ TOAST ═══ */
 .toast-container { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 400; pointer-events: none }
-.toast { background: var(--summary-bg); color: #fff; padding: 8px 16px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; box-shadow: var(--shadow-lg); animation: toast-in .2s ease }
+.toast { background: var(--summary-bg); color: #fff; padding: 8px 16px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; box-shadow: var(--shadow-lg); animation: toast-in .2s ease; display: flex; align-items: center }
+.toast-action { background: none; border: none; color: var(--accent-bright); font-weight: 700; cursor: pointer; margin-left: 12px; font-size: 13px; padding: 0; pointer-events: all }
 
 /* ═══ EMPTY STATES ═══ */
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 24px; text-align: center }

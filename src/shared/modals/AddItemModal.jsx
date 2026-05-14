@@ -111,9 +111,9 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
   }
 
   return (
-    <div className="detail-overlay" onClick={onClose}>
+    <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add new item" onClick={onClose}>
       <div className="detail-sheet" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-        <button className="detail-close" onClick={onClose}>✕</button>
+        <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">
           <h2 className="detail-name" style={{ fontSize: 18 }}>Add New Item</h2>
 

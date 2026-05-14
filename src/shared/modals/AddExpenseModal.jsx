@@ -51,10 +51,10 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
   }
 
   return (
-    <div className="detail-overlay" onClick={onClose}>
+    <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add expense" onClick={onClose}>
       <div className="detail-sheet" onClick={e => e.stopPropagation()}>
         <div className="detail-handle" />
-        <button className="detail-close" onClick={onClose}>✕</button>
+        <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">
 
           {step === 'select' && (
