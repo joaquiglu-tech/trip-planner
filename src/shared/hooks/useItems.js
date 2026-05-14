@@ -40,6 +40,8 @@ function mergeItem(row, stopName, existingCity) {
 
 export function useItems(currentUserEmail, showToast) {
   const [items, setItems] = useState([]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const [loaded, setLoaded] = useState(false);
   const stopsMapRef = useRef({});
   const stopsDataRef = useRef([]);
@@ -99,22 +101,26 @@ export function useItems(currentUserEmail, showToast) {
   }, [currentUserEmail, showToast]);
 
   const updateItem = useCallback(async (id, changes) => {
-    setItems(prev => prev.map(it => it.id === id ? { ...it, ...changes } : it));
+    let prev;
+    setItems(p => p.map(it => {
+      if (it.id === id) { prev = it; return { ...it, ...changes }; }
+      return it;
+    }));
     const { error } = await supabase.from('items').update({
       ...changes, updated_at: new Date().toISOString(), updated_by: currentUserEmail,
     }).eq('id', id);
     if (error) {
-      console.warn('Failed to update item:', error);
+      if (prev) setItems(p => p.map(it => it.id === id ? prev : it));
       throw error;
     }
   }, [currentUserEmail]);
 
   const setStatus = useCallback(async (id, status) => {
     if (navigator.vibrate) navigator.vibrate(15);
-    const item = items.find(it => it.id === id);
+    const item = itemsRef.current.find(it => it.id === id);
     const itemStops = item?.stop_ids || [];
     if (item?.type === 'stay' && itemStops.length > 0 && (status === 'sel' || status === 'conf')) {
-      const others = items.filter(it => it.type === 'stay' && it.id !== id && (it.status === 'sel' || it.status === 'conf') && it.stop_ids?.some(s => itemStops.includes(s)));
+      const others = itemsRef.current.filter(it => it.type === 'stay' && it.id !== id && (it.status === 'sel' || it.status === 'conf') && it.stop_ids?.some(s => itemStops.includes(s)));
       if (others.length > 0) {
         setItems(prev => prev.map(it => others.some(o => o.id === it.id) ? { ...it, status: '' } : it));
         try {
@@ -129,7 +135,7 @@ export function useItems(currentUserEmail, showToast) {
       }
     }
     await updateItem(id, { status });
-  }, [items, currentUserEmail, updateItem]);
+  }, [currentUserEmail, updateItem, showToast]);
 
   const addItem = useCallback(async (itemData) => {
     const newItem = {
@@ -160,14 +166,19 @@ export function useItems(currentUserEmail, showToast) {
     setItems(prev => [...prev, merged]);
     enrichItem(data).then(changes => {
       if (Object.keys(changes).length > 0) {
-        setItems(prev => prev.map(it => it.id === data.id ? { ...it, ...changes } : it));
+        updateItem(data.id, changes).catch(err =>
+          console.warn('enrichItem updateItem failed for', data.name, err));
       }
     }).catch(err => console.warn('enrichItem failed for', data.name, err));
     return data;
-  }, [currentUserEmail]);
+  }, [currentUserEmail, updateItem]);
 
   const deleteItem = useCallback(async (id) => {
-    setItems(prev => prev.filter(it => it.id !== id));
+    let prev;
+    setItems(p => {
+      prev = p.find(it => it.id === id);
+      return p.filter(it => it.id !== id);
+    });
     try {
       await supabase.from('expenses').delete().eq('item_id', id);
       await supabase.from('place_cache').delete().eq('item_id', id);
@@ -180,10 +191,11 @@ export function useItems(currentUserEmail, showToast) {
       const { error } = await supabase.from('items').delete().eq('id', id);
       if (error) {
         console.warn('Failed to delete item:', error);
-        // Item already removed from UI; realtime will re-add if delete failed
+        if (prev) setItems(p => [...p, prev]);
       }
     } catch (err) {
       console.warn('deleteItem cascade error:', err);
+      if (prev) setItems(p => [...p, prev]);
     }
   }, []);
 

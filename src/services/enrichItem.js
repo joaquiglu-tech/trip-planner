@@ -1,8 +1,9 @@
-import { supabase } from './supabase';
 import { fetchPlaceData } from './googlePlaces';
 
-// Auto-enrich a newly added item with external data
-// Called after item is saved to DB — updates the item row async
+/**
+ * Auto-enrich a newly added item with external data.
+ * Returns changes object — caller is responsible for persisting via updateItem.
+ */
 export async function enrichItem(item) {
   const changes = {};
 
@@ -17,15 +18,6 @@ export async function enrichItem(item) {
     } catch (err) {
       console.warn('Google Places enrichment failed:', err);
     }
-  }
-
-  // Save enrichment to DB if we found anything
-  if (Object.keys(changes).length > 0) {
-    const { error } = await supabase.from('items').update({
-      ...changes,
-      updated_at: new Date().toISOString(),
-    }).eq('id', item.id);
-    if (error) console.warn('enrichItem DB update failed for', item.name, error);
   }
 
   return changes;

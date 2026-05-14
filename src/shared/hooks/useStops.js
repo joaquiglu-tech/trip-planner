@@ -100,7 +100,6 @@ export function useStops() {
   }, []);
 
   const addStop = useCallback(async (stopData) => {
-    const maxSort = stops.reduce((max, s) => Math.max(max, s.sort_order || 0), 0);
     const newStop = {
       id: `stop-${stopData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`,
       name: stopData.name,
@@ -110,14 +109,14 @@ export function useStops() {
       lat: stopData.lat || null,
       lng: stopData.lng || null,
       trip_id: 'trip-1',
-      sort_order: maxSort + 1,
+      sort_order: Date.now(),
       tips: [],
     };
     const { data, error } = await supabase.from('stops').insert(newStop).select().single();
     if (error) throw error;
     setStops(prev => [...prev, data].sort((a, b) => new Date(a.start_date) - new Date(b.start_date)));
     return data;
-  }, [stops]);
+  }, []);
 
   const deleteStop = useCallback(async (id) => {
     setStops(prev => prev.filter(s => s.id !== id));
