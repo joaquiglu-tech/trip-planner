@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PlaceSearch from '../components/PlaceSearch';
 import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
 
@@ -27,6 +27,18 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [xoteloStatus, setXoteloStatus] = useState(''); // '' | 'searching' | 'found' | 'not_found'
+
+  useEffect(() => {
+    window.history.pushState({ modal: true }, '', '');
+    function handlePop() { onClose(); }
+    function handleKey(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('popstate', handlePop);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('popstate', handlePop);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [onClose]);
 
   function updateForm(key, val) {
     setForm((f) => {
@@ -99,9 +111,9 @@ export default function AddItemModal({ onClose, onAdd, stops, userEmail }) {
   }
 
   return (
-    <div className="detail-overlay" onClick={onClose}>
+    <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add new item" onClick={onClose}>
       <div className="detail-sheet" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-        <button className="detail-close" onClick={onClose}>✕</button>
+        <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">
           <h2 className="detail-name" style={{ fontSize: 18 }}>Add New Item</h2>
 

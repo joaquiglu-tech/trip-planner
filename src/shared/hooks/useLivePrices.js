@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase } from '../../services/supabase';
 import { fetchHotelPrice } from '../../services/hotelPrices';
 
-export function useLivePrices(staysWithKeys, stops) {
+export function useLivePrices(staysWithKeys, stops, updateItem) {
   const [livePrices, setLivePrices] = useState({});
   const fetchedRef = useRef(new Set());
 
@@ -45,14 +44,13 @@ export function useLivePrices(staysWithKeys, stops) {
               allRates: price.all_rates, lastUpdated: new Date().toISOString(),
             }}));
 
-            // Write to DB
+            // Write via updateItem so optimistic state stays in sync
             if (total !== Number(stay.estimated_cost || 0)) {
-              const { error } = await supabase.from('items').update({
-                estimated_cost: total,
-                updated_at: new Date().toISOString(),
-                updated_by: 'xotelo-sync',
-              }).eq('id', stay.id);
-              if (error) console.warn('Failed to update estimated_cost for', stay.name, error);
+              try {
+                await updateItem(stay.id, { estimated_cost: total });
+              } catch (err) {
+                console.warn('Failed to update estimated_cost for', stay.name, err);
+              }
             }
           }
         } catch (err) {
@@ -75,6 +73,5 @@ function getStayDates(stay, stops) {
     const byId = stops.find(s => s.id === firstStopId);
     if (byId) return { checkIn: String(byId.start_date).substring(0, 10), checkOut: String(byId.end_date).substring(0, 10) };
   }
-  if (stops.length > 0) return { checkIn: String(stops[0].start_date).substring(0, 10), checkOut: String(stops[stops.length - 1].end_date).substring(0, 10) };
   return null;
 }

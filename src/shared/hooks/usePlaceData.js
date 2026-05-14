@@ -1,14 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../../services/supabase';
 import { fetchPlaceData } from '../../services/googlePlaces';
 
 export function usePlaceData() {
   const [places, setPlaces] = useState({});
+  const placesRef = useRef(places);
+  placesRef.current = places;
 
   // Lazy fetch: only load place data when a card is opened
   const getPlaceData = useCallback(async (itemId, name, city) => {
     // Return from memory cache if available
-    if (places[itemId]?.photo_url) return places[itemId];
+    if (placesRef.current[itemId]?.photo_url) return placesRef.current[itemId];
 
     // Check Supabase cache first
     try {
@@ -31,7 +33,7 @@ export function usePlaceData() {
       }
     } catch (err) { console.warn('Places API fetch failed:', err); }
     return null;
-  }, [places]);
+  }, []); // stable — reads cache via placesRef.current
 
   return { places, getPlaceData };
 }

@@ -1,22 +1,27 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { $f, itemCost } from '../../shared/hooks/useItems';
-import { useTrip } from '../../shared/hooks/TripContext';
+import { useTripData, useTripActions } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
 import ExpenseCard from '../../shared/components/ExpenseCard';
 import BudgetSummary from './BudgetSummary';
 
-export default function BudgetPage({ active }) {
-  const { items, stops, livePrices, expenses, updateItem, deleteItem, setStatus, addExpense, updateExpense, deleteExpense, files, setFile, removeFile, places, getPlaceData } = useTrip();
+export default function BudgetPage() {
+  const { items, stops, livePrices, expenses, files, places } = useTripData();
+  const { updateItem, deleteItem, setStatus, addExpense, updateExpense, deleteExpense, setFile, removeFile, getPlaceData } = useTripActions();
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
+  const handleCloseDetail = useCallback(() => setSelectedItem(null), []);
+
+  const itemsMap = useMemo(() => new Map(items.map(it => [it.id, it])), [items]);
+  const stopsMap = useMemo(() => new Map((stops || []).map(s => [s.id, s])), [stops]);
 
   const confirmedExpenses = useMemo(() => {
     return (expenses || []).filter(e => e.item_id).map(e => {
-      const item = items.find(it => it.id === e.item_id);
-      const stop = item?.stop_ids?.[0] ? stops?.find(s => s.id === item.stop_ids[0]) : null;
+      const item = itemsMap.get(e.item_id);
+      const stop = item?.stop_ids?.[0] ? stopsMap.get(item.stop_ids[0]) : null;
       return { ...e, item, stop };
     }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }, [expenses, items, stops]);
+  }, [expenses, itemsMap, stopsMap]);
 
   const unlinkedExpenses = useMemo(() => {
     return (expenses || []).filter(e => !e.item_id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -25,7 +30,7 @@ export default function BudgetPage({ active }) {
   const planned = useMemo(() => items.filter(it => it.status === 'sel'), [items]);
 
   return (
-    <div id="page-budget" className={`page ${active ? "active" : ""}`}>
+    <div id="page-budget" className="page active">
       <BudgetSummary items={items} expenses={expenses} />
 
       {/* CONFIRMED */}
@@ -62,13 +67,21 @@ export default function BudgetPage({ active }) {
                 <div className="bi-left">
                   <div className="bi-name">{e.note || e.category || 'Expense'}</div>
                   <div className="bi-meta">
-                    <span style={{ color: '#D97706', fontWeight: 600 }}>Not linked to an item</span>
+                    <span style={{ color: 'var(--warning)', fontWeight: 600 }}>Not linked to an item</span>
                     <span> · {new Date(e.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
                 <div className="bi-right">
                   <div className="bi-paid">{$f(Number(e.amount))}</div>
-                  <button onClick={() => deleteExpense(e.id)} style={{ background: 'none', border: 'none', color: '#f87171', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>delete</button>
+                  <button onClick={async () => {
+                    if (!confirm('Delete this expense? This cannot be undone.')) return;
+                    try {
+                      await deleteExpense(e.id);
+                    } catch (err) {
+                      console.warn('Failed to delete expense:', err);
+                      alert('Failed to delete expense.');
+                    }
+                  }} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>delete</button>
                 </div>
               </div>
             ))}
@@ -123,8 +136,8 @@ export default function BudgetPage({ active }) {
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight}
           livePriceRates={livePrices?.[selectedItem.id]?.allRates}
-          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
-          onClose={() => setSelectedItem(null)}
+          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
+          onClose={handleCloseDetail}
           onDelete={liveItem.created_by ? () => { deleteItem(liveItem.id); setSelectedItem(null); } : null}
         />;
       })()}

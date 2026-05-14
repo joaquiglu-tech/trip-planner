@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { $f } from '../hooks/useItems';
 
 export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmail }) {
@@ -8,6 +8,18 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    window.history.pushState({ modal: true }, '', '');
+    function handlePop() { onClose(); }
+    function handleKey(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('popstate', handlePop);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('popstate', handlePop);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [onClose]);
 
   // Items that can have expenses — selected or confirmed
   const availableItems = useMemo(() => {
@@ -39,10 +51,10 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
   }
 
   return (
-    <div className="detail-overlay" onClick={onClose}>
+    <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add expense" onClick={onClose}>
       <div className="detail-sheet" onClick={e => e.stopPropagation()}>
         <div className="detail-handle" />
-        <button className="detail-close" onClick={onClose}>✕</button>
+        <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
         <div className="detail-content">
 
           {step === 'select' && (
@@ -72,7 +84,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
                         <div className="bi-name">{it.name}</div>
                         <div className="bi-meta">
                           <span className="bi-type">{it.type}</span>
-                          {stop?.name && <span> · {stop.sleep}</span>}
+                          {stop?.name && <span> · {stop.name}</span>}
                         </div>
                       </div>
                       <div className="bi-right">
@@ -90,7 +102,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
               <h2 className="detail-name" style={{ fontSize: 18 }}>How much did you pay?</h2>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>{selectedItem.name}</div>
               <div className="cost-input-row" style={{ marginBottom: 12 }}>
-                <span className="cost-input-prefix">$</span>
+                <span className="cost-input-prefix">€</span>
                 <input
                   type="number" className="cost-input" placeholder="0"
                   value={amount} onChange={e => setAmount(e.target.value)}

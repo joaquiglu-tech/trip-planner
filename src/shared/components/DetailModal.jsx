@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { $f } from '../hooks/useItems';
+import { useTripData } from '../hooks/TripContext';
 import { uploadFile, deleteFile } from '../../services/storage';
 import { extractXoteloKey, fetchStayEstimate } from '../../services/xotelo';
 import PlaceSearch from './PlaceSearch';
@@ -42,6 +43,7 @@ function formatDatetime(dt) {
 }
 
 export default function DetailModal({ it, status, setStatus, updateItem, onClose, onDelete, files, setFile, removeFile, placeData, getPlaceData, livePrice, livePriceRates, expenseAmount, itemExpenses, addExpense, updateExpense, deleteExpense, stops }) {
+  const { email } = useTripData();
   const st = status || it.status || '';
   const [editing, setEditing] = useState(false);
   const [showExpenseCard, setShowExpenseCard] = useState(false);
@@ -106,7 +108,6 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
   return (
     <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Item details">
       <div className="detail-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="detail-handle" />
         <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
 
         {/* Photos */}
@@ -123,11 +124,20 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
               <div className="status-selector">
                 {[{ value: '', label: 'Not added', cls: '' }, { value: 'sel', label: 'Selected', cls: 'sel' }, { value: 'conf', label: 'Confirmed', cls: 'conf' }].map(opt => (
                   <button key={opt.value} className={`status-option ${opt.cls} ${st === opt.value ? 'active' : ''}`}
-                    onClick={() => {
+                    onClick={async () => {
                       if (opt.value === st) return;
                       if (navigator.vibrate) navigator.vibrate(15);
-                      if (opt.value === 'conf' && st !== 'conf') { setShowExpenseCard(true); return; }
-                      if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) { if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`)) return; if (itemExpenses?.length > 0) { for (const exp of itemExpenses) { try { deleteExpense(exp.id); } catch {} } } }
+                      if (opt.value === 'conf' && st !== 'conf') { setStatus(it.id, 'conf'); setShowExpenseCard(true); return; }
+                      if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) {
+                        if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`)) return;
+                        if (itemExpenses?.length > 0) {
+                          let failed = false;
+                          for (const exp of itemExpenses) {
+                            try { await deleteExpense(exp.id); } catch (err) { console.warn('Failed to delete expense:', err); failed = true; }
+                          }
+                          if (failed) return;
+                        }
+                      }
                       setStatus(it.id, opt.value);
                     }}>
                     {opt.value === 'conf' ? '✓' : opt.value === 'sel' ? '●' : '○'} {opt.label}
@@ -145,8 +155,8 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           <div className="detail-badges">
             <span className={`badge b-${it.type}`}>{TYPE_LABEL[it.type] || it.type}</span>
             {it.city && <span className="badge b-city">{it.city}</span>}
-            {googleRating && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>Rating {googleRating}</span>}
-            {priceLvl && <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a' }}>{priceLvl}</span>}
+            {googleRating && <span className="badge" style={{ background: 'var(--badge-rating-bg)', color: 'var(--badge-rating-text)' }}>Rating {googleRating}</span>}
+            {priceLvl && <span className="badge" style={{ background: 'var(--badge-price-bg)', color: 'var(--badge-price-text)' }}>{priceLvl}</span>}
             {it.subcat && SUBCAT_BADGE[it.subcat] && <span className="badge">{SUBCAT_BADGE[it.subcat]}</span>}
             {it.tier && <span className="badge b-bar">{it.tier}</span>}
             {it.transport_mode && <span className="badge">{TRANSPORT_ICON[it.transport_mode] || ''} {TRANSPORT_MODES.find(m => m.value === it.transport_mode)?.label}</span>}
@@ -201,7 +211,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           {/* Files */}
           {itemFiles.length > 0 && (
             <div className="detail-section"><div className="detail-section-title">Attachments ({itemFiles.length})</div>
-              {itemFiles.map((f, i) => (<div key={i} className="file-chip" style={{ marginBottom: 4 }}><span className="file-chip-name">{f.name}</span><a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: '#1967d2' }}>Open</a><button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button></div>))}
+              {itemFiles.map((f, i) => (<div key={i} className="file-chip" style={{ marginBottom: 4 }}><span className="file-chip-name">{f.name}</span><a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: 'var(--link-blue)' }}>Open</a><button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button></div>))}
             </div>
           )}
           {(st === 'sel' || st === 'conf') && (
@@ -222,6 +232,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
           item={it} stops={stops}
           onClose={() => setShowExpenseCard(false)}
           addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} setStatus={setStatus}
+          email={email}
         />
       )}
     </div>
@@ -244,6 +255,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
     hrs: it.hrs ? String(it.hrs) : '',
     xotelo_key: it.xotelo_key || '',
   });
+  const [baseItem] = useState(it); // snapshot of item when edit mode opened — used for conflict detection
   const [tripadvisorUrl, setTripadvisorUrl] = useState(it.xotelo_key ? `tripadvisor.com/Hotel_Review-${it.xotelo_key}-Reviews` : '');
   const [xoteloStatus, setXoteloStatus] = useState(it.xotelo_key ? 'found' : '');
 
@@ -267,6 +279,16 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
   const u = (key, val) => setDraft(d => ({ ...d, [key]: val }));
 
   async function handleSave() {
+    // Conflict detection: warn if live item diverged from snapshot taken at edit-mode open
+    const conflicts = [];
+    if (it.name !== baseItem.name) conflicts.push('name');
+    if (it.status !== baseItem.status) conflicts.push('status');
+    if (Number(it.estimated_cost) !== Number(baseItem.estimated_cost)) conflicts.push('estimated cost');
+    if (JSON.stringify(it.stop_ids) !== JSON.stringify(baseItem.stop_ids)) conflicts.push('stops');
+    if (conflicts.length > 0) {
+      if (!confirm(`This item was updated by someone else (${conflicts.join(', ')} changed). Save anyway?`)) return;
+    }
+
     setSaving(true);
     const changes = {};
     if (draft.name !== (it.name || '')) changes.name = draft.name;
@@ -315,7 +337,6 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
   return (
     <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Edit item">
       <div className="detail-sheet">
-        <div className="detail-handle" />
         <div className="detail-action-top">
           <div style={{ fontSize: 14, fontWeight: 700 }}>Edit {it.name}</div>
         </div>
@@ -430,8 +451,8 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
               {itemFiles.map((f, i) => (
                 <div key={i} className="file-chip" style={{ marginBottom: 4 }}>
                   <span className="file-chip-name">{f.name}</span>
-                  <a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: '#1967d2' }}>Open</a>
-                  <button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button>
+                  <a href={f.url} target="_blank" rel="noopener" style={{ fontSize: 10, color: 'var(--link-blue)' }}>Open</a>
+                  <button onClick={() => handleRemoveFile(f.path)} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', cursor: 'pointer', padding: 0, fontSize: 14 }}>x</button>
                 </div>
               ))}
             </div>

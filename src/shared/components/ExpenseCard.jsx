@@ -3,7 +3,7 @@ import { $f } from '../hooks/useItems';
 
 // Shared expense card — used from BudgetPage and DetailModal
 // mode: 'edit' (existing expense) or 'create' (new expense for an item)
-export default function ExpenseCard({ expense, item, stops, onClose, onViewItem, addExpense, updateExpense, deleteExpense, setStatus }) {
+export default function ExpenseCard({ expense, item, stops, onClose, onViewItem, addExpense, updateExpense, deleteExpense, setStatus, email }) {
   const isNew = !expense;
   const [amountInput, setAmountInput] = useState(expense ? String(Number(expense.amount)) : '');
   const [saving, setSaving] = useState(false);
@@ -17,7 +17,7 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
     setError('');
     try {
       if (isNew && item) {
-        await addExpense({ amount: val, category: item.type === 'food' ? 'food' : item.type, note: item.name, item_id: item.id, stop_id: item.stop_ids?.[0] || '', created_by: '' });
+        await addExpense({ amount: val, category: item.type === 'food' ? 'food' : item.type, note: item.name, item_id: item.id, stop_id: item.stop_ids?.[0] || '', created_by: email || '' });
         if (item.status !== 'conf' && setStatus) await setStatus(item.id, 'conf');
       } else if (expense) {
         if (val !== Number(expense.amount)) await updateExpense(expense.id, { amount: val });
@@ -49,19 +49,18 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
   return (
     <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Expense">
       <div className="detail-sheet" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-        <div className="detail-handle" />
         <button className="detail-close" onClick={onClose} aria-label="Close">✕</button>
         <div className="detail-content">
           <div className="detail-section-title">{isNew ? 'New Expense' : 'Expense'}</div>
           <h2 className="detail-name" style={{ fontSize: 18 }}>{displayItem?.name || expense?.note || 'Expense'}</h2>
 
-          {error && <div style={{ color: '#ef4444', fontSize: 12, marginBottom: 8 }}>{error}</div>}
+          {error && <div style={{ color: 'var(--error)', fontSize: 12, marginBottom: 8 }}>{error}</div>}
 
           <div className="itin-general" style={{ marginTop: 12 }}>
             <div className="itin-general-row">
               <span className="itin-general-label">Amount</span>
               <div className="cost-input-row" style={{ flex: 1, justifyContent: 'flex-end' }}>
-                <span className="cost-input-prefix">$</span>
+                <span className="cost-input-prefix">€</span>
                 <input type="number" className="cost-input" style={{ fontSize: 14, maxWidth: 120, textAlign: 'right' }}
                   value={amountInput} onChange={e => setAmountInput(e.target.value)} autoFocus placeholder="0" />
               </div>

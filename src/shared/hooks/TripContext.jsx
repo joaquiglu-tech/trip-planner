@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useCallback } from 'react';
 import { useItems } from './useItems';
 import { useStops } from './useStops';
 import { usePlaceData } from './usePlaceData';
@@ -16,13 +16,22 @@ export function TripProvider({ email, children }) {
   const stopsHook = useStops();
   const { places, getPlaceData } = usePlaceData();
   const expensesHook = useExpenses();
-  const livePrices = useLivePrices(itemsHook.staysWithKeys, stopsHook.stops);
+  const livePrices = useLivePrices(itemsHook.staysWithKeys, stopsHook.stops, itemsHook.updateItem);
   const { files, setFile, removeFile, clearFiles } = useItemFiles(itemsHook.items);
+
+  const dataError = itemsHook.error || stopsHook.error || expensesHook.error;
+  const retryAll = useCallback(() => {
+    itemsHook.retry();
+    stopsHook.retry();
+    expensesHook.retry();
+  }, [itemsHook.retry, stopsHook.retry, expensesHook.retry]);
 
   // Data changes frequently — items, expenses, prices update via realtime
   const data = useMemo(() => ({
     items: itemsHook.items,
     loaded: itemsHook.loaded,
+    dataError,
+    retryAll,
     files,
     livePrices,
     toast,
@@ -31,7 +40,7 @@ export function TripProvider({ email, children }) {
     places,
     expenses: expensesHook.expenses,
     email,
-  }), [itemsHook.items, itemsHook.loaded, files, livePrices, toast, stopsHook.stops, stopsHook.loaded, places, expensesHook.expenses, email]);
+  }), [itemsHook.items, itemsHook.loaded, dataError, retryAll, files, livePrices, toast, stopsHook.stops, stopsHook.loaded, places, expensesHook.expenses, email]);
 
   // Actions are stable callbacks — rarely change
   const actions = useMemo(() => ({

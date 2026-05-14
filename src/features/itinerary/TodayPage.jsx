@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useTrip } from '../../shared/hooks/TripContext';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTripData, useTripActions } from '../../shared/hooks/TripContext';
 import DetailModal from '../../shared/components/DetailModal';
 import OverviewView from './OverviewView';
 import StopSection from './StopSection';
 import StatusFilter from './StatusFilter';
 import { toDateStr, formatStopDate, getTodayDayIndex, getCalendarDates } from './utils';
 
-export default function TodayPage({ active }) {
-  const { items, stops, livePrices, expenses, updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, deleteExpense, addItem, files, setFile, removeFile, places, getPlaceData } = useTrip();
+export default function TodayPage() {
+  const { items, stops, livePrices, expenses, files, places } = useTripData();
+  const { updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, setFile, removeFile, getPlaceData } = useTripActions();
   const expenseMap = useMemo(() => {
     const map = {};
     (expenses || []).forEach(e => { map[e.item_id] = (map[e.item_id] || 0) + Number(e.amount || 0); });
@@ -22,6 +23,7 @@ export default function TodayPage({ active }) {
   const selectorRef = useRef(null);
   const calendarDates = useMemo(() => getCalendarDates(stops), [stops]);
   const todayDateStr = new Date().toISOString().split('T')[0];
+  const handleCloseDetail = useCallback(() => setSelectedItem(null), []);
 
   // Resolve which stops to display based on view
   const activeStops = useMemo(() => {
@@ -45,7 +47,7 @@ export default function TodayPage({ active }) {
   }, [view, selectorMode]);
 
   return (
-    <div className={`page ${active ? 'active' : ''}`}>
+    <div className="page active">
       {/* Stops/Dates toggle */}
       <div className="itin-mode-toggle">
         <button className={`fp ${selectorMode === 'stops' ? 'fp-active' : ''}`} onClick={() => setSelectorMode('stops')}>Stops</button>
@@ -93,12 +95,12 @@ export default function TodayPage({ active }) {
           stop={activeStops[0]} items={items} onItemTap={setSelectedItem} places={places}
           statusFilter={statusFilter} selectedDate={selectedDate}
           combinedStopIds={activeStops.map(s => s.id)}
-          updateStop={updateStop} deleteStop={deleteStop} addItem={addItem} stops={stops} showTitle={false} />
+          updateStop={updateStop} deleteStop={deleteStop} updateItem={updateItem} addItem={addItem} stops={stops} showTitle={false} />
       ) : (
         activeStops.map(stop => (
           <StopSection key={stop.id} stop={stop} items={items} onItemTap={setSelectedItem} places={places}
             statusFilter={statusFilter} selectedDate={selectedDate}
-            updateStop={updateStop} deleteStop={deleteStop} addItem={addItem} stops={stops} showTitle={activeStops.length > 1}
+            updateStop={updateStop} deleteStop={deleteStop} updateItem={updateItem} addItem={addItem} stops={stops} showTitle={activeStops.length > 1}
             livePrices={livePrices} expenseMap={expenseMap} />
         ))
       )}
@@ -115,8 +117,8 @@ export default function TodayPage({ active }) {
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
-          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
-          onClose={() => setSelectedItem(null)}
+          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
+          onClose={handleCloseDetail}
           onDelete={liveItem.created_by ? () => { deleteItem(liveItem.id); setSelectedItem(null); } : null}
         />;
       })()}
