@@ -24,6 +24,8 @@ async function fetchPlaceId(name) {
 export function useStops() {
   const [stops, setStops] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(null);
+  const [loadKey, setLoadKey] = useState(0);
   const enrichCancelledRef = useRef(false);
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export function useStops() {
     async function load() {
       const { data, error } = await supabase.from('stops').select('*').order('sort_order');
       if (cancelled) return;
-      if (error) { console.warn('Failed to load stops:', error); setLoaded(true); return; }
+      if (error) { console.warn('Failed to load stops:', error); setError('Failed to load stops'); setLoaded(true); return; }
       setStops(data || []);
       setLoaded(true);
 
@@ -78,7 +80,7 @@ export function useStops() {
       })
       .subscribe();
     return () => { cancelled = true; enrichCancelledRef.current = true; supabase.removeChannel(channel); };
-  }, []);
+  }, [loadKey]);
 
   const updateStop = useCallback(async (id, changes) => {
     setStops(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
@@ -127,5 +129,7 @@ export function useStops() {
     }
   }, []);
 
-  return { stops, loaded, updateStop, addStop, deleteStop };
+  const retry = useCallback(() => { setError(null); setLoadKey(k => k + 1); }, []);
+
+  return { stops, loaded, error, retry, updateStop, addStop, deleteStop };
 }

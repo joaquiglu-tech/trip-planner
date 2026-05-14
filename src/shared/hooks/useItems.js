@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../../services/supabase';
 import { enrichItem } from '../../services/enrichItem';
 
-export const $f = (n) => '$' + (n || 0).toLocaleString();
+export const $f = (n) => '€' + (n || 0).toLocaleString();
 
 export function itemCost(it) {
   return Number(it.estimated_cost) || 0;
@@ -43,6 +43,8 @@ export function useItems(currentUserEmail, showToast) {
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(null);
+  const [loadKey, setLoadKey] = useState(0);
   const stopsMapRef = useRef({});
   const stopsDataRef = useRef([]);
 
@@ -55,7 +57,7 @@ export function useItems(currentUserEmail, showToast) {
         supabase.from('stops').select('id, name, start_date, end_date').order('sort_order'),
       ]);
       if (cancelled) return;
-      if (itemsRes.error) { console.warn('Failed to load items:', itemsRes.error); setLoaded(true); return; }
+      if (itemsRes.error) { console.warn('Failed to load items:', itemsRes.error); setError('Failed to load items'); setLoaded(true); return; }
       const stopsMap = {};
       (stopsRes.data || []).forEach(s => { stopsMap[s.id] = s; });
       stopsMapRef.current = stopsMap;
@@ -70,7 +72,7 @@ export function useItems(currentUserEmail, showToast) {
     }
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [loadKey]);
 
   // Realtime sync
   useEffect(() => {
@@ -203,5 +205,7 @@ export function useItems(currentUserEmail, showToast) {
   const staysWithKeys = useMemo(() => items.filter(it => it.type === 'stay' && it.xotelo_key), [items]);
   const stopsData = stopsDataRef.current;
 
-  return { items, loaded, updateItem, setStatus, addItem, deleteItem, staysWithKeys, stopsData };
+  const retry = useCallback(() => { setError(null); setLoadKey(k => k + 1); }, []);
+
+  return { items, loaded, error, retry, updateItem, setStatus, addItem, deleteItem, staysWithKeys, stopsData };
 }

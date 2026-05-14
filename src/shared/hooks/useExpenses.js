@@ -4,13 +4,15 @@ import { supabase } from '../../services/supabase';
 export function useExpenses() {
   const [expenses, setExpenses] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(null);
+  const [loadKey, setLoadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       const { data, error } = await supabase.from('expenses').select('*').order('created_at', { ascending: false });
       if (cancelled) return;
-      if (error) { console.warn('Failed to load expenses:', error); setLoaded(true); return; }
+      if (error) { console.warn('Failed to load expenses:', error); setError('Failed to load expenses'); setLoaded(true); return; }
       if (data) setExpenses(data);
       setLoaded(true);
     }
@@ -32,7 +34,7 @@ export function useExpenses() {
       })
       .subscribe();
     return () => { cancelled = true; supabase.removeChannel(channel); };
-  }, []);
+  }, [loadKey]);
 
   const addExpense = useCallback(async (expense) => {
     const { data, error } = await supabase.from('expenses').insert(expense).select().single();
@@ -57,5 +59,7 @@ export function useExpenses() {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  return { expenses, loaded, addExpense, updateExpense, deleteExpense };
+  const retry = useCallback(() => { setError(null); setLoadKey(k => k + 1); }, []);
+
+  return { expenses, loaded, error, retry, addExpense, updateExpense, deleteExpense };
 }

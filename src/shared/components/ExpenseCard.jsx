@@ -60,7 +60,7 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
             <div className="itin-general-row">
               <span className="itin-general-label">Amount</span>
               <div className="cost-input-row" style={{ flex: 1, justifyContent: 'flex-end' }}>
-                <span className="cost-input-prefix">$</span>
+                <span className="cost-input-prefix">€</span>
                 <input type="number" className="cost-input" style={{ fontSize: 14, maxWidth: 120, textAlign: 'right' }}
                   value={amountInput} onChange={e => setAmountInput(e.target.value)} autoFocus placeholder="0" />
               </div>

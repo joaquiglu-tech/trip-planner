@@ -102,7 +102,7 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
               <h2 className="detail-name" style={{ fontSize: 18 }}>How much did you pay?</h2>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>{selectedItem.name}</div>
               <div className="cost-input-row" style={{ marginBottom: 12 }}>
-                <span className="cost-input-prefix">$</span>
+                <span className="cost-input-prefix">€</span>
                 <input
                   type="number" className="cost-input" placeholder="0"
                   value={amount} onChange={e => setAmount(e.target.value)}

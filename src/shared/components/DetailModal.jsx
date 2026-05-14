@@ -255,6 +255,7 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
     hrs: it.hrs ? String(it.hrs) : '',
     xotelo_key: it.xotelo_key || '',
   });
+  const [baseItem] = useState(it); // snapshot of item when edit mode opened — used for conflict detection
   const [tripadvisorUrl, setTripadvisorUrl] = useState(it.xotelo_key ? `tripadvisor.com/Hotel_Review-${it.xotelo_key}-Reviews` : '');
   const [xoteloStatus, setXoteloStatus] = useState(it.xotelo_key ? 'found' : '');
 
@@ -278,6 +279,16 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
   const u = (key, val) => setDraft(d => ({ ...d, [key]: val }));
 
   async function handleSave() {
+    // Conflict detection: warn if live item diverged from snapshot taken at edit-mode open
+    const conflicts = [];
+    if (it.name !== baseItem.name) conflicts.push('name');
+    if (it.status !== baseItem.status) conflicts.push('status');
+    if (Number(it.estimated_cost) !== Number(baseItem.estimated_cost)) conflicts.push('estimated cost');
+    if (JSON.stringify(it.stop_ids) !== JSON.stringify(baseItem.stop_ids)) conflicts.push('stops');
+    if (conflicts.length > 0) {
+      if (!confirm(`This item was updated by someone else (${conflicts.join(', ')} changed). Save anyway?`)) return;
+    }
+
     setSaving(true);
     const changes = {};
     if (draft.name !== (it.name || '')) changes.name = draft.name;

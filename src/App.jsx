@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './shared/hooks/useAuth';
+import { useOnlineStatus } from './shared/hooks/useOnlineStatus';
 import { TripProvider, useTrip } from './shared/hooks/TripContext';
 import Login from './features/auth/Login';
 import TopBar from './shared/components/TopBar';
@@ -31,7 +32,8 @@ export default function App() {
 }
 
 function AppShell({ session }) {
-  const { items, loaded, stops, stopsLoaded, toast, addItem, addStop, addExpense, expenses, email } = useTrip();
+  const { items, loaded, stops, stopsLoaded, dataError, retryAll, toast, addItem, addStop, addExpense, expenses, email } = useTrip();
+  const online = useOnlineStatus();
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [showFab, setShowFab] = useState(null);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -53,11 +55,20 @@ function AppShell({ session }) {
 
   if (!loaded || !stopsLoaded) return <div className="loading-screen">Loading...</div>;
 
+  if (dataError) return (
+    <div className="error-state">
+      <h2>Something went wrong</h2>
+      <p>{dataError}</p>
+      <button onClick={retryAll}>Try again</button>
+    </div>
+  );
+
   const isProfile = activeTab === 'profile';
 
   return (
     <div className="app-shell">
       <TopBar items={items} stops={stops} session={session} onProfileClick={() => navigateTab('profile')} />
+      {!online && <div className="offline-banner">You're offline — changes won't save until you reconnect</div>}
       <div className="page-container">
         <SelectPage active={activeTab === 'plan'} filterCity={filterCity} clearFilterCity={() => setFilterCity(null)} />
         <BudgetPage active={activeTab === 'expenses'} />
