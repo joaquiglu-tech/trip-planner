@@ -68,7 +68,15 @@ export default function BudgetPage({ active }) {
                 </div>
                 <div className="bi-right">
                   <div className="bi-paid">{$f(Number(e.amount))}</div>
-                  <button onClick={() => deleteExpense(e.id)} style={{ background: 'none', border: 'none', color: '#f87171', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>delete</button>
+                  <button onClick={async () => {
+                    if (!confirm('Delete this expense? This cannot be undone.')) return;
+                    try {
+                      await deleteExpense(e.id);
+                    } catch (err) {
+                      console.warn('Failed to delete expense:', err);
+                      alert('Failed to delete expense.');
+                    }
+                  }} style={{ background: 'none', border: 'none', color: '#f87171', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>delete</button>
                 </div>
               </div>
             ))}

@@ -122,6 +122,10 @@ export function useItems(currentUserEmail, showToast) {
         } catch (err) {
           console.warn('Failed to deselect conflicting stays:', err);
         }
+        if (showToast) {
+          const names = others.map(o => o.name).join(', ');
+          showToast(`Deselected ${names} (only one stay per stop)`);
+        }
       }
     }
     await updateItem(id, { status });

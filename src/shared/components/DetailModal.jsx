@@ -125,11 +125,20 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
               <div className="status-selector">
                 {[{ value: '', label: 'Not added', cls: '' }, { value: 'sel', label: 'Selected', cls: 'sel' }, { value: 'conf', label: 'Confirmed', cls: 'conf' }].map(opt => (
                   <button key={opt.value} className={`status-option ${opt.cls} ${st === opt.value ? 'active' : ''}`}
-                    onClick={() => {
+                    onClick={async () => {
                       if (opt.value === st) return;
                       if (navigator.vibrate) navigator.vibrate(15);
                       if (opt.value === 'conf' && st !== 'conf') { setStatus(it.id, 'conf'); setShowExpenseCard(true); return; }
-                      if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) { if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`)) return; if (itemExpenses?.length > 0) { for (const exp of itemExpenses) { try { deleteExpense(exp.id); } catch {} } } }
+                      if (st === 'conf' && opt.value !== 'conf' && expenseAmount > 0) {
+                        if (!confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`)) return;
+                        if (itemExpenses?.length > 0) {
+                          let failed = false;
+                          for (const exp of itemExpenses) {
+                            try { await deleteExpense(exp.id); } catch (err) { console.warn('Failed to delete expense:', err); failed = true; }
+                          }
+                          if (failed) return;
+                        }
+                      }
                       setStatus(it.id, opt.value);
                     }}>
                     {opt.value === 'conf' ? '✓' : opt.value === 'sel' ? '●' : '○'} {opt.label}

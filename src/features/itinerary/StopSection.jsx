@@ -13,7 +13,7 @@ function getItemDate(startTime) {
 
 // selectedDate: optional YYYY-MM-DD for date-mode filtering
 // combinedStopIds: optional array of stop IDs for date-mode combined view
-export default function StopSection({ stop, items, onItemTap, places, statusFilter, updateStop, deleteStop, addItem, stops, showTitle, selectedDate, combinedStopIds, livePrices, expenseMap }) {
+export default function StopSection({ stop, items, onItemTap, places, statusFilter, updateStop, deleteStop, updateItem, addItem, stops, showTitle, selectedDate, combinedStopIds, livePrices, expenseMap }) {
   const [editing, setEditing] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [draft, setDraft] = useState({});
@@ -97,8 +97,19 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
             </div>
             {deleteStop && (
               <button className="detail-btn-delete" style={{ marginTop: 8 }} onClick={() => {
-                const itemCount = items.filter(it => itemInStop(it, stop.id)).length;
-                if (confirm(`Delete ${stop.name}? ${itemCount > 0 ? `This will unlink ${itemCount} items.` : ''} This cannot be undone.`)) { deleteStop(stop.id); setEditing(false); }
+                const affectedItems = items.filter(it => itemInStop(it, stop.id));
+                if (confirm(`Delete ${stop.name}? ${affectedItems.length > 0 ? `This will unlink ${affectedItems.length} items.` : ''} This cannot be undone.`)) {
+                  (async () => {
+                    if (updateItem) {
+                      for (const item of affectedItems) {
+                        const newStopIds = (item.stop_ids || []).filter(sid => sid !== stop.id);
+                        await updateItem(item.id, { stop_ids: newStopIds });
+                      }
+                    }
+                    await deleteStop(stop.id);
+                    setEditing(false);
+                  })();
+                }
               }}>Delete this stop</button>
             )}
           </>

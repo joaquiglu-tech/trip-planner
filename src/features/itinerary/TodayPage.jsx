@@ -93,12 +93,12 @@ export default function TodayPage({ active }) {
           stop={activeStops[0]} items={items} onItemTap={setSelectedItem} places={places}
           statusFilter={statusFilter} selectedDate={selectedDate}
           combinedStopIds={activeStops.map(s => s.id)}
-          updateStop={updateStop} deleteStop={deleteStop} addItem={addItem} stops={stops} showTitle={false} />
+          updateStop={updateStop} deleteStop={deleteStop} updateItem={updateItem} addItem={addItem} stops={stops} showTitle={false} />
       ) : (
         activeStops.map(stop => (
           <StopSection key={stop.id} stop={stop} items={items} onItemTap={setSelectedItem} places={places}
             statusFilter={statusFilter} selectedDate={selectedDate}
-            updateStop={updateStop} deleteStop={deleteStop} addItem={addItem} stops={stops} showTitle={activeStops.length > 1}
+            updateStop={updateStop} deleteStop={deleteStop} updateItem={updateItem} addItem={addItem} stops={stops} showTitle={activeStops.length > 1}
             livePrices={livePrices} expenseMap={expenseMap} />
         ))
       )}
