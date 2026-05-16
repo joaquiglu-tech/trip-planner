@@ -131,7 +131,7 @@ export default function SelectPage({ filterCity, clearFilterCity }) {
           livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
           expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
           onClose={handleCloseDetail}
-          onDelete={selectedItem.created_by ? () => { deleteItem(selectedItem.id); setSelectedItem(null); } : null}
+          onDelete={() => { deleteItem(selectedItem.id); setSelectedItem(null); }}
         />;
       })()}
       {showAddModal && <AddItemModal onClose={() => setShowAddModal(false)} onAdd={addItem} stops={stops} userEmail={userEmail} />}
