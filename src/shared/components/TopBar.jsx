@@ -34,7 +34,6 @@ export default function TopBar({ items, stops, session, onProfileClick, onRefres
           <div className="topbar-bar" role="progressbar" aria-valuenow={pct}><div className="topbar-fill" style={{ width: pct + '%' }} /></div>
         </div>
       </div>
-      <button className="topbar-refresh" onClick={onRefresh} aria-label="Refresh data" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>↻</button>
       <button className="topbar-avatar" onClick={onProfileClick} aria-label="Profile">{initial}</button>
     </header>
   );

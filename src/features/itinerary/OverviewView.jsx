@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { $f, itemCost } from '../../shared/hooks/useItems';
 import { RouteMap } from './MapComponents';
-import { formatStopDate, calcNights, formatRelativeTime, getStay, getStopStats, detectConflicts } from './utils';
+import { formatStopDate, calcNights, formatRelativeTime, getStay, getStopStats } from './utils';
 
 export default function OverviewView({ items, stops, expenses, onItemTap, onDaySelect }) {
   const daysLeft = useMemo(() => {
@@ -31,7 +31,6 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
       .slice(0, 8),
   [items]);
 
-  const { stopConflicts } = useMemo(() => detectConflicts(items, stops), [items, stops]);
 
   if (!stops || stops.length === 0) {
     return (
@@ -58,13 +57,6 @@ export default function OverviewView({ items, stops, expenses, onItemTap, onDayS
         <div className="home-stat"><div className="home-stat-num">{$f(stats.estimated)}</div><div className="home-stat-label">Estimated</div></div>
         <div className="home-stat"><div className="home-stat-num" style={{ color: 'var(--green)' }}>{$f(stats.confirmed)}</div><div className="home-stat-label">Confirmed</div></div>
       </div>
-      {stopConflicts.length > 0 && (
-        <div className="conflict-banner">
-          {stopConflicts.map((c, i) => (
-            <div key={i} className="conflict-item">Date overlap: {c.stop1.name} and {c.stop2.name}</div>
-          ))}
-        </div>
-      )}
       <div className="itin-map-schedule">
         <div className="itin-map-col">
           <div className="itin-col-header">
