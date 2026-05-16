@@ -138,7 +138,7 @@ export default function BudgetPage() {
           livePriceRates={livePrices?.[selectedItem.id]?.allRates}
           expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
           onClose={handleCloseDetail}
-          onDelete={liveItem.created_by ? () => { deleteItem(liveItem.id); setSelectedItem(null); } : null}
+          onDelete={() => { deleteItem(liveItem.id); setSelectedItem(null); }}
         />;
       })()}
     </div>
