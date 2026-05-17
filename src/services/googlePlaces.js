@@ -15,7 +15,7 @@ export async function fetchPlaceData(itemId, name, city) {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': API_KEY,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.currentOpeningHours,places.photos,places.priceLevel',
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.currentOpeningHours,places.photos,places.priceLevel,places.location',
         },
         body: JSON.stringify({
           textQuery: `${name} ${city}`,
@@ -50,6 +50,8 @@ export async function fetchPlaceData(itemId, name, city) {
       total_ratings: place.userRatingCount || 0,
       address: place.formattedAddress || '',
       phone: place.nationalPhoneNumber || '',
+      lat: place.location?.latitude || null,
+      lng: place.location?.longitude || null,
       website: place.websiteUri || '',
       hours: place.currentOpeningHours?.weekdayDescriptions || [],
       price_level: place.priceLevel || null,
