@@ -207,7 +207,7 @@ button:focus-visible, [role="button"]:focus-visible, a:focus-visible, input:focu
 @media(min-width:520px) { .detail-sheet { max-height: 90vh; border-radius: var(--radius-lg); margin-bottom: 20px } }
 @media(min-width:768px) { .detail-sheet { max-width: 600px } }
 @media(min-width:1200px) { .detail-sheet { max-width: 700px } }
-.detail-close { position: sticky; top: 12px; float: right; margin-right: 12px; z-index: 10; background: rgba(0,0,0,.5); backdrop-filter: blur(8px); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: var(--text-base); cursor: pointer; display: flex; align-items: center; justify-content: center }
+.detail-close { position: absolute; top: 12px; right: 12px; z-index: 20; background: rgba(0,0,0,.5); backdrop-filter: blur(8px); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: var(--text-base); cursor: pointer; display: flex; align-items: center; justify-content: center }
 /* Image carousel */
 .detail-carousel { position: relative; background: var(--bg-card-hd) }
 .detail-carousel-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none }

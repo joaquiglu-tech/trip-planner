@@ -265,7 +265,6 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
     hrs: it.hrs ? String(it.hrs) : '',
     xotelo_key: it.xotelo_key || '',
   });
-  const [baseItem] = useState(it); // snapshot of item when edit mode opened — used for conflict detection
   const [tripadvisorUrl, setTripadvisorUrl] = useState(it.xotelo_key ? `tripadvisor.com/Hotel_Review-${it.xotelo_key}-Reviews` : '');
   const [xoteloStatus, setXoteloStatus] = useState(it.xotelo_key ? 'found' : '');
 
@@ -289,17 +288,6 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
   const u = (key, val) => setDraft(d => ({ ...d, [key]: val }));
 
   async function handleSave() {
-    // Conflict detection: warn if live item diverged from snapshot taken at edit-mode open
-    const conflicts = [];
-    if (it.name !== baseItem.name) conflicts.push('name');
-    if (it.status !== baseItem.status) conflicts.push('status');
-    if (Number(it.estimated_cost) !== Number(baseItem.estimated_cost)) conflicts.push('estimated cost');
-    if (JSON.stringify(it.stop_ids) !== JSON.stringify(baseItem.stop_ids)) conflicts.push('stops');
-    if (conflicts.length > 0) {
-      const confirmed = await confirm(`This item was updated by someone else (${conflicts.join(', ')} changed). Save anyway?`, { confirmLabel: 'Save anyway' });
-      if (!confirmed) return;
-    }
-
     setSaving(true);
     const changes = {};
     if (draft.name !== (it.name || '')) changes.name = draft.name;
@@ -467,7 +455,10 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
             <div><label className="edit-label">End</label><input className="edit-input" value={draft.end_time} onChange={e => u('end_time', e.target.value)} type="datetime-local" /></div>
           </div>
 
-          {/* Pricing — same component as summary for consistency */}
+          {/* Pricing */}
+          <div className="edit-section-title">Pricing</div>
+          <label className="edit-label">Estimated cost ($)</label>
+          <input className="edit-input" value={draft.estimated_cost} onChange={e => u('estimated_cost', e.target.value)} type="number" step="0.01" placeholder="0" />
           <PricingBlock it={{ ...it, estimated_cost: draft.estimated_cost ? Number(draft.estimated_cost) : it.estimated_cost }} livePrice={livePrice} expenseAmount={expenseAmount} onExpenseClick={onExpenseClick} />
 
           {/* Links */}
