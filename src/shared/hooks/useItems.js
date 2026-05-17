@@ -124,11 +124,18 @@ export function useItems(currentUserEmail, showToast) {
     if (item?.type === 'stay' && itemStops.length > 0 && (status === 'sel' || status === 'conf')) {
       const others = itemsRef.current.filter(it => it.type === 'stay' && it.id !== id && (it.status === 'sel' || it.status === 'conf') && it.stop_ids?.some(s => itemStops.includes(s)));
       if (others.length > 0) {
+        const prevStatuses = others.map(o => ({ id: o.id, status: o.status }));
         setItems(prev => prev.map(it => others.some(o => o.id === it.id) ? { ...it, status: '' } : it));
         try {
           await Promise.all(others.map(o => supabase.from('items').update({ status: '', updated_at: new Date().toISOString(), updated_by: currentUserEmail }).eq('id', o.id)));
         } catch (err) {
           console.warn('Failed to deselect conflicting stays:', err);
+          setItems(prev => prev.map(it => {
+            const restore = prevStatuses.find(p => p.id === it.id);
+            return restore ? { ...it, status: restore.status } : it;
+          }));
+          if (showToast) showToast('Failed to update stays — please try again');
+          return;
         }
         if (showToast) {
           const names = others.map(o => o.name).join(', ');
@@ -140,11 +147,12 @@ export function useItems(currentUserEmail, showToast) {
   }, [currentUserEmail, updateItem, showToast]);
 
   const addItem = useCallback(async (itemData) => {
+    const maxSort = itemsRef.current.reduce((max, it) => Math.max(max, it.sort_order || 0), 0);
     const newItem = {
       id: crypto.randomUUID(),
       name: itemData.name || '',
       type: itemData.type || 'food',
-      description: itemData.desc_text || itemData.description || '',
+      description: itemData.description || '',
       link: itemData.link || '',
       estimated_cost: itemData.estimated_cost || 0,
       dish: itemData.dish || '', subcat: itemData.subcat || '', tier: itemData.tier || '',
@@ -156,6 +164,7 @@ export function useItems(currentUserEmail, showToast) {
       hrs: itemData.hrs || null, notes: itemData.notes || '',
       start_time: itemData.start_time || null, end_time: itemData.end_time || null,
       stop_ids: itemData.stop_ids || [],
+      sort_order: maxSort + 1,
       status: itemData.status || 'sel',
       created_by: currentUserEmail, updated_by: currentUserEmail,
       created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
@@ -182,21 +191,24 @@ export function useItems(currentUserEmail, showToast) {
       return p.filter(it => it.id !== id);
     });
     try {
-      await supabase.from('expenses').delete().eq('item_id', id);
-      await supabase.from('place_cache').delete().eq('item_id', id);
+      // Delete item first — source of truth. Orphaned children are less harmful than orphaned parents.
+      const { error } = await supabase.from('items').delete().eq('id', id);
+      if (error) {
+        console.warn('Failed to delete item:', error);
+        if (prev) setItems(p => [...p, prev]);
+        return;
+      }
+      // Cleanup children — best effort
+      await supabase.from('expenses').delete().eq('item_id', id).catch(e => console.warn('Expense cleanup failed:', e));
+      await supabase.from('place_cache').delete().eq('item_id', id).catch(e => console.warn('Place cache cleanup failed:', e));
       try {
         const { data: storageFiles } = await supabase.storage.from('reservations').list(id);
         if (storageFiles?.length > 0) {
           await supabase.storage.from('reservations').remove(storageFiles.map(f => `${id}/${f.name}`));
         }
-      } catch (storageErr) { console.warn('Storage cleanup failed for item', id, storageErr); }
-      const { error } = await supabase.from('items').delete().eq('id', id);
-      if (error) {
-        console.warn('Failed to delete item:', error);
-        if (prev) setItems(p => [...p, prev]);
-      }
+      } catch (storageErr) { console.warn('Storage cleanup failed:', storageErr); }
     } catch (err) {
-      console.warn('deleteItem cascade error:', err);
+      console.warn('deleteItem error:', err);
       if (prev) setItems(p => [...p, prev]);
     }
   }, []);

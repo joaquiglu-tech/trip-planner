@@ -21,7 +21,7 @@ const TRANSPORT_MODES = [
   { value: 'rental', label: 'Rental' }, { value: 'drive', label: 'Drive' }, { value: 'ferry', label: 'Ferry' }, { value: 'taxi', label: 'Taxi' },
 ];
 
-const EMPTY_FORM = { name: '', type: 'food', stop_ids: [], desc_text: '', dish: '', subcat: '', tier: '', hrs: '',
+const EMPTY_FORM = { name: '', type: 'food', stop_ids: [], description: '', dish: '', subcat: '', tier: '', hrs: '',
   transport_mode: '', is_rental: false, origin: null, dest: null, start_time: '', end_time: '',
   link: '', estimated_cost: '', notes: '', tripadvisor_url: '', xotelo_key: '',
   status: 'sel', confirmed_cost: '', expense_note: '' };
@@ -68,12 +68,15 @@ export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stop
         if (s1 && !next.origin) next.origin = { name: s1.name, lat: s1.lat, lng: s1.lng };
         if (s2 && !next.dest) next.dest = { name: s2.name, lat: s2.lat, lng: s2.lng };
       }
-      // Re-fetch Xotelo rates when stop changes and we have a key
-      if (key === 'stop_ids' && next.xotelo_key && next.type === 'stay') {
-        fetchXoteloPrices(next.xotelo_key, val);
-      }
       return next;
     });
+    // Xotelo fetch outside setState — reads current state to avoid stale closure
+    if (key === 'stop_ids') {
+      setForm(f => {
+        if (f.xotelo_key && f.type === 'stay') fetchXoteloPrices(f.xotelo_key, val).catch(() => {});
+        return f;
+      });
+    }
   }
 
   // Fetch Xotelo prices for a key + stop dates
@@ -83,12 +86,15 @@ export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stop
     const checkIn = String(firstStop.start_date).substring(0, 10);
     const checkOut = String(firstStop.end_date).substring(0, 10);
     setXoteloStatus('searching');
-    const estimate = await fetchStayEstimate(key, checkIn, checkOut);
-    if (estimate) {
-      setForm(f => ({ ...f, estimated_cost: String(Math.round(estimate.estimated_cost)) }));
+    try {
+      const estimate = await fetchStayEstimate(key, checkIn, checkOut);
+      if (estimate) {
+        setForm(f => ({ ...f, estimated_cost: String(Math.round(estimate.estimated_cost)) }));
+      }
       setXoteloStatus('found');
-    } else {
-      setXoteloStatus('found');
+    } catch (err) {
+      console.warn('Xotelo fetch failed:', err);
+      setXoteloStatus('not_found');
     }
   }
 
@@ -102,8 +108,8 @@ export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stop
       return;
     }
     setForm(f => ({ ...f, xotelo_key: key }));
-    // Try to fetch immediately with current stop selection
-    fetchXoteloPrices(key, form.stop_ids);
+    // Read current stop_ids from state to avoid stale closure
+    setForm(f => { fetchXoteloPrices(key, f.stop_ids).catch(() => {}); return f; });
   }
 
   async function handleSave() {
@@ -217,28 +223,29 @@ export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stop
                 <input className="add-input" placeholder="Expense note (optional)"
                   value={form.expense_note} onChange={e => updateForm('expense_note', e.target.value)}
                   style={{ marginBottom: 8 }} />
-                <label className="add-label">Attachments</label>
-                {pendingFiles.length > 0 && (
-                  <div style={{ marginBottom: 8 }}>
-                    {pendingFiles.map((f, i) => (
-                      <div key={i} className="file-chip" style={{ marginBottom: 4 }}>
-                        <span className="file-chip-name">{f.name}</span>
-                        <button type="button" className="file-remove-btn"
-                          onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}>x</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <label className="detail-upload-btn" style={{ marginBottom: 8 }}>
-                  Upload file
-                  <input type="file" accept="image/*,.pdf,.doc,.docx" className="hidden-input"
-                    onChange={e => { if (e.target.files[0]) { setPendingFiles(prev => [...prev, e.target.files[0]]); e.target.value = ''; } }} />
-                </label>
               </>
             )}
 
+            <label className="add-label">Attachments</label>
+            {pendingFiles.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                {pendingFiles.map((f, i) => (
+                  <div key={i} className="file-chip" style={{ marginBottom: 4 }}>
+                    <span className="file-chip-name">{f.name}</span>
+                    <button type="button" className="file-remove-btn"
+                      onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}>x</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="detail-upload-btn" style={{ marginBottom: 8 }}>
+              Upload file
+              <input type="file" accept="image/*,.pdf,.doc,.docx" className="hidden-input"
+                onChange={e => { if (e.target.files[0]) { setPendingFiles(prev => [...prev, e.target.files[0]]); e.target.value = ''; } }} />
+            </label>
+
             <label className="add-label">Description</label>
-            <textarea className="add-input" rows={2} value={form.desc_text} onChange={(e) => updateForm('desc_text', e.target.value)} placeholder="What is it? Why go?" />
+            <textarea className="add-input" rows={2} value={form.description} onChange={(e) => updateForm('description', e.target.value)} placeholder="What is it? Why go?" />
 
             {/* Type-specific fields */}
             {form.type === 'food' && (
