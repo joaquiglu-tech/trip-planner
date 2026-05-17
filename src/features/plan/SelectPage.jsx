@@ -12,7 +12,7 @@ const TYPE_ORDER = ['transport', 'stay', 'activity', 'food'];
 
 export default function SelectPage({ filterCity, clearFilterCity }) {
   const { items, livePrices, expenses, expenseMap, email: userEmail, stops, files, places } = useTripData();
-  const { updateItem, setStatus, addItem, deleteItem, addExpense, updateExpense, setFile, removeFile, getPlaceData } = useTripActions();
+  const { updateItem, setStatus, addItem, deleteItem, addExpense, updateExpense, deleteExpense, setFile, removeFile, getPlaceData } = useTripActions();
   const [filters, setFilters] = useState({ type: 'all', city: 'all', status: 'all', search: '' });
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function SelectPage({ filterCity, clearFilterCity }) {
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
-          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
+          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
           onClose={handleCloseDetail}
           onDelete={() => { deleteItem(selectedItem.id); setSelectedItem(null); }}
         />;
