@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { backfillCoords } from './services/enrichItem';
 import { useAuth } from './shared/hooks/useAuth';
-
-// Expose backfill for one-time use from browser console: window.backfillCoords()
-if (typeof window !== 'undefined') window.backfillCoords = backfillCoords;
 import { useOnlineStatus } from './shared/hooks/useOnlineStatus';
 import { TripProvider, useTrip } from './shared/hooks/TripContext';
 import Login from './features/auth/Login';
