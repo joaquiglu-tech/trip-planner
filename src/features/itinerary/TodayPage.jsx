@@ -8,7 +8,7 @@ import { toDateStr, formatStopDate, getTodayDayIndex, getCalendarDates } from '.
 
 export default function TodayPage() {
   const { items, stops, livePrices, expenses, files, places, expenseMap } = useTripData();
-  const { updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, addItem, setFile, removeFile, getPlaceData } = useTripActions();
+  const { updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, deleteExpense, addItem, setFile, removeFile, getPlaceData } = useTripActions();
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectorMode, setSelectorMode] = useState('stops');
@@ -97,12 +97,12 @@ export default function TodayPage() {
           stop={activeStops[0]} items={items} onItemTap={setSelectedItem} places={places}
           statusFilter={statusFilter} selectedDate={selectedDate}
           combinedStopIds={activeStops.map(s => s.id)}
-          updateStop={updateStop} deleteStop={deleteStop} updateItem={updateItem} addItem={addItem} stops={stops} showTitle={false} />
+          updateStop={updateStop} deleteStop={deleteStop} updateItem={updateItem} addItem={addItem} addExpense={addExpense} setFile={setFile} userEmail={email} stops={stops} showTitle={false} />
       ) : (
         activeStops.map(stop => (
           <StopSection key={stop.id} stop={stop} items={items} onItemTap={setSelectedItem} places={places}
             statusFilter={statusFilter} selectedDate={selectedDate}
-            updateStop={updateStop} deleteStop={deleteStop} updateItem={updateItem} addItem={addItem} stops={stops} showTitle={activeStops.length > 1}
+            updateStop={updateStop} deleteStop={deleteStop} updateItem={updateItem} addItem={addItem} addExpense={addExpense} setFile={setFile} userEmail={email} stops={stops} showTitle={activeStops.length > 1}
             livePrices={livePrices} expenseMap={expenseMap} />
         ))
       )}
@@ -119,7 +119,7 @@ export default function TodayPage() {
           files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
           placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
           livePrice={livePrices?.[selectedItem.id]?.perNight} livePriceRates={livePrices?.[selectedItem.id]?.allRates}
-          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
+          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
           onClose={handleCloseDetail}
           onDelete={() => { deleteItem(liveItem.id); setSelectedItem(null); }}
         />;

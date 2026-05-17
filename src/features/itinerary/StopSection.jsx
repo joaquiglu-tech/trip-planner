@@ -13,7 +13,7 @@ function getItemDate(startTime) {
 
 // selectedDate: optional YYYY-MM-DD for date-mode filtering
 // combinedStopIds: optional array of stop IDs for date-mode combined view
-export default function StopSection({ stop, items, onItemTap, places, statusFilter, updateStop, deleteStop, updateItem, addItem, stops, showTitle, selectedDate, combinedStopIds, livePrices, expenseMap }) {
+export default function StopSection({ stop, items, onItemTap, places, statusFilter, updateStop, deleteStop, updateItem, addItem, addExpense, setFile, userEmail, stops, showTitle, selectedDate, combinedStopIds, livePrices, expenseMap }) {
   const [editing, setEditing] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [draft, setDraft] = useState({});
@@ -161,7 +161,7 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
       {tips && (<details className="today-section"><summary className="today-section-title" style={{ cursor: 'pointer', listStyle: 'none' }}>Travel tips</summary><ul className="detail-tips" style={{ marginTop: 6 }}>{tips.map((t, i) => <li key={i}>{t}</li>)}</ul></details>)}
       <PlanSection planItems={planItems} onItemTap={onItemTap} livePrices={livePrices} expenseMap={expenseMap} />
       {addItem && (<button className="itin-add-item-btn" onClick={() => setShowAddItem(true)}>+ Add item to {stop.name}</button>)}
-      {showAddItem && (<AddItemModal onClose={() => setShowAddItem(false)} onAdd={(data) => addItem({ ...data, stop_ids: data.stop_ids?.length ? data.stop_ids : [stop.id] })} stops={stops} userEmail="" defaultStopId={stop.id} />)}
+      {showAddItem && (<AddItemModal onClose={() => setShowAddItem(false)} onAdd={(data) => addItem({ ...data, stop_ids: data.stop_ids?.length ? data.stop_ids : [stop.id] })} addExpense={addExpense} setFile={setFile} stops={stops} userEmail={userEmail || ''} defaultStopId={stop.id} />)}
     </div>
   );
 }
