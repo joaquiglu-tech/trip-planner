@@ -33,7 +33,7 @@ export function useStops() {
     enrichCancelledRef.current = false;
 
     async function load() {
-      const { data, error } = await supabase.from('stops').select('*').order('sort_order');
+      const { data, error } = await supabase.from('stops').select('*').order('start_date');
       if (cancelled) return;
       if (error) { console.warn('Failed to load stops:', error); setError('Failed to load stops'); setLoaded(true); return; }
       setStops(data || []);
@@ -72,10 +72,10 @@ export function useStops() {
         } else if (payload.eventType === 'INSERT') {
           setStops(prev => {
             if (prev.some(s => s.id === payload.new.id)) return prev;
-            return [...prev, payload.new].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            return [...prev, payload.new].sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
           });
         } else if (payload.eventType === 'UPDATE') {
-          setStops(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s));
+          setStops(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s).sort((a, b) => new Date(a.start_date) - new Date(b.start_date)));
         }
       })
       .subscribe();
@@ -83,7 +83,11 @@ export function useStops() {
   }, [loadKey]);
 
   const updateStop = useCallback(async (id, changes) => {
-    setStops(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
+    setStops(prev => {
+      const updated = prev.map(s => s.id === id ? { ...s, ...changes } : s);
+      if (changes.start_date || changes.end_date) return updated.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+      return updated;
+    });
     const { error } = await supabase.from('stops').update(changes).eq('id', id);
     if (error) {
       console.warn('Failed to update stop:', error);
