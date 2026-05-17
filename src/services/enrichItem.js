@@ -13,6 +13,7 @@ export async function enrichItem(item) {
       const place = await fetchPlaceData(item.id, item.name, item.city);
       if (place) {
         if (place.place_id) changes.google_place_id = place.place_id;
+        if (place.lat && place.lng) { changes.lat = place.lat; changes.lng = place.lng; }
         if (place.address && !item.description) changes.description = place.address;
       }
     } catch (err) {
