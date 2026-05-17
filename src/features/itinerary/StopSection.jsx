@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { toDateStr, formatStopDate, calcNights, itemInStop, getStay, detectConflicts } from './utils';
+import { toDateStr, formatStopDate, calcNights, itemInStop, getStay } from './utils';
 import { DayMap } from './MapComponents';
 import ScheduleList from './ScheduleList';
 import PlanSection from './PlanSection';
@@ -82,10 +82,6 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
     return allStopItems.filter(it => it.status === statusFilter);
   }, [allStopItems, statusFilter]);
 
-  const conflicts = useMemo(() => {
-    const { itemConflicts } = detectConflicts(items, [stop]);
-    return itemConflicts.filter(c => c.stopId === stop.id);
-  }, [items, stop]);
 
   return (
     <div className={showTitle ? 'stop-section' : ''}>
@@ -134,13 +130,6 @@ export default function StopSection({ stop, items, onItemTap, places, statusFilt
           </div>
         )}
       </div>
-      {conflicts.length > 0 && (
-        <div className="conflict-banner">
-          {conflicts.map((c, i) => (
-            <div key={i} className="conflict-item">Time overlap: {c.item1.name} and {c.item2.name}</div>
-          ))}
-        </div>
-      )}
       <div className="itin-map-schedule">
         <div className="itin-map-col">
           <div className="itin-col-header">
