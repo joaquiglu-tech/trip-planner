@@ -156,7 +156,7 @@ export function useItems(currentUserEmail, showToast) {
       hrs: itemData.hrs || null, notes: itemData.notes || '',
       start_time: itemData.start_time || null, end_time: itemData.end_time || null,
       stop_ids: itemData.stop_ids || [],
-      status: 'sel',
+      status: itemData.status || 'sel',
       created_by: currentUserEmail, updated_by: currentUserEmail,
       created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     };
