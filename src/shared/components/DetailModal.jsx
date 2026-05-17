@@ -364,10 +364,14 @@ function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpen
                     if (opt.value === (status || '')) return;
                     if (navigator.vibrate) navigator.vibrate(15);
                     if ((status || '') === 'conf' && opt.value !== 'conf' && expenseAmount > 0) {
+                      const confirmed = await confirm(`This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`, { destructive: true, confirmLabel: 'Continue' });
+                      if (!confirmed) return;
                       if (itemExpenses?.length > 0) {
+                        let failed = false;
                         for (const exp of itemExpenses) {
-                          try { await deleteExpense(exp.id); } catch (err) { console.warn('Failed to delete expense:', err); }
+                          try { await deleteExpense(exp.id); } catch (err) { console.warn('Failed to delete expense:', err); failed = true; }
                         }
+                        if (failed) return;
                       }
                     }
                     setStatus(it.id, opt.value);

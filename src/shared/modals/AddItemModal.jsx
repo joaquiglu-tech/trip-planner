@@ -125,19 +125,26 @@ export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stop
       });
 
       // Create expense if confirmed with a cost
+      const errors = [];
       const cost = parseFloat(form.confirmed_cost);
       if (form.status === 'conf' && cost > 0 && addExpense) {
-        await addExpense({
-          amount: cost,
-          category: form.type,
-          note: form.expense_note || form.name,
-          item_id: newItem.id,
-          stop_id: form.stop_ids[0] || '',
-          created_by: userEmail,
-        });
+        try {
+          await addExpense({
+            amount: cost,
+            category: form.type,
+            note: form.expense_note || form.name,
+            item_id: newItem.id,
+            stop_id: form.stop_ids[0] || '',
+            created_by: userEmail,
+          });
+        } catch (err) {
+          console.warn('Expense creation failed:', err);
+          errors.push('Expense could not be saved — open the item to add it manually.');
+        }
       }
 
       // Upload pending files
+      const failedFiles = [];
       if (pendingFiles.length > 0 && setFile) {
         for (const file of pendingFiles) {
           try {
@@ -145,10 +152,15 @@ export default function AddItemModal({ onClose, onAdd, addExpense, setFile, stop
             setFile(newItem.id, result);
           } catch (err) {
             console.warn('File upload failed:', err);
+            failedFiles.push(file.name);
           }
         }
       }
+      if (failedFiles.length > 0) errors.push(`Failed to upload: ${failedFiles.join(', ')}`);
 
+      if (errors.length > 0) {
+        alert(`Item saved, but:\n${errors.join('\n')}`);
+      }
       onClose();
     } catch (err) {
       alert('Error saving: ' + err.message);
