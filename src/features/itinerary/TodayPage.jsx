@@ -7,7 +7,7 @@ import StatusFilter from './StatusFilter';
 import { toDateStr, formatStopDate, getTodayDayIndex, getCalendarDates } from './utils';
 
 export default function TodayPage() {
-  const { items, stops, livePrices, expenses, files, places, expenseMap } = useTripData();
+  const { items, stops, livePrices, expenses, files, places, expenseMap, email } = useTripData();
   const { updateItem, deleteItem, updateStop, deleteStop, setStatus, addExpense, updateExpense, deleteExpense, addItem, setFile, removeFile, getPlaceData } = useTripActions();
   const [selectedItem, setSelectedItem] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
