@@ -89,8 +89,8 @@ src/
 - PWA cache: Supabase API 1h, Google Maps 7d, Places 30d
 
 ## The build workflow (per feature / per fix)
-The **execution layer is Superpowers** (a plugin — install it, not bundled). Not every step
-every time — scale to the change.
+The **execution layer is Superpowers** (a plugin — declared in `.claude/settings.json`, not
+bundled as files). Not every step every time — scale to the change.
 
 1. **Brainstorm** (`superpowers:brainstorming`) — refine a rough idea through questions, explore alternatives.
 2. **Plan** (`superpowers:writing-plans`) — break work into small tasks with exact file paths and verification. Plans land in `docs/superpowers/plans/`.
@@ -104,8 +104,10 @@ forensic tracing when a bug outgrows systematic-debugging), `bmad-correct-course
 mid-flight), `bmad-retrospective`, plus doc utilities.
 
 ## Frameworks & skills
-- **Superpowers** (PLUGIN — install, not bundled): the execution loop above.
-  `/plugin install superpowers@claude-plugins-official`.
+- **Superpowers** (PLUGIN — declared in `.claude/settings.json`, not bundled as files): the
+  execution loop above. It's obra's marketplace plugin; `.claude/settings.json` registers
+  `obra/superpowers-marketplace` and enables `superpowers@superpowers-marketplace`, so it
+  auto-installs at session start (web included). To manage it locally: `/plugin`.
 - **BMAD** (bundled under `.claude/skills/bmad-*`, config in `_bmad/`) — 10 skills that don't
   overlap Superpowers: `bmad-spec`, `bmad-investigate`, `bmad-correct-course`, `bmad-retrospective`,
   `bmad-document-project`, `bmad-generate-project-context`, `bmad-shard-doc`, `bmad-index-docs`,
