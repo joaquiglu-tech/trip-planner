@@ -1,8 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { Map, useMap, useMapsLibrary, Marker } from '@vis.gl/react-google-maps';
-import { calcNights, itemInStop, getStay } from './utils';
-
-const TYPE_MAP_COLOR = { stay: '#7C3AED', food: '#D97706', activity: '#16A34A', transport: '#2563EB' };
+import { itemInStop, getStay } from './utils';
 
 const TRANSPORT_TRAVEL_MODE = {
   drive: 'DRIVING', taxi: 'DRIVING',

@@ -7,6 +7,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
+    // Dummy Supabase vars so modules that import the client (which throws on
+    // missing env at import time) can load in test/CI without a real .env.
+    // Real dev/prod still require genuine values — the runtime guard is intact.
+    env: {
+      VITE_SUPABASE_URL: 'http://localhost:54321',
+      VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+    },
   },
   plugins: [
     react(),

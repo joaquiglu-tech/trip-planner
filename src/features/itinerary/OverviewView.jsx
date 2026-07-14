@@ -3,7 +3,7 @@ import { $f, itemCost } from '../../shared/hooks/useItems';
 import { RouteMap } from './MapComponents';
 import { formatStopDate, calcNights, formatRelativeTime, getStay, getStopStats } from './utils';
 
-export default function OverviewView({ items, stops, expenses, onItemTap, onDaySelect }) {
+export default function OverviewView({ items, stops, expenses, onDaySelect }) {
   const daysLeft = useMemo(() => {
     if (!stops || !stops.length) return 0;
     return Math.ceil((new Date(stops[0].start_date) - new Date()) / 86400000);

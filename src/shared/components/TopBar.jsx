@@ -1,4 +1,4 @@
-export default function TopBar({ items, stops, session, onProfileClick, onRefresh }) {
+export default function TopBar({ items, stops, session, onProfileClick }) {
   const stays = items.filter(it => it.type === 'stay');
   const cities = [...new Set(stays.map(it => it.city))];
   const booked = cities.filter(city => stays.some(it => it.city === city && it.status === 'conf')).length;

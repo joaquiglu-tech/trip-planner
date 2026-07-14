@@ -10,8 +10,8 @@ export function formatStopDate(stop) {
   const ed = toDateStr(stop.end_date);
   if (!sd) return '';
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const [sy, smn, sdy] = sd.split('-').map(Number);
-  const [ey, emn, edy] = ed.split('-').map(Number);
+  const [, smn, sdy] = sd.split('-').map(Number);
+  const [, emn, edy] = ed.split('-').map(Number);
   const sm = months[smn - 1], em = months[emn - 1];
   if (smn === emn && sdy !== edy) return `${sm} ${sdy}–${edy}`;
   if (smn !== emn) return `${sm} ${sdy} – ${em} ${edy}`;
