@@ -1,4 +1,4 @@
-import { fetchPlaceData } from './googlePlaces';
+import { fetchPlaceData } from "./googlePlaces";
 
 /**
  * Auto-enrich a newly added item with external data.
@@ -13,11 +13,16 @@ export async function enrichItem(item) {
       const place = await fetchPlaceData(item.id, item.name, item.city);
       if (place) {
         if (place.place_id) changes.google_place_id = place.place_id;
-        if (place.lat && place.lng) { changes.lat = place.lat; changes.lng = place.lng; }
-        if (place.address && !item.description) changes.description = place.address;
+        // != null (not truthiness) so a real 0 coordinate isn't dropped (M05)
+        if (place.lat != null && place.lng != null) {
+          changes.lat = place.lat;
+          changes.lng = place.lng;
+        }
+        if (place.address && !item.description)
+          changes.description = place.address;
       }
     } catch (err) {
-      console.warn('Google Places enrichment failed:', err);
+      console.warn("Google Places enrichment failed:", err);
     }
   }
 

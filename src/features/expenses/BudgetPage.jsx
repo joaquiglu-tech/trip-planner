@@ -1,33 +1,67 @@
-import { useState, useMemo, useCallback } from 'react';
-import { $f, itemCost } from '../../shared/hooks/useItems';
-import { useTripData, useTripActions } from '../../shared/hooks/TripContext';
-import DetailModal from '../../shared/components/DetailModal';
-import ExpenseCard from '../../shared/components/ExpenseCard';
-import BudgetSummary from './BudgetSummary';
+import { useState, useMemo, useCallback } from "react";
+import { $f, itemCost, sumItemExpenses } from "../../shared/hooks/useItems";
+import { itemHasExpense } from "../../shared/hooks/useExpenses";
+import { useTripData, useTripActions } from "../../shared/hooks/TripContext";
+import DetailModal from "../../shared/components/DetailModal";
+import ExpenseCard from "../../shared/components/ExpenseCard";
+import BudgetSummary from "./BudgetSummary";
 
 export default function BudgetPage() {
   const { items, stops, livePrices, expenses, files, places } = useTripData();
-  const { updateItem, deleteItem, setStatus, addExpense, updateExpense, deleteExpense, setFile, removeFile, getPlaceData } = useTripActions();
+  const {
+    updateItem,
+    deleteItem,
+    setStatus,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    setFile,
+    removeFile,
+    getPlaceData,
+  } = useTripActions();
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const handleCloseDetail = useCallback(() => setSelectedItem(null), []);
 
-  const itemsMap = useMemo(() => new Map(items.map(it => [it.id, it])), [items]);
-  const stopsMap = useMemo(() => new Map((stops || []).map(s => [s.id, s])), [stops]);
+  const itemsMap = useMemo(
+    () => new Map(items.map((it) => [it.id, it])),
+    [items],
+  );
+  const stopsMap = useMemo(
+    () => new Map((stops || []).map((s) => [s.id, s])),
+    [stops],
+  );
 
   const confirmedExpenses = useMemo(() => {
-    return (expenses || []).filter(e => e.item_id).map(e => {
-      const item = itemsMap.get(e.item_id);
-      const stop = item?.stop_ids?.[0] ? stopsMap.get(item.stop_ids[0]) : null;
-      return { ...e, item, stop };
-    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return (expenses || [])
+      .filter((e) => e.item_id)
+      .map((e) => {
+        const item = itemsMap.get(e.item_id);
+        const stop = item?.stop_ids?.[0]
+          ? stopsMap.get(item.stop_ids[0])
+          : null;
+        return { ...e, item, stop };
+      })
+      .sort((a, b) => (new Date(b.created_at).getTime() || 0) - (new Date(a.created_at).getTime() || 0));
   }, [expenses, itemsMap, stopsMap]);
 
   const unlinkedExpenses = useMemo(() => {
-    return (expenses || []).filter(e => !e.item_id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return (expenses || [])
+      .filter((e) => !e.item_id)
+      .sort((a, b) => (new Date(b.created_at).getTime() || 0) - (new Date(a.created_at).getTime() || 0));
   }, [expenses]);
 
-  const planned = useMemo(() => items.filter(it => it.status === 'sel'), [items]);
+  // M06: include confirmed items that have no logged expense — otherwise they
+  // vanish from both lists yet still count toward the summary's selected total.
+  const planned = useMemo(
+    () =>
+      items.filter(
+        (it) =>
+          it.status === "sel" ||
+          (it.status === "conf" && !itemHasExpense(expenses, it.id)),
+      ),
+    [items, expenses],
+  );
 
   return (
     <div id="page-budget" className="page active">
@@ -37,14 +71,28 @@ export default function BudgetPage() {
       <div className="sect-title">Confirmed ({confirmedExpenses.length})</div>
       {confirmedExpenses.length > 0 ? (
         <div className="budget-list">
-          {confirmedExpenses.map(e => (
-            <div key={e.id} className="budget-item budget-item-conf" onClick={() => setSelectedExpense(e)} style={{ cursor: 'pointer' }}>
+          {confirmedExpenses.map((e) => (
+            <div
+              key={e.id}
+              className="budget-item budget-item-conf"
+              onClick={() => setSelectedExpense(e)}
+              style={{ cursor: "pointer" }}
+            >
               <div className="bi-left">
-                <div className="bi-name">{e.item?.name || e.note || 'Expense'}</div>
+                <div className="bi-name">
+                  {e.item?.name || e.note || "Expense"}
+                </div>
                 <div className="bi-meta">
-                  {e.item?.type && <span className="bi-type">{e.item.type}</span>}
+                  {e.item?.type && (
+                    <span className="bi-type">{e.item.type}</span>
+                  )}
                   {e.stop?.name && <span> · {e.stop.name}</span>}
-                  {e.created_at && <span> · {new Date(e.created_at).toLocaleDateString()}</span>}
+                  {e.created_at && (
+                    <span>
+                      {" "}
+                      · {new Date(e.created_at).toLocaleDateString()}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="bi-right">
@@ -54,7 +102,9 @@ export default function BudgetPage() {
           ))}
         </div>
       ) : (
-        <div className="itin-empty"><div className="itin-empty-text">No confirmed expenses yet.</div></div>
+        <div className="itin-empty">
+          <div className="itin-empty-text">No confirmed expenses yet.</div>
+        </div>
       )}
 
       {/* UNLINKED */}
@@ -62,26 +112,48 @@ export default function BudgetPage() {
         <>
           <div className="sect-title">Unlinked ({unlinkedExpenses.length})</div>
           <div className="budget-list">
-            {unlinkedExpenses.map(e => (
+            {unlinkedExpenses.map((e) => (
               <div key={e.id} className="budget-item budget-item-unlinked">
                 <div className="bi-left">
-                  <div className="bi-name">{e.note || e.category || 'Expense'}</div>
+                  <div className="bi-name">
+                    {e.note || e.category || "Expense"}
+                  </div>
                   <div className="bi-meta">
-                    <span style={{ color: 'var(--warning)', fontWeight: 600 }}>Not linked to an item</span>
-                    <span> · {new Date(e.created_at).toLocaleDateString()}</span>
+                    <span style={{ color: "var(--warning)", fontWeight: 600 }}>
+                      Not linked to an item
+                    </span>
+                    <span>
+                      {" "}
+                      · {new Date(e.created_at).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
                 <div className="bi-right">
                   <div className="bi-paid">{$f(Number(e.amount))}</div>
-                  <button onClick={async () => {
-                    if (!confirm('Delete this expense? This cannot be undone.')) return;
-                    try {
-                      await deleteExpense(e.id);
-                    } catch (err) {
-                      console.warn('Failed to delete expense:', err);
-                      alert('Failed to delete expense.');
-                    }
-                  }} style={{ background: 'none', border: 'none', color: 'var(--danger-light)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>delete</button>
+                  <button
+                    onClick={async () => {
+                      if (
+                        !confirm("Delete this expense? This cannot be undone.")
+                      )
+                        return;
+                      try {
+                        await deleteExpense(e.id);
+                      } catch (err) {
+                        console.warn("Failed to delete expense:", err);
+                        alert("Failed to delete expense.");
+                      }
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--danger-light)",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    delete
+                  </button>
                 </div>
               </div>
             ))}
@@ -93,23 +165,37 @@ export default function BudgetPage() {
       <div className="sect-title">Planned ({planned.length})</div>
       {planned.length > 0 ? (
         <div className="budget-list">
-          {planned.map(it => {
+          {planned.map((it) => {
             const est = itemCost(it);
             return (
-              <div key={it.id} className="budget-item" onClick={() => setSelectedItem(it)} style={{ cursor: 'pointer' }}>
+              <div
+                key={it.id}
+                className="budget-item"
+                onClick={() => setSelectedItem(it)}
+                style={{ cursor: "pointer" }}
+              >
                 <div className="bi-left">
                   <div className="bi-name">{it.name}</div>
-                  <div className="bi-meta">{it.city} · Selected</div>
+                  <div className="bi-meta">
+                    {it.city} ·{" "}
+                    {it.status === "conf"
+                      ? "Booked · no expense logged"
+                      : "Selected"}
+                  </div>
                 </div>
                 <div className="bi-right">
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{est > 0 ? $f(est) : '—'}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>
+                    {est > 0 ? $f(est) : "—"}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="itin-empty"><div className="itin-empty-text">No planned items.</div></div>
+        <div className="itin-empty">
+          <div className="itin-empty-text">No planned items.</div>
+        </div>
       )}
 
       {/* EXPENSE DETAIL CARD */}
@@ -119,29 +205,51 @@ export default function BudgetPage() {
           item={selectedExpense.item}
           stops={stops}
           onClose={() => setSelectedExpense(null)}
-          onViewItem={() => { setSelectedExpense(null); setSelectedItem(selectedExpense.item); }}
-          addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
+          onViewItem={() => {
+            setSelectedExpense(null);
+            setSelectedItem(selectedExpense.item);
+          }}
+          addExpense={addExpense}
+          updateExpense={updateExpense}
+          deleteExpense={deleteExpense}
         />
       )}
 
       {/* ITEM DETAIL MODAL */}
-      {selectedItem && (() => {
-        const liveItem = items.find(i => i.id === selectedItem.id) || selectedItem;
-        const itemExpenses = (expenses || []).filter(e => e.item_id === liveItem.id);
-        const exp = itemExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-        return <DetailModal
-          it={liveItem} status={liveItem.status || ''} setStatus={setStatus}
-          updateItem={updateItem} stops={stops}
-          files={files[selectedItem.id]} setFile={setFile} removeFile={removeFile}
-          placeData={places?.[selectedItem.id]} getPlaceData={getPlaceData}
-          livePrice={livePrices?.[selectedItem.id]?.perNight}
-          livePriceRates={livePrices?.[selectedItem.id]?.allRates}
-          expenseAmount={exp} itemExpenses={itemExpenses} addExpense={addExpense} updateExpense={updateExpense}
-          onClose={handleCloseDetail}
-          onDelete={() => { deleteItem(liveItem.id); setSelectedItem(null); }}
-        />;
-      })()}
+      {selectedItem &&
+        (() => {
+          const liveItem =
+            items.find((i) => i.id === selectedItem.id) || selectedItem;
+          const itemExpenses = (expenses || []).filter(
+            (e) => e.item_id === liveItem.id,
+          );
+          const exp = sumItemExpenses(expenses, liveItem.id);
+          return (
+            <DetailModal
+              it={liveItem}
+              status={liveItem.status || ""}
+              setStatus={setStatus}
+              updateItem={updateItem}
+              stops={stops}
+              files={files[selectedItem.id]}
+              setFile={setFile}
+              removeFile={removeFile}
+              placeData={places?.[selectedItem.id]}
+              getPlaceData={getPlaceData}
+              livePrice={livePrices?.[selectedItem.id]?.perNight}
+              livePriceRates={livePrices?.[selectedItem.id]?.allRates}
+              expenseAmount={exp}
+              itemExpenses={itemExpenses}
+              addExpense={addExpense}
+              updateExpense={updateExpense}
+              onClose={handleCloseDetail}
+              onDelete={() => {
+                deleteItem(liveItem.id);
+                setSelectedItem(null);
+              }}
+            />
+          );
+        })()}
     </div>
   );
 }
-

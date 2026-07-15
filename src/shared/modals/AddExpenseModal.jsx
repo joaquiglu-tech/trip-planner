@@ -1,26 +1,39 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useFocusTrap } from '../hooks/useFocusTrap';
-import AddItemModal from './AddItemModal';
+import { useState, useMemo, useEffect } from "react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
+import AddItemModal from "./AddItemModal";
 
-export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmail, addItem, addExpense, setFile }) {
+export default function AddExpenseModal({
+  items = [],
+  stops = [],
+  onAdd,
+  onClose,
+  userEmail,
+  addItem,
+  addExpense,
+  setFile,
+}) {
   const trapRef = useFocusTrap();
-  const [step, setStep] = useState('select'); // 'select' | 'amount'
+  const [step, setStep] = useState("select"); // 'select' | 'amount'
   const [selectedItem, setSelectedItem] = useState(null);
-  const [search, setSearch] = useState('');
-  const [amount, setAmount] = useState('');
-  const [note, setNote] = useState('');
+  const [search, setSearch] = useState("");
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
 
   useEffect(() => {
-    window.history.pushState({ modal: true }, '', '');
-    function handlePop() { onClose(); }
-    function handleKey(e) { if (e.key === 'Escape') onClose(); }
-    window.addEventListener('popstate', handlePop);
-    window.addEventListener('keydown', handleKey);
+    window.history.pushState({ modal: true }, "", "");
+    function handlePop() {
+      onClose();
+    }
+    function handleKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("popstate", handlePop);
+    window.addEventListener("keydown", handleKey);
     return () => {
-      window.removeEventListener('popstate', handlePop);
-      window.removeEventListener('keydown', handleKey);
+      window.removeEventListener("popstate", handlePop);
+      window.removeEventListener("keydown", handleKey);
     };
   }, [onClose]);
 
@@ -28,8 +41,10 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
   const availableItems = useMemo(() => {
     const q = search.toLowerCase();
     return items
-      .filter(it => it.status === 'sel' || it.status === 'conf')
-      .filter(it => !q || (it.name + it.city + it.type).toLowerCase().includes(q))
+      .filter((it) => it.status === "sel" || it.status === "conf")
+      .filter(
+        (it) => !q || (it.name + it.city + it.type).toLowerCase().includes(q),
+      )
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [items, search]);
 
@@ -43,48 +58,91 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
         category: selectedItem.type,
         note: note || selectedItem.name,
         item_id: selectedItem.id,
-        stop_id: selectedItem.stop_ids?.[0] || '',
+        stop_id: selectedItem.stop_ids?.[0] || "",
         created_by: userEmail,
       });
       onClose();
     } catch (err) {
-      alert('Error: ' + err.message);
+      alert("Error: " + err.message);
       setSaving(false);
     }
   }
 
   return (
-    <div className="detail-overlay" role="dialog" aria-modal="true" aria-label="Add expense" onClick={onClose}>
-      <div className="detail-sheet" ref={trapRef} onClick={e => e.stopPropagation()}>
-        <button className="detail-close" aria-label="Close" onClick={onClose}>✕</button>
+    <div
+      className="detail-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Add expense"
+      onClick={onClose}
+    >
+      <div
+        className="detail-sheet"
+        ref={trapRef}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className="detail-close" aria-label="Close" onClick={onClose}>
+          ✕
+        </button>
         <div className="detail-content">
-
-          {step === 'select' && (
+          {step === "select" && (
             <>
-              <h2 className="detail-name" style={{ fontSize: 18 }}>Add Expense</h2>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Select the item you paid for</p>
+              <h2 className="detail-name" style={{ fontSize: 18 }}>
+                Add Expense
+              </h2>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-muted)",
+                  marginBottom: 12,
+                }}
+              >
+                Select the item you paid for
+              </p>
               <input
-                type="search" className="edit-input" placeholder="Search items..."
-                value={search} onChange={e => setSearch(e.target.value)}
+                type="search"
+                className="edit-input"
+                placeholder="Search items..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 style={{ marginBottom: 10 }}
                 autoFocus
               />
-              <button type="button" className="detail-btn" onClick={() => setShowAddItem(true)}
-                style={{ width: '100%', marginBottom: 10, color: 'var(--accent)', fontWeight: 600, fontSize: 13 }}>
+              <button
+                type="button"
+                className="detail-btn"
+                onClick={() => setShowAddItem(true)}
+                style={{
+                  width: "100%",
+                  marginBottom: 10,
+                  color: "var(--accent)",
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
                 + Create new item
               </button>
-              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+              <div style={{ maxHeight: 300, overflowY: "auto" }}>
                 {availableItems.length === 0 && (
-                  <div className="itin-empty"><div className="itin-empty-text">No items found. Add items from the Plan tab first.</div></div>
+                  <div className="itin-empty">
+                    <div className="itin-empty-text">
+                      No items found. Add items from the Plan tab first.
+                    </div>
+                  </div>
                 )}
-                {availableItems.map(it => {
-                  const stop = it.stop_ids?.[0] ? stops?.find(s => s.id === it.stop_ids[0]) : null;
+                {availableItems.map((it) => {
+                  const stop = it.stop_ids?.[0]
+                    ? stops?.find((s) => s.id === it.stop_ids[0])
+                    : null;
                   return (
                     <div
                       key={it.id}
-                      className={`budget-item ${selectedItem?.id === it.id ? 'budget-item-conf' : ''}`}
-                      onClick={() => { setSelectedItem(it); setStep('amount'); }}
-                      style={{ cursor: 'pointer', marginBottom: 4 }}
+                      className={`budget-item ${selectedItem?.id === it.id ? "budget-item-conf" : ""}`}
+                      onClick={() => {
+                        setSelectedItem(it);
+                        setStep("amount");
+                      }}
+                      style={{ cursor: "pointer", marginBottom: 4 }}
                     >
                       <div className="bi-left">
                         <div className="bi-name">{it.name}</div>
@@ -94,7 +152,11 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
                         </div>
                       </div>
                       <div className="bi-right">
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{it.status === 'conf' ? 'Booked' : 'Selected'}</span>
+                        <span
+                          style={{ fontSize: 11, color: "var(--text-muted)" }}
+                        >
+                          {it.status === "conf" ? "Booked" : "Selected"}
+                        </span>
                       </div>
                     </div>
                   );
@@ -103,35 +165,65 @@ export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmai
             </>
           )}
 
-          {step === 'amount' && selectedItem && (
+          {step === "amount" && selectedItem && (
             <>
-              <h2 className="detail-name" style={{ fontSize: 18 }}>How much did you pay?</h2>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>{selectedItem.name}</div>
+              <h2 className="detail-name" style={{ fontSize: 18 }}>
+                How much did you pay?
+              </h2>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-muted)",
+                  marginBottom: 12,
+                }}
+              >
+                {selectedItem.name}
+              </div>
               <div className="cost-input-row" style={{ marginBottom: 12 }}>
                 <span className="cost-input-prefix">$</span>
                 <input
-                  type="number" className="cost-input" placeholder="0"
-                  value={amount} onChange={e => setAmount(e.target.value)}
+                  type="number"
+                  className="cost-input"
+                  placeholder="0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
                   autoFocus
                 />
               </div>
               <input
-                className="edit-input" placeholder="Note (optional)"
-                value={note} onChange={e => setNote(e.target.value)}
+                className="edit-input"
+                placeholder="Note (optional)"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
                 style={{ marginBottom: 12 }}
               />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="detail-btn" onClick={() => setStep('select')} style={{ flex: 1 }}>Back</button>
-                <button className="detail-btn sel" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>{saving ? 'Saving...' : 'Add Expense'}</button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="detail-btn"
+                  onClick={() => setStep("select")}
+                  style={{ flex: 1 }}
+                >
+                  Back
+                </button>
+                <button
+                  className="detail-btn sel"
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{ flex: 1 }}
+                >
+                  {saving ? "Saving..." : "Add Expense"}
+                </button>
               </div>
             </>
           )}
-
         </div>
       </div>
       {showAddItem && (
         <AddItemModal
-          onClose={() => { setShowAddItem(false); onClose(); }}
+          onClose={() => {
+            setShowAddItem(false);
+            onClose();
+          }}
           onAdd={addItem}
           addExpense={addExpense}
           setFile={setFile}
