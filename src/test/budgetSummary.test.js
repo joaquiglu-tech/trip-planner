@@ -105,3 +105,39 @@ describe("computeBudgetTotals", () => {
     expect(computeBudgetTotals(items, withRefund).confTotal).toBe(450);
   });
 });
+
+describe("computeBudgetTotals — unlinked expenses grouped by category", () => {
+  const items = [
+    {
+      id: "1",
+      name: "Hotel",
+      type: "stay",
+      status: "conf",
+      estimated_cost: 500,
+    },
+  ];
+  it("keys an unlinked expense by its own category, not 'other'", () => {
+    const expenses = [
+      { id: "e1", item_id: "1", amount: 450 },
+      { id: "u1", item_id: null, category: "groceries", amount: 40 },
+      { id: "u2", item_id: null, category: "gas", amount: 25 },
+    ];
+    const { byType, confTotal } = computeBudgetTotals(items, expenses);
+    expect(byType.groceries.conf).toBe(40);
+    expect(byType.gas.conf).toBe(25);
+    expect(byType.other).toBeUndefined();
+    expect(confTotal).toBe(515); // 450 + 40 + 25
+  });
+  it("falls back to 'other' when an unlinked expense has no category", () => {
+    const expenses = [{ id: "u3", item_id: null, amount: 10 }];
+    const { byType } = computeBudgetTotals(items, expenses);
+    expect(byType.other.conf).toBe(10);
+  });
+  it("merges an unlinked item-type category into that type's row", () => {
+    const expenses = [
+      { id: "u4", item_id: null, category: "food", amount: 30 },
+    ];
+    const { byType } = computeBudgetTotals(items, expenses);
+    expect(byType.food.conf).toBe(30);
+  });
+});
