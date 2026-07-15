@@ -5,6 +5,9 @@ import {
   sumItemExpenses,
   isXoteloManaged,
   shouldNotifyUpdate,
+  toCoord,
+  insertBySortOrder,
+  conflictingStays,
 } from "../shared/hooks/useItems";
 
 // ─────────────────────────────────────────────────────────────
@@ -217,5 +220,74 @@ describe("shouldNotifyUpdate (M41)", () => {
         me,
       ),
     ).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// M05 — coordinate 0 must not be dropped by truthiness checks
+// ─────────────────────────────────────────────────────────────
+describe("toCoord (M05)", () => {
+  it("preserves a real 0 coordinate (equator / prime meridian)", () => {
+    expect(toCoord(0, 0)).toEqual({ lat: 0, lng: 0 });
+  });
+  it("returns a numeric coord for valid values (coerces strings)", () => {
+    expect(toCoord("40.7", "-74")).toEqual({ lat: 40.7, lng: -74 });
+  });
+  it("returns null when either side is null/undefined/empty", () => {
+    expect(toCoord(null, 5)).toBeNull();
+    expect(toCoord(5, undefined)).toBeNull();
+    expect(toCoord("", 5)).toBeNull();
+  });
+  it("returns null for non-finite values", () => {
+    expect(toCoord(NaN, 5)).toBeNull();
+    expect(toCoord(5, "abc")).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// M09 — deleteItem rollback must restore sort position
+// ─────────────────────────────────────────────────────────────
+describe("insertBySortOrder (M09)", () => {
+  it("re-inserts an item at its sort_order position, not the end", () => {
+    const list = [
+      { id: "a", sort_order: 1 },
+      { id: "c", sort_order: 3 },
+    ];
+    const result = insertBySortOrder(list, { id: "b", sort_order: 2 });
+    expect(result.map((x) => x.id)).toEqual(["a", "b", "c"]);
+  });
+  it("does not duplicate an item already present", () => {
+    const list = [{ id: "a", sort_order: 1 }];
+    const result = insertBySortOrder(list, { id: "a", sort_order: 1 });
+    expect(result).toHaveLength(1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// M04 — deselect only genuinely conflicting stays
+// ─────────────────────────────────────────────────────────────
+describe("conflictingStays (M04)", () => {
+  const items = [
+    { id: "t", type: "stay", status: "sel", stop_ids: ["s1"] },
+    { id: "a", type: "stay", status: "sel", stop_ids: ["s1"] },
+    { id: "b", type: "stay", status: "conf", stop_ids: ["s2"] },
+    { id: "c", type: "stay", status: "", stop_ids: ["s1"] },
+    { id: "d", type: "food", status: "sel", stop_ids: ["s1"] },
+  ];
+  it("returns other selected/confirmed stays sharing a stop", () => {
+    expect(conflictingStays(items, "t", ["s1"]).map((x) => x.id)).toEqual([
+      "a",
+    ]);
+  });
+  it("excludes the target itself, non-stays, unselected, and other stops", () => {
+    const ids = conflictingStays(items, "t", ["s1"]).map((x) => x.id);
+    expect(ids).not.toContain("t");
+    expect(ids).not.toContain("b");
+    expect(ids).not.toContain("c");
+    expect(ids).not.toContain("d");
+  });
+  it("handles empty/undefined inputs", () => {
+    expect(conflictingStays(null, "t", ["s1"])).toEqual([]);
+    expect(conflictingStays(items, "t", null)).toEqual([]);
   });
 });

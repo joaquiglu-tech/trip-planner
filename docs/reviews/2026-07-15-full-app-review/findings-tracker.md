@@ -60,23 +60,23 @@
 
 - [~] **M01 · Max-1-expense-per-item unenforced → double-tap doubles paid total** — `src/shared/hooks/useExpenses.js:39-47`; selectable list `src/shared/modals/AddExpenseModal.jsx:28-49`; sums all in `TripContext.jsx:32` · `×4` · ✅ Slice 2 (code): `itemHasExpense` guard in `addExpense` (single choke point — covers all creation paths); tested. ⏳ PENDING: DB partial unique index — SQL in `M01-expenses-unique-index.sql`, apply via Supabase (has a pre-check for existing dupes).
   - _Fix:_ DB unique constraint on `expenses.item_id` (generated migration) + guard in `addExpense`/`AddExpenseModal` (exclude items that already have an expense; upsert or surface conflict).
-- [ ] **M02 · Realtime DELETE relies on `payload.old.id` (needs REPLICA IDENTITY FULL)** — `useItems.js:85`, `useExpenses.js:25`, `useStops.js:71` · `×2`
+- [x] **M02 · Realtime DELETE relies on `payload.old.id` (needs REPLICA IDENTITY FULL)** — `useItems.js:85`, `useExpenses.js:25`, `useStops.js:71` · `×2` · ✅ Slice 4: `if (!payload.old?.id) return` guard in useItems + useStops DELETE handlers (useExpenses already dedups by id). Default replica identity includes the PK, so this is belt-and-suspenders.
   - _Failure:_ Without full replica identity, `payload.old.id` is undefined → deleted rows never removed locally (lingering item double-counts in expenseMap). _Fix:_ verify/set replica identity; guard `if (!payload.old?.id) return`.
 - [ ] **M03 · `estimated_cost` written as `NaN` from bad/missing dates** — `src/services/hotelPrices.js:15-17` (also `:14` rate missing `.rate`; checkOut≤checkIn → negative/zero nights), `src/shared/hooks/useLivePrices.js:74` (null dates → `"null"` string to Xotelo) · `×3`
   - _Fix:_ validate both dates parse + finite and `nights > 0` before computing; filter rates to finite `rate`; return null otherwise.
-- [ ] **M04 · `setStatus` partial failure → stop left with no selected stay, no rollback** — `src/shared/hooks/useItems.js:126-148` (deselect at 132 commits, target update at 148 throws) · `×2`
+- [x] **M04 · `setStatus` partial failure → stop left with no selected stay, no rollback** — `src/shared/hooks/useItems.js:126-148` (deselect at 132 commits, target update at 148 throws) · `×2` · ✅ Slice 4: reordered — target update runs FIRST (self-rolling-back), then best-effort deselect of `conflictingStays()` with its own rollback. A failed change never leaves 0 stays selected.
   - _Fix:_ only deselect others after the target update succeeds, or roll back deselects in a catch.
-- [ ] **M05 · `lat/lng === 0` silently dropped by truthiness** — `services/googlePlaces.js:53-54`, `services/enrichItem.js:16`, `useItems.js:20-22`, `useStops.js:43-44`, `DetailModal.jsx:316-317` · `×4`
+- [x] **M05 · `lat/lng === 0` silently dropped by truthiness** — `services/googlePlaces.js:53-54`, `services/enrichItem.js:16`, `useItems.js:20-22`, `useStops.js:43-44`, `DetailModal.jsx:316-317` · `×4` · ✅ Slice 4: new `toCoord()` helper used in `mergeItem`; `?? null`/`!= null` in DetailModal origin/dest, googlePlaces, enrichItem; `== null` in useStops enrich checks. Tested.
   - _Failure:_ equator/prime-meridian coords coerced to null → missing/mislocated map marker; useStops re-enriches valid lat-0 stops. _Fix:_ use `?? null` / `!= null` / `Number.isFinite`.
 - [ ] **M06 · `conf` item with no expense vanishes from Budget tab but still counts in `selTotal`** — `src/features/expenses/BudgetPage.jsx:30` (`planned = items.filter(status==='sel')` only)
   - _Fix:_ include conf-without-expense items in the breakdown.
-- [ ] **M07 · `deleteStop` failure permanently drops the row** — `src/shared/hooks/useStops.js:127-134` · `×2`
+- [x] **M07 · `deleteStop` failure permanently drops the row** — `src/shared/hooks/useStops.js:127-134` · `×2` · ✅ Slice 4: capture prev, re-add (sorted) on error and rethrow — no more false "realtime re-adds" comment.
   - _Failure:_ optimistic remove; on DB error only `console.warn` — the comment "Realtime will re-add" is false (nothing changed server-side, no event fires). _Fix:_ re-add stop on error.
-- [ ] **M08 · `updateStop` no rollback on DB error** — `src/shared/hooks/useStops.js:86-95`
+- [x] **M08 · `updateStop` no rollback on DB error** — `src/shared/hooks/useStops.js:86-95` · ✅ Slice 4: capture prev, restore (sorted) on error before rethrow.
   - _Failure:_ optimistic state (incl. dates that drive itinerary grouping + live-price window) stays applied on failure; only warns. _Fix:_ capture prev, restore on catch (like useItems.updateItem).
-- [ ] **M09 · `deleteItem` rollback loses sort position** — `src/shared/hooks/useItems.js:200,214`
+- [x] **M09 · `deleteItem` rollback loses sort position** — `src/shared/hooks/useItems.js:200,214` · ✅ Slice 4: rollback uses `insertBySortOrder()` (re-inserts at sort_order, dedup by id). Tested.
   - _Failure:_ re-adds via `[...p, prev]` (appended to end, ignoring `sort_order`). _Fix:_ re-insert by sort_order or trigger reload.
-- [ ] **M10 · `StopSection` delete: `updateItem` throws mid-unlink → half-unlinked items, stop not deleted** — `src/features/itinerary/StopSection.jsx:100-113`
+- [x] **M10 · `StopSection` delete: `updateItem` throws mid-unlink → half-unlinked items, stop not deleted** — `src/features/itinerary/StopSection.jsx:100-113` · ✅ Slice 4: whole unlink→delete sequence wrapped in try/catch with a user-facing alert on failure. (Fully atomic unlink would need a DB function — noted, out of scope.)
   - _Fix:_ try/catch; unlink then delete atomically.
 
 ### Money / currency (DECISION 1 = USD)

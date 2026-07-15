@@ -103,6 +103,40 @@ export function shouldNotifyUpdate(existing, incoming, currentUserEmail) {
   return true;
 }
 
+// Build a coordinate pair, preserving a legitimate 0 (equator / prime
+// meridian) that truthiness checks like `lat && lng` would wrongly drop (M05).
+export function toCoord(lat, lng) {
+  if (lat == null || lng == null || lat === "" || lng === "") return null;
+  const la = Number(lat);
+  const ln = Number(lng);
+  return Number.isFinite(la) && Number.isFinite(ln)
+    ? { lat: la, lng: ln }
+    : null;
+}
+
+// Re-insert an item into a list at its sort_order position (dedup by id), so a
+// failed-delete rollback restores the original ordering, not the end (M09).
+export function insertBySortOrder(list, item) {
+  const next = list.filter((x) => x.id !== item.id);
+  next.push(item);
+  next.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  return next;
+}
+
+// Other selected/confirmed stays sharing a stop with the target — the ones the
+// "one stay per stop" rule must deselect (M04). Pure so setStatus can order the
+// writes safely.
+export function conflictingStays(items, targetId, stopIds) {
+  const stops = stopIds || [];
+  return (items || []).filter(
+    (it) =>
+      it.type === "stay" &&
+      it.id !== targetId &&
+      (it.status === "sel" || it.status === "conf") &&
+      (it.stop_ids || []).some((s) => stops.includes(s)),
+  );
+}
+
 // Best-effort cleanup of an item's child rows/files. Must NOT chain .catch on
 // a Supabase query builder — the builder is a thenable with no .catch, so that
 // would throw synchronously (C1). Awaits each call and swallows errors instead.
@@ -132,16 +166,9 @@ export async function cleanupItemChildren(client, id) {
 }
 
 function mergeItem(row, stopName, existingCity) {
-  const coord =
-    row.lat && row.lng ? { lat: Number(row.lat), lng: Number(row.lng) } : null;
-  const originCoord =
-    row.origin_lat && row.origin_lng
-      ? { lat: Number(row.origin_lat), lng: Number(row.origin_lng) }
-      : null;
-  const destCoord =
-    row.dest_lat && row.dest_lng
-      ? { lat: Number(row.dest_lat), lng: Number(row.dest_lng) }
-      : null;
+  const coord = toCoord(row.lat, row.lng);
+  const originCoord = toCoord(row.origin_lat, row.origin_lng);
+  const destCoord = toCoord(row.dest_lat, row.dest_lng);
   const routeLabel =
     row.origin_name && row.dest_name
       ? `${row.origin_name} \u2192 ${row.dest_name}`
@@ -240,6 +267,7 @@ export function useItems(currentUserEmail, showToast) {
         { event: "*", schema: "public", table: "items" },
         (payload) => {
           if (payload.eventType === "DELETE") {
+            if (!payload.old?.id) return; // M02: no id (replica identity) → skip
             setItems((prev) => prev.filter((it) => it.id !== payload.old.id));
           } else {
             const firstStopId = payload.new.stop_ids?.[0];
@@ -315,60 +343,57 @@ export function useItems(currentUserEmail, showToast) {
       if (navigator.vibrate) navigator.vibrate(15);
       const item = itemsRef.current.find((it) => it.id === id);
       const itemStops = item?.stop_ids || [];
-      if (
+
+      // M04: set the target FIRST — that's the user's intent, and updateItem
+      // rolls itself back on failure, so a failed change never leaves the stop
+      // with the other stay already deselected and nothing selected.
+      await updateItem(id, { status });
+
+      // Then enforce "one stay per stop" as a best-effort follow-up. If this
+      // fails we leave >1 selected (visible/recoverable) rather than 0.
+      const isStaySelect =
         item?.type === "stay" &&
         itemStops.length > 0 &&
-        (status === "sel" || status === "conf")
-      ) {
-        const others = itemsRef.current.filter(
-          (it) =>
-            it.type === "stay" &&
-            it.id !== id &&
-            (it.status === "sel" || it.status === "conf") &&
-            it.stop_ids?.some((s) => itemStops.includes(s)),
+        (status === "sel" || status === "conf");
+      if (!isStaySelect) return;
+
+      const others = conflictingStays(itemsRef.current, id, itemStops);
+      if (others.length === 0) return;
+
+      const prevStatuses = others.map((o) => ({ id: o.id, status: o.status }));
+      setItems((prev) =>
+        prev.map((it) =>
+          others.some((o) => o.id === it.id) ? { ...it, status: "" } : it,
+        ),
+      );
+      try {
+        await Promise.all(
+          others.map((o) =>
+            supabase
+              .from("items")
+              .update({
+                status: "",
+                updated_at: new Date().toISOString(),
+                updated_by: currentUserEmail,
+              })
+              .eq("id", o.id),
+          ),
         );
-        if (others.length > 0) {
-          const prevStatuses = others.map((o) => ({
-            id: o.id,
-            status: o.status,
-          }));
-          setItems((prev) =>
-            prev.map((it) =>
-              others.some((o) => o.id === it.id) ? { ...it, status: "" } : it,
-            ),
-          );
-          try {
-            await Promise.all(
-              others.map((o) =>
-                supabase
-                  .from("items")
-                  .update({
-                    status: "",
-                    updated_at: new Date().toISOString(),
-                    updated_by: currentUserEmail,
-                  })
-                  .eq("id", o.id),
-              ),
-            );
-          } catch (err) {
-            console.warn("Failed to deselect conflicting stays:", err);
-            setItems((prev) =>
-              prev.map((it) => {
-                const restore = prevStatuses.find((p) => p.id === it.id);
-                return restore ? { ...it, status: restore.status } : it;
-              }),
-            );
-            if (showToast)
-              showToast("Failed to update stays — please try again");
-            return;
-          }
-          if (showToast) {
-            const names = others.map((o) => o.name).join(", ");
-            showToast(`Deselected ${names} (only one stay per stop)`);
-          }
+        if (showToast) {
+          const names = others.map((o) => o.name).join(", ");
+          showToast(`Deselected ${names} (only one stay per stop)`);
         }
+      } catch (err) {
+        console.warn("Failed to deselect conflicting stays:", err);
+        setItems((prev) =>
+          prev.map((it) => {
+            const restore = prevStatuses.find((p) => p.id === it.id);
+            return restore ? { ...it, status: restore.status } : it;
+          }),
+        );
+        if (showToast)
+          showToast("Selected, but couldn't deselect the other stay");
       }
-      await updateItem(id, { status });
     },
     [currentUserEmail, updateItem, showToast],
   );
@@ -448,14 +473,15 @@ export function useItems(currentUserEmail, showToast) {
       const { error } = await supabase.from("items").delete().eq("id", id);
       if (error) {
         console.warn("Failed to delete item:", error);
-        if (prev) setItems((p) => [...p, prev]);
+        // M09: restore at the original sort position, not the end.
+        if (prev) setItems((p) => insertBySortOrder(p, prev));
         return;
       }
       // Cleanup children — best effort (awaits + swallows; never .catch a builder — C1)
       await cleanupItemChildren(supabase, id);
     } catch (err) {
       console.warn("deleteItem error:", err);
-      if (prev) setItems((p) => [...p, prev]);
+      if (prev) setItems((p) => insertBySortOrder(p, prev));
     }
   }, []);
 

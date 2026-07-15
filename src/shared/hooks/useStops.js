@@ -1,24 +1,37 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { supabase, GOOGLE_MAPS_API_KEY as API_KEY } from '../../services/supabase';
+import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  supabase,
+  GOOGLE_MAPS_API_KEY as API_KEY,
+} from "../../services/supabase";
 
 // Fetch Google Place ID for a city name
 async function fetchPlaceId(name) {
   try {
-    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.location',
+    const res = await fetch(
+      "https://places.googleapis.com/v1/places:searchText",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": API_KEY,
+          "X-Goog-FieldMask": "places.id,places.location",
+        },
+        body: JSON.stringify({ textQuery: name, maxResultCount: 1 }),
       },
-      body: JSON.stringify({ textQuery: name, maxResultCount: 1 }),
-    });
+    );
     if (!res.ok) return null;
     const data = await res.json();
     const place = data.places?.[0];
     if (!place) return null;
-    return { placeId: place.id, lat: place.location?.latitude, lng: place.location?.longitude };
-  } catch (err) { console.warn('fetchPlaceId failed for', name, err); return null; }
+    return {
+      placeId: place.id,
+      lat: place.location?.latitude,
+      lng: place.location?.longitude,
+    };
+  } catch (err) {
+    console.warn("fetchPlaceId failed for", name, err);
+    return null;
+  }
 }
 
 export function useStops() {
@@ -33,15 +46,25 @@ export function useStops() {
     enrichCancelledRef.current = false;
 
     async function load() {
-      const { data, error } = await supabase.from('stops').select('*').order('start_date');
+      const { data, error } = await supabase
+        .from("stops")
+        .select("*")
+        .order("start_date");
       if (cancelled) return;
-      if (error) { console.warn('Failed to load stops:', error); setError('Failed to load stops'); setLoaded(true); return; }
+      if (error) {
+        console.warn("Failed to load stops:", error);
+        setError("Failed to load stops");
+        setLoaded(true);
+        return;
+      }
       setStops(data || []);
       setLoaded(true);
 
       // Auto-populate google_place_id and lat/lng for stops missing them
-      const needsPlaceId = (data || []).filter(s => !s.google_place_id);
-      const needsCoords = (data || []).filter(s => !s.lat && s.google_place_id);
+      const needsPlaceId = (data || []).filter((s) => !s.google_place_id);
+      const needsCoords = (data || []).filter(
+        (s) => s.lat == null && s.google_place_id,
+      );
       const toFetch = [...needsPlaceId, ...needsCoords];
       if (toFetch.length > 0) {
         for (const stop of toFetch) {
@@ -50,14 +73,26 @@ export function useStops() {
           if (result) {
             const updates = {};
             if (!stop.google_place_id) updates.google_place_id = result.placeId;
-            if (!stop.lat && result.lat) { updates.lat = result.lat; updates.lng = result.lng; }
+            if (stop.lat == null && result.lat != null) {
+              updates.lat = result.lat;
+              updates.lng = result.lng;
+            }
             if (Object.keys(updates).length > 0) {
-              const { error: updateErr } = await supabase.from('stops').update(updates).eq('id', stop.id);
-              if (updateErr) console.warn('Failed to enrich stop', stop.name, updateErr);
-              else setStops(prev => prev.map(s => s.id === stop.id ? { ...s, ...updates } : s));
+              const { error: updateErr } = await supabase
+                .from("stops")
+                .update(updates)
+                .eq("id", stop.id);
+              if (updateErr)
+                console.warn("Failed to enrich stop", stop.name, updateErr);
+              else
+                setStops((prev) =>
+                  prev.map((s) =>
+                    s.id === stop.id ? { ...s, ...updates } : s,
+                  ),
+                );
             }
           }
-          await new Promise(r => setTimeout(r, 300));
+          await new Promise((r) => setTimeout(r, 300));
         }
       }
     }
@@ -65,32 +100,63 @@ export function useStops() {
 
     // Incremental realtime — merge individual changes instead of full reload
     const channel = supabase
-      .channel('stops-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stops' }, (payload) => {
-        if (payload.eventType === 'DELETE') {
-          setStops(prev => prev.filter(s => s.id !== payload.old.id));
-        } else if (payload.eventType === 'INSERT') {
-          setStops(prev => {
-            if (prev.some(s => s.id === payload.new.id)) return prev;
-            return [...prev, payload.new].sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          setStops(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s).sort((a, b) => new Date(a.start_date) - new Date(b.start_date)));
-        }
-      })
+      .channel("stops-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "stops" },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            if (!payload.old?.id) return; // M02: no id (replica identity) → skip
+            setStops((prev) => prev.filter((s) => s.id !== payload.old.id));
+          } else if (payload.eventType === "INSERT") {
+            setStops((prev) => {
+              if (prev.some((s) => s.id === payload.new.id)) return prev;
+              return [...prev, payload.new].sort(
+                (a, b) => new Date(a.start_date) - new Date(b.start_date),
+              );
+            });
+          } else if (payload.eventType === "UPDATE") {
+            setStops((prev) =>
+              prev
+                .map((s) =>
+                  s.id === payload.new.id ? { ...s, ...payload.new } : s,
+                )
+                .sort(
+                  (a, b) => new Date(a.start_date) - new Date(b.start_date),
+                ),
+            );
+          }
+        },
+      )
       .subscribe();
-    return () => { cancelled = true; enrichCancelledRef.current = true; supabase.removeChannel(channel); };
+    return () => {
+      cancelled = true;
+      enrichCancelledRef.current = true;
+      supabase.removeChannel(channel);
+    };
   }, [loadKey]);
 
   const updateStop = useCallback(async (id, changes) => {
-    setStops(prev => {
-      const updated = prev.map(s => s.id === id ? { ...s, ...changes } : s);
-      if (changes.start_date || changes.end_date) return updated.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+    let prev;
+    setStops((list) => {
+      prev = list.find((s) => s.id === id);
+      const updated = list.map((s) => (s.id === id ? { ...s, ...changes } : s));
+      if (changes.start_date || changes.end_date)
+        return updated.sort(
+          (a, b) => new Date(a.start_date) - new Date(b.start_date),
+        );
       return updated;
     });
-    const { error } = await supabase.from('stops').update(changes).eq('id', id);
+    const { error } = await supabase.from("stops").update(changes).eq("id", id);
     if (error) {
-      console.warn('Failed to update stop:', error);
+      console.warn("Failed to update stop:", error);
+      // M08: restore the optimistic change instead of leaving it applied.
+      if (prev)
+        setStops((list) =>
+          list
+            .map((s) => (s.id === id ? prev : s))
+            .sort((a, b) => new Date(a.start_date) - new Date(b.start_date)),
+        );
       throw error;
     }
     // If name changed, re-fetch google place ID + coords
@@ -98,9 +164,18 @@ export function useStops() {
       const result = await fetchPlaceId(changes.name);
       if (result) {
         const updates = { google_place_id: result.placeId };
-        if (result.lat) { updates.lat = result.lat; updates.lng = result.lng; }
-        const { error: enrichErr } = await supabase.from('stops').update(updates).eq('id', id);
-        if (!enrichErr) setStops(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+        if (result.lat) {
+          updates.lat = result.lat;
+          updates.lng = result.lng;
+        }
+        const { error: enrichErr } = await supabase
+          .from("stops")
+          .update(updates)
+          .eq("id", id);
+        if (!enrichErr)
+          setStops((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+          );
       }
     }
   }, []);
@@ -111,29 +186,54 @@ export function useStops() {
       name: stopData.name,
       start_date: stopData.start_date,
       end_date: stopData.end_date,
-      google_place_id: stopData.google_place_id || '',
+      google_place_id: stopData.google_place_id || "",
       lat: stopData.lat || null,
       lng: stopData.lng || null,
-      trip_id: 'trip-1',
+      trip_id: "trip-1",
       sort_order: Date.now(),
       tips: [],
     };
-    const { data, error } = await supabase.from('stops').insert(newStop).select().single();
+    const { data, error } = await supabase
+      .from("stops")
+      .insert(newStop)
+      .select()
+      .single();
     if (error) throw error;
-    setStops(prev => [...prev, data].sort((a, b) => new Date(a.start_date) - new Date(b.start_date)));
+    setStops((prev) =>
+      [...prev, data].sort(
+        (a, b) => new Date(a.start_date) - new Date(b.start_date),
+      ),
+    );
     return data;
   }, []);
 
   const deleteStop = useCallback(async (id) => {
-    setStops(prev => prev.filter(s => s.id !== id));
-    const { error } = await supabase.from('stops').delete().eq('id', id);
+    let prev;
+    setStops((list) => {
+      prev = list.find((s) => s.id === id);
+      return list.filter((s) => s.id !== id);
+    });
+    const { error } = await supabase.from("stops").delete().eq("id", id);
     if (error) {
-      console.warn('Failed to delete stop:', error);
-      // Realtime will re-add if delete failed
+      console.warn("Failed to delete stop:", error);
+      // M07: a failed delete fires NO realtime event, so nothing else restores
+      // the row — re-add it ourselves instead of letting it silently vanish.
+      if (prev)
+        setStops((list) =>
+          list.some((s) => s.id === prev.id)
+            ? list
+            : [...list, prev].sort(
+                (a, b) => new Date(a.start_date) - new Date(b.start_date),
+              ),
+        );
+      throw error;
     }
   }, []);
 
-  const retry = useCallback(() => { setError(null); setLoadKey(k => k + 1); }, []);
+  const retry = useCallback(() => {
+    setError(null);
+    setLoadKey((k) => k + 1);
+  }, []);
 
   return { stops, loaded, error, retry, updateStop, addStop, deleteStop };
 }

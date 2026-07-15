@@ -791,13 +791,14 @@ function EditMode({
     const newDestName = draft.dest?.name || "";
     if (newOriginName !== (it.origin_name || "")) {
       changes.origin_name = newOriginName;
-      changes.origin_lat = draft.origin?.lat || null;
-      changes.origin_lng = draft.origin?.lng || null;
+      // ?? not || so a real 0 coordinate is preserved (M05)
+      changes.origin_lat = draft.origin?.lat ?? null;
+      changes.origin_lng = draft.origin?.lng ?? null;
     }
     if (newDestName !== (it.dest_name || "")) {
       changes.dest_name = newDestName;
-      changes.dest_lat = draft.dest?.lat || null;
-      changes.dest_lng = draft.dest?.lng || null;
+      changes.dest_lat = draft.dest?.lat ?? null;
+      changes.dest_lng = draft.dest?.lng ?? null;
     }
     const derivedRoute = [newOriginName, newDestName]
       .filter(Boolean)
