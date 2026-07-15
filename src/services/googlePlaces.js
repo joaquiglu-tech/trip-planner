@@ -37,13 +37,20 @@ export async function searchPlaces(query, { signal } = {}) {
 
 // Search for a place by name + city, return place details
 export async function fetchPlaceData(itemId, name, city) {
-  // Check cache first
-  const { data: cached } = await supabase
-    .from("place_cache")
-    .select("*")
-    .eq("item_id", itemId)
-    .single();
-  if (cached && cached.photo_url) return cached;
+  // Check cache first. maybeSingle + limit(1) so a cache miss (0 rows) or a
+  // stray duplicate doesn't error, and the read is inside try so a network
+  // failure can't become an unhandled rejection (M45).
+  try {
+    const { data: cached } = await supabase
+      .from("place_cache")
+      .select("*")
+      .eq("item_id", itemId)
+      .limit(1)
+      .maybeSingle();
+    if (cached && cached.photo_url) return cached;
+  } catch (err) {
+    console.warn("place_cache read failed:", err);
+  }
 
   try {
     // Use Places API (New) — Text Search
@@ -64,7 +71,13 @@ export async function fetchPlaceData(itemId, name, city) {
       },
     );
 
-    if (!searchRes.ok) return null;
+    if (!searchRes.ok) {
+      // M47: surface quota/rate-limit distinctly from other failures.
+      if (searchRes.status === 429)
+        console.warn("Google Places rate limit / quota exceeded (429)");
+      else console.warn("Google Places search failed:", searchRes.status);
+      return null;
+    }
     const searchData = await searchRes.json();
     const place = searchData.places?.[0];
     if (!place) return null;

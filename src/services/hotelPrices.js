@@ -41,15 +41,26 @@ export async function fetchHotelPrice(xoteloKey, checkIn, checkOut) {
   if (!xoteloKey) return null;
   const nights = nightsBetween(checkIn, checkOut);
   if (!nights) return null; // invalid/missing/reversed dates → no bogus estimate
+  // M46: abort a hung request after 8s so the price loop can't stall forever.
+  // NB: `/api/xotelo` is a Vercel serverless function — under `npm run dev` it
+  // 404s (use `vercel dev` or the deployed preview for live prices).
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(
       `${XOTELO_BASE}?hotel_key=${encodeURIComponent(xoteloKey)}&chk_in=${encodeURIComponent(checkIn)}&chk_out=${encodeURIComponent(checkOut)}`,
+      { signal: controller.signal },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn("Xotelo request failed:", res.status);
+      return null;
+    }
     const data = await res.json();
     return computeHotelPrice(data, nights);
   } catch (err) {
     console.warn("Xotelo API error:", err);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }

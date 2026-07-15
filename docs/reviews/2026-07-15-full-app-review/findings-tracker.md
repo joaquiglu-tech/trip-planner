@@ -167,23 +167,23 @@
 
 ### Services / external API robustness
 
-- [ ] **M45 · `googlePlaces` cache-read outside try + `.single()` on multi-row** — `src/services/googlePlaces.js:6`
+- [x] **M45 · `googlePlaces` cache-read outside try + `.single()` on multi-row** — `src/services/googlePlaces.js:6` · ✅ Slice 9: cache read moved inside try/catch and uses `.limit(1).maybeSingle()` (no error on miss or stray dup, no unhandled rejection on network fail).
   - _Failure:_ `.single()` network error escapes (unhandled rejection); multiple place*cache rows → `.single()` errors → cache always misses → Places re-fetch + quota burn. \_Fix:* move select into try; use `.maybeSingle()`/`.limit(1)`.
-- [ ] **M46 · `/api/xotelo` has no timeout + no dev proxy; failures swallowed** — `src/services/hotelPrices.js:7-8`
+- [x] **M46 · `/api/xotelo` has no timeout + no dev proxy; failures swallowed** — `src/services/hotelPrices.js:7-8` · ✅ Slice 9: AbortController 8s timeout + non-OK status logged (no silent swallow); query params URL-encoded (Slice 7). Dev-proxy: `/api/xotelo` is a Vercel serverless fn — documented in a code comment that it needs `vercel dev`/preview (a vite proxy has no valid target).
   - _Failure:_ no AbortController → hang; no `server.proxy` in vite.config → 404 under `npm run dev`, silently returns null. _Fix:_ AbortController+timeout; wire dev proxy or document; log diagnostics. Also URL-encode query params (`:7`).
-- [ ] **M47 · Places 429/quota not distinguished from other failures** — `src/services/googlePlaces.js:27`
+- [x] **M47 · Places 429/quota not distinguished from other failures** — `src/services/googlePlaces.js:27` · ✅ Slice 9: 429 logged distinctly ("rate limit / quota exceeded") vs other non-OK statuses.
   - _Fix:_ branch on 429 for backoff/skip vs permanent fail.
-- [ ] **M48 · Xotelo key extraction misses `d\d+`-only URLs** — `src/services/xotelo.js:6`
+- [x] **M48 · Xotelo key extraction misses `d\d+`-only URLs** — `src/services/xotelo.js:6` · ✅ Slice 9: regex falls back to a standalone `d\d+` when there's no `g\d+-d\d+`. Tested.
   - _Failure:_ URL without `g\d+` → null key → no live prices. _Fix:_ also match valid standalone key form.
-- [ ] **M49 · Maps API key baked into persisted photo URLs; no presence guard** — `googlePlaces.js:38,48` (stored in `place_cache.photo_urls`), `main.jsx:12`, `supabase.js:11`
+- [~] **M49 · Maps API key baked into persisted photo URLs; no presence guard** — `googlePlaces.js:38,48` (stored in `place_cache.photo_urls`), `main.jsx:12`, `supabase.js:11` · ✅ Slice 9: presence guard added (`supabase.js` warns when the Maps key is missing). ⏳ Key-in-photo-URLs (rotation breaks the 30-day photo cache) NOT fixed — needs storing the photo resource name and re-signing at render; deferred as a known limitation (LOW value, schema/refactor).
   - _Failure:_ key rotation breaks all cached photo URLs (30-day CacheFirst); missing `VITE_GOOGLE_MAPS_API_KEY` → `APIProvider(undefined)`, silent map failure. _Fix:_ store media ref without key / re-sign on read; guard/warn on missing key like the Supabase check.
-- [ ] **M50 · `storage` edge gaps** — `src/services/storage.js`
+- [x] **M50 · `storage` edge gaps** — `src/services/storage.js` · ✅ Slice 9: `uploadFile` guards null file; `fileExt`/`storagePath` handle dot-less/trailing-dot names (no malformed path); `listFiles` passes an explicit high `limit` (receipts per item are few). `fileExt`/`storagePath` tested.
   - _Failure:_ `>100` files no pagination (`:19`); no-extension filename → whole name as ext / malformed path (`:6`); null `file` → raw TypeError (`:5`). _Fix:_ paginate list; guard extension parsing; early-guard null file.
-- [ ] **M51 · App-shell null guards** — `src/main.jsx:10` (`getElementById('root')` null → `createRoot` throws), `src/App.jsx:28` (empty `user.email` → trip scoped to `''`)
+- [x] **M51 · App-shell null guards** — `src/main.jsx:10` (`getElementById('root')` null → `createRoot` throws), `src/App.jsx:28` (empty `user.email` → trip scoped to `''`) · ✅ Slice 9: `main.jsx` throws a clear "Root element #root not found"; `App.jsx` shows a message instead of scoping the trip to `''` when the account has no email.
   - _Fix:_ assert root exists; handle/flag missing email before scoping trip data.
 - [x] **M52 · `useLivePrices` input/type gaps** — `useLivePrices.js:17` (`stops` undefined → `.length` throws), `:48` (`price.total` string → `!== Number(estimated_cost)` always true → redundant writes/type drift) · ✅ Slice 7: `(stops || []).length` guard; `getStayDates` guards null dates; `computeHotelPrice` returns a numeric `total`, so the writeback compare is number-vs-number.
   - _Fix:_ `(stops||[]).length`; `Number(price.total)` before compare/write.
-- [ ] **M53 · Orphaned storage files on item delete / status downgrade** — `DetailModal.jsx:143-146,232`, `useItemFiles`
+- [x] **M53 · Orphaned storage files on item delete / status downgrade** — `DetailModal.jsx:143-146,232`, `useItemFiles` · ✅ Addressed by C1's `cleanupItemChildren` (Slice 1) — item delete now lists + removes the `reservations/<id>/` folder. Status downgrade intentionally retains files (the item still exists and may be re-confirmed), so they're not orphaned.
   - _Failure:_ files never removed; since files load only for conf items they become unreachable but still stored. _Fix:_ delete the item's storage folder on item delete; decide policy on downgrade. (Interacts with C1 cleanup.)
 
 ---
@@ -238,7 +238,7 @@
 
 - [ ] **L33 · StatusSelector logic duplicated Summary vs Edit** — `DetailModal.jsx:131-152` vs `349-369` (extract `<StatusSelector>`; couples with M18 fix)
 - [ ] **L34 · File-chip list + upload row duplicated between modes** — `DetailModal.jsx:219-226` vs `479-495` (extract `<Attachments>`)
-- [ ] **L35 · Dead `|| ''` fallbacks after throw guard** — `supabase.js:6-10`
+- [x] **L35 · Dead `|| ''` fallbacks after throw guard** — `supabase.js:6-10` · ✅ Slice 9 (bonus): removed — `createClient(supabaseUrl, supabaseAnonKey)` (the throw guarantees both).
 - [ ] **L36 · Redundant 10-minute session poll duplicates `onAuthStateChange`** — `useAuth.jsx:24-31`
 - [ ] **L37 · `BudgetSummary` O(items×expenses) nested scans** — `BudgetSummary.jsx:24,39` (build Maps once; BudgetPage already has `itemsMap`)
 
