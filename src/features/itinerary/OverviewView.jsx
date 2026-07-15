@@ -7,13 +7,12 @@ import {
   formatRelativeTime,
   getStay,
   getStopStats,
+  getDaysUntilTrip,
 } from "./utils";
 
 export default function OverviewView({ items, stops, expenses, onDaySelect }) {
-  const daysLeft = useMemo(() => {
-    if (!stops || !stops.length) return 0;
-    return Math.ceil((new Date(stops[0].start_date) - new Date()) / 86400000);
-  }, [stops]);
+  // Single source + timezone-safe day count (M34)
+  const daysLeft = useMemo(() => getDaysUntilTrip(stops || []), [stops]);
 
   // Single source of truth shared with BudgetSummary (C4)
   const stats = useMemo(() => {

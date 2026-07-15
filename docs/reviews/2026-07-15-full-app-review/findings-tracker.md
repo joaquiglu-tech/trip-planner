@@ -68,7 +68,7 @@
   - _Fix:_ only deselect others after the target update succeeds, or roll back deselects in a catch.
 - [x] **M05 · `lat/lng === 0` silently dropped by truthiness** — `services/googlePlaces.js:53-54`, `services/enrichItem.js:16`, `useItems.js:20-22`, `useStops.js:43-44`, `DetailModal.jsx:316-317` · `×4` · ✅ Slice 4: new `toCoord()` helper used in `mergeItem`; `?? null`/`!= null` in DetailModal origin/dest, googlePlaces, enrichItem; `== null` in useStops enrich checks. Tested.
   - _Failure:_ equator/prime-meridian coords coerced to null → missing/mislocated map marker; useStops re-enriches valid lat-0 stops. _Fix:_ use `?? null` / `!= null` / `Number.isFinite`.
-- [ ] **M06 · `conf` item with no expense vanishes from Budget tab but still counts in `selTotal`** — `src/features/expenses/BudgetPage.jsx:30` (`planned = items.filter(status==='sel')` only)
+- [x] **M06 · `conf` item with no expense vanishes from Budget tab but still counts in `selTotal`** — `src/features/expenses/BudgetPage.jsx:30` (`planned = items.filter(status==='sel')` only) · ✅ Slice 6: `planned` now includes `conf` items with no expense (via `itemHasExpense`), labeled "Booked · no expense logged".
   - _Fix:_ include conf-without-expense items in the breakdown.
 - [x] **M07 · `deleteStop` failure permanently drops the row** — `src/shared/hooks/useStops.js:127-134` · `×2` · ✅ Slice 4: capture prev, re-add (sorted) on error and rethrow — no more false "realtime re-adds" comment.
   - _Failure:_ optimistic remove; on DB error only `console.warn` — the comment "Realtime will re-add" is false (nothing changed server-side, no event fires). _Fix:_ re-add stop on error.
@@ -89,7 +89,7 @@
   - _Failure:_ `Number(e.amount||0)` on a non-numeric string → NaN poisons totals → whole budget shows `$NaN`. _Fix:_ `Number(e.amount)||0`.
 - [x] **M14 · "Sum expenses for an item" reimplemented in 3 places** — `BudgetSummary.jsx:24`, `BudgetPage.jsx:131`, DetailModal · ✅ Slice 1: extracted `sumItemExpenses(expenses, itemId)`; adopted by `computeBudgetTotals` + `BudgetPage`. DetailModal call site migrates in Slice 5.
   - _Fix:_ extract `sumItemExpenses(expenses, itemId)` into the shared cost module (couples with C4).
-- [ ] **M15 · `detectConflicts` false-positives on bare time strings across different days** — `src/features/itinerary/utils.js:120`
+- [x] **M15 · `detectConflicts` false-positives on bare time strings across different days** — `src/features/itinerary/utils.js:120` · ✅ Slice 6: overlap check now only runs when both items carry a full datetime (`.includes('T')`); bare times (no day) are skipped. Tested.
   - _Failure:_ raw string compare of `start_time`/`end_time`; `mergeItem` mixes full datetime-local and bare `HH:MM`, so different-day items on a multi-day stop flag as conflicting. _Fix:_ normalize to comparable datetimes (attach date) before comparing.
 
 ### DetailModal / expense flow
@@ -139,13 +139,13 @@
 
 ### Timezone / dates
 
-- [ ] **M34 · UTC "today" vs local calendar → wrong day near midnight** — `TodayPage.jsx:20` (`toISOString()`), `utils.js:63-74` (`getTodayDayIndex`/`getDaysUntilTrip` parse bare `YYYY-MM-DD` as UTC vs local `now`), `utils.js:140-141` · `×3`
+- [x] **M34 · UTC "today" vs local calendar → wrong day near midnight** — `TodayPage.jsx:20` (`toISOString()`), `utils.js:63-74` (`getTodayDayIndex`/`getDaysUntilTrip` parse bare `YYYY-MM-DD` as UTC vs local `now`), `utils.js:140-141` · `×3` · ✅ Slice 6: new `todayStr()` (local); `getTodayDayIndex` compares date strings inclusively; `getDaysUntilTrip` compares UTC-parsed date strings (no skew). TodayPage + OverviewView use them. Tested.
   - _Fix:_ one consistent local-date formatter; compare via `toDateStr` strings.
-- [ ] **M35 · `StopSection` dates can't be cleared; inverted range accepted** — `src/features/itinerary/StopSection.jsx:21-29`
+- [x] **M35 · `StopSection` dates can't be cleared; inverted range accepted** — `src/features/itinerary/StopSection.jsx:21-29` · ✅ Slice 6: `saveEdit` runs `validateStopDates` — both dates required, inverted range rejected with a message. (Stops require dates by design, so "clear" is intentionally disallowed.) Tested.
   - _Fix:_ allow explicit clear; validate `end >= start`.
 - [ ] **M36 · Multi `stop_ids`: only `[0]` used** — `ExpenseCard.jsx:15`, `AddExpenseModal.jsx:46,81`, `DetailModal.jsx:239`
   - _Failure:_ expense hard-bound to first stop; other stops ignored. _Fix:_ decide/display across all stops.
-- [ ] **M37 · `ScheduleList`: item dated outside stop range dumped onto day one** — `src/features/itinerary/ScheduleList.jsx:28-34`
+- [x] **M37 · `ScheduleList`: item dated outside stop range dumped onto day one** — `src/features/itinerary/ScheduleList.jsx:28-34` · ✅ Slice 6: extracted `groupScheduleItems`; out-of-range/undated items go to a trailing "Unscheduled" group, not day one. Tested.
   - _Fix:_ keep out-of-range items in an explicit "unscheduled" group.
 
 ### Architecture / project rules
@@ -214,8 +214,8 @@
 
 - [ ] **L15 · `AddStopModal` date-order check runs before presence check** — `AddStopModal.jsx:70-71`
 - [ ] **L16 · Equal start/end dates → zero-night stop saved** — `AddStopModal.jsx:70`
-- [ ] **L17 · Single-day stop never registers as "today"** — `utils.js:63-69` (exclusive end)
-- [ ] **L18 · `ScheduleList` `perDay` divides by `nights`, not `nights+1` → empty trailing day** — `ScheduleList.jsx:44-48` · `×2`
+- [x] **L17 · Single-day stop never registers as "today"** — `utils.js:63-69` (exclusive end) · ✅ Slice 6 (bonus): `getTodayDayIndex` now uses an inclusive date-string range, so start===end matches. Tested.
+- [x] **L18 · `ScheduleList` `perDay` divides by `nights`, not `nights+1` → empty trailing day** — `ScheduleList.jsx:44-48` · `×2` · ✅ Slice 6 (bonus): `groupScheduleItems` even-distribution divides by `dateKeys.length`. Tested.
 - [ ] **L19 · Map waypoints `slice(0,8)` silently drops middle stops** — `MapComponents.jsx:78`
 - [ ] **L20 · `allStopItems` useMemo omits `combinedStopIds` (+ statusFilter) from deps** — `StopSection.jsx:63-73` · `×2`
 - [ ] **L21 · NaN-sort tiebreaks** — `OverviewView.jsx:28-31` (missing `updated_at`), `BudgetPage.jsx:23,27` (missing `created_at`), `PlanSection.jsx:11`/`SelectPage.jsx:59` (equal `start_time`, no secondary sort → nondeterministic order)

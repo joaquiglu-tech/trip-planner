@@ -5,6 +5,7 @@ import {
   calcNights,
   itemInStop,
   getStay,
+  validateStopDates,
 } from "./utils";
 import { DayMap } from "./MapComponents";
 import ScheduleList from "./ScheduleList";
@@ -52,11 +53,17 @@ export default function StopSection({
     setEditing(true);
   }
   function saveEdit() {
+    // M35: require both dates and reject an inverted range.
+    const dateError = validateStopDates(draft.start_date, draft.end_date);
+    if (dateError) {
+      alert(dateError);
+      return;
+    }
     const changes = {};
     if (draft.name !== (stop.name || "")) changes.name = draft.name;
-    if (draft.start_date && draft.start_date !== toDateStr(stop.start_date))
+    if (draft.start_date !== toDateStr(stop.start_date))
       changes.start_date = draft.start_date;
-    if (draft.end_date && draft.end_date !== toDateStr(stop.end_date))
+    if (draft.end_date !== toDateStr(stop.end_date))
       changes.end_date = draft.end_date;
     if (Object.keys(changes).length > 0 && updateStop)
       updateStop(stop.id, changes);

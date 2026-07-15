@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { $f, itemCost, sumItemExpenses } from "../../shared/hooks/useItems";
+import { itemHasExpense } from "../../shared/hooks/useExpenses";
 import { useTripData, useTripActions } from "../../shared/hooks/TripContext";
 import DetailModal from "../../shared/components/DetailModal";
 import ExpenseCard from "../../shared/components/ExpenseCard";
@@ -50,9 +51,16 @@ export default function BudgetPage() {
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [expenses]);
 
+  // M06: include confirmed items that have no logged expense — otherwise they
+  // vanish from both lists yet still count toward the summary's selected total.
   const planned = useMemo(
-    () => items.filter((it) => it.status === "sel"),
-    [items],
+    () =>
+      items.filter(
+        (it) =>
+          it.status === "sel" ||
+          (it.status === "conf" && !itemHasExpense(expenses, it.id)),
+      ),
+    [items, expenses],
   );
 
   return (
@@ -168,7 +176,12 @@ export default function BudgetPage() {
               >
                 <div className="bi-left">
                   <div className="bi-name">{it.name}</div>
-                  <div className="bi-meta">{it.city} · Selected</div>
+                  <div className="bi-meta">
+                    {it.city} ·{" "}
+                    {it.status === "conf"
+                      ? "Booked · no expense logged"
+                      : "Selected"}
+                  </div>
                 </div>
                 <div className="bi-right">
                   <div style={{ fontSize: 13, fontWeight: 700 }}>
