@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { $f } from '../hooks/useItems';
 import AddItemModal from './AddItemModal';
 
 export default function AddExpenseModal({ items, stops, onAdd, onClose, userEmail, addItem, addExpense, setFile }) {

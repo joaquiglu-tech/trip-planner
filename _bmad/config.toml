@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────────
+# BMAD config — extracted & generalized for trip-planner.
+#
+# Originally installer-managed (see csm-webapp). This copy was
+# hand-trimmed: project name changed to trip-planner, and the modules
+# / agents that were NOT migrated were removed:
+#   - modules.tea  (Playwright/Cypress test-architecture) — dropped
+#   - modules.cis  (creative agents) — dropped
+#   - [agents.*]   (Mary/John/Winston/Sally/Amelia/Paige personas) — dropped
+#
+# To pin values or add custom agents/overrides that survive a future
+# `bmad` install, use:
+#   _bmad/custom/config.toml       (team, committed)
+#   _bmad/custom/config.user.toml  (personal, gitignored)
+# ─────────────────────────────────────────────────────────────────
+
+[core]
+project_name = "trip-planner"
+document_output_language = "English"
+output_folder = "{project-root}/docs"
+
+[modules.bmm]
+planning_artifacts = "{project-root}/docs/planning-artifacts"
+implementation_artifacts = "{project-root}/docs/implementation-artifacts"
+project_knowledge = "{project-root}/docs"

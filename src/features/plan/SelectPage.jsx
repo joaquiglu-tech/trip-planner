@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { itemCost } from '../../shared/hooks/useItems';
 import { useTripData, useTripActions } from '../../shared/hooks/TripContext';
 import FilterBar from './FilterBar';
 import ItemCard from './ItemCard';

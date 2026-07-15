@@ -32,7 +32,7 @@ export default function App() {
 }
 
 function AppShell({ session }) {
-  const { items, loaded, stops, stopsLoaded, dataError, retryAll, toast, addItem, addStop, addExpense, expenses, email, setFile } = useTrip();
+  const { items, loaded, stops, stopsLoaded, dataError, retryAll, toast, addItem, addStop, addExpense, email, setFile } = useTrip();
   const online = useOnlineStatus();
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [showFab, setShowFab] = useState(null);

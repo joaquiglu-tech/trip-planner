@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { $f } from '../hooks/useItems';
 import { useConfirm } from '../hooks/useConfirm';
 import ConfirmModal from './ConfirmModal';
 

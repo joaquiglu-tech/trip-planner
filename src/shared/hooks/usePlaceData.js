@@ -1,11 +1,13 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { fetchPlaceData } from '../../services/googlePlaces';
 
 export function usePlaceData() {
   const [places, setPlaces] = useState({});
   const placesRef = useRef(places);
-  placesRef.current = places;
+  // Keep the latest-value ref in sync after commit (read only inside the
+  // async getPlaceData callback, never during render).
+  useEffect(() => { placesRef.current = places; });
 
   // Lazy fetch: only load place data when a card is opened
   const getPlaceData = useCallback(async (itemId, name, city) => {

@@ -248,7 +248,7 @@ export default function DetailModal({ it, status, setStatus, updateItem, onClose
 }
 
 // ═══ EDIT MODE — batch save ═══
-function EditMode({ it, stops, livePrice, livePriceRates, expenseAmount, onExpenseClick, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile, setStatus, status, itemExpenses, deleteExpense }) {
+function EditMode({ it, stops, livePrice, expenseAmount, onExpenseClick, updateItem, onClose, showSaved, saved, itemFiles, uploading, handleUpload, handleRemoveFile, setStatus, status, itemExpenses, deleteExpense }) {
   const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
   const trapRef = useFocusTrap();
   const [draft, setDraft] = useState({

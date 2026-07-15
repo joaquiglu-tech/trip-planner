@@ -41,7 +41,9 @@ function mergeItem(row, stopName, existingCity) {
 export function useItems(currentUserEmail, showToast) {
   const [items, setItems] = useState([]);
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+  // Keep the latest-value ref in sync after commit (read only inside callbacks
+  // like updateItem/addItem/deleteItem, never during render).
+  useEffect(() => { itemsRef.current = items; });
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [loadKey, setLoadKey] = useState(0);

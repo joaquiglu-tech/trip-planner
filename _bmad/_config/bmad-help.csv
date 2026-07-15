@@ -1,0 +1,13 @@
+module,skill,display-name,menu-code,description,action,args,phase,preceded-by,followed-by,required,output-location,outputs
+BMad Method,_meta,,,,,,,,,false,https://docs.bmad-method.org/llms.txt,
+BMad Method,bmad-investigate,Investigate,IN,Forensic case investigation calibrated to the input. Evidence-graded analysis with hypothesis tracking. Produces a structured case file.,,4-implementation,,,false,implementation_artifacts,investigation report,
+BMad Method,bmad-retrospective,Retrospective,ER,Optional at epic end: Review completed work lessons learned and next epic or if major issues consider CC.,,,4-implementation,bmad-code-review,,false,implementation_artifacts,retrospective
+BMad Method,bmad-document-project,Document Project,DP,Analyze an existing project to produce useful documentation.,,,anytime,,,false,project-knowledge,*
+BMad Method,bmad-generate-project-context,Generate Project Context,GPC,Scan existing codebase to generate a lean LLM-optimized project-context.md. Essential for brownfield projects.,,,anytime,,,false,output_folder,project context
+BMad Method,bmad-correct-course,Correct Course,CC,Navigate significant changes. May recommend start over update PRD redo architecture sprint planning or correct epics and stories.,,,anytime,,,false,planning_artifacts,change proposal
+Core,_meta,,,,,,,,,false,https://docs.bmad-method.org/llms.txt,
+Core,bmad-help,BMad Help,BH,,,,anytime,,,false,,
+Core,bmad-index-docs,Index Docs,ID,Use when LLM needs to understand available docs without loading everything.,,,anytime,,,false,,
+Core,bmad-shard-doc,Shard Document,SD,Use when doc becomes too large (>500 lines) to manage effectively.,,[path],anytime,,,false,,
+Core,bmad-spec,Spec,SP,"Use to distill any intent input (brief, PRD, transcript, brain dump, design folder, mixed multi-source) into a succinct, no-fluff SPEC.md contract + companions that downstream work derives from. Locks the WHAT before the HOW. Works for software, game design, research, editorial, policy, business, anything intent-bearing. Validation mode also available.",,[path],anytime,,,false,{output_folder}/specs/spec-{slug},SPEC.md + companion files
+Core,bmad-customize,BMad Customize,BC,"Use when you want to change how an agent or workflow behaves — add persistent facts, swap templates, insert activation hooks, or customize menus. Scans what's customizable, picks the right scope (agent vs workflow), writes the override to _bmad/custom/, and verifies the merge. No TOML hand-authoring required.",,,anytime,,,false,{project-root}/_bmad/custom,TOML override files
