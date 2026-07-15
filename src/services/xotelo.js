@@ -1,9 +1,10 @@
-import { fetchHotelPrice } from './hotelPrices';
+import { fetchHotelPrice } from "./hotelPrices";
 
 // Extract Xotelo hotel key from TripAdvisor URL
 export function extractXoteloKey(url) {
   if (!url) return null;
-  const match = url.match(/g\d+-d\d+/);
+  // Prefer the full geo+hotel key; fall back to a standalone d# form (M48).
+  const match = url.match(/g\d+-d\d+/) || url.match(/d\d+/);
   return match ? match[0] : null;
 }
 
@@ -15,9 +16,10 @@ export async function fetchStayEstimate(xoteloKey, checkIn, checkOut) {
     const price = await fetchHotelPrice(xoteloKey, checkIn, checkOut);
     if (!price) return null;
     // Prefer Booking.com or Expedia rates, fallback to lowest
-    const preferred = price.all_rates.find(r => r.source === 'Booking.com')
-      || price.all_rates.find(r => r.source === 'Expedia')
-      || price.all_rates[0];
+    const preferred =
+      price.all_rates.find((r) => r.source === "Booking.com") ||
+      price.all_rates.find((r) => r.source === "Expedia") ||
+      price.all_rates[0];
     const perNight = preferred ? preferred.per_night : price.per_night;
     return {
       xotelo_key: xoteloKey,
@@ -28,7 +30,7 @@ export async function fetchStayEstimate(xoteloKey, checkIn, checkOut) {
       nights: price.nights,
     };
   } catch (err) {
-    console.warn('Xotelo fetch failed:', err);
+    console.warn("Xotelo fetch failed:", err);
     return null;
   }
 }

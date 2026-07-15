@@ -9,7 +9,7 @@ export function SettingsProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-    try { localStorage.setItem('tripDarkMode', darkMode); } catch {}
+    try { localStorage.setItem('tripDarkMode', darkMode); } catch { /* storage unavailable */ }
   }, [darkMode]);
 
   return (

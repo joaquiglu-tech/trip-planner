@@ -7,12 +7,19 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
+    // Dummy Supabase vars so modules that import the client (which throws on
+    // missing env at import time) can load in test/CI without a real .env.
+    // Real dev/prod still require genuine values — the runtime guard is intact.
+    env: {
+      VITE_SUPABASE_URL: 'http://localhost:54321',
+      VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+    },
   },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Anisita',
         short_name: 'Anisita',
@@ -23,9 +30,11 @@ export default defineConfig({
         orientation: 'portrait',
         start_url: '/',
         icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           { src: '/icon-192.svg', sizes: '192x192', type: 'image/svg+xml' },
           { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml' },
-          { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
         ],
       },
       workbox: {
@@ -62,6 +71,11 @@ export default defineConfig({
             urlPattern: /^https:\/\/places\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: { cacheName: 'google-places', expiration: { maxEntries: 100, maxAgeSeconds: 30 * 86400 } },
+          },
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
+            handler: 'CacheFirst',
+            options: { cacheName: 'cdn-fonts', expiration: { maxEntries: 10, maxAgeSeconds: 365 * 24 * 60 * 60 } },
           },
         ],
       },

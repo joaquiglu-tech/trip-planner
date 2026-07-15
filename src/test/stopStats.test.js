@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getStopStats, itemInStop } from '../features/itinerary/utils';
+import { getStopStats } from '../features/itinerary/utils';
 
 describe('getStopStats', () => {
   const stop = { id: 'stop-rome' };

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  toDateStr, formatStopDate, calcNights, formatTime, formatRelativeTime,
+  toDateStr, formatStopDate, calcNights, formatTime,
   itemInStop, getCalendarDates
 } from '../features/itinerary/utils';
 

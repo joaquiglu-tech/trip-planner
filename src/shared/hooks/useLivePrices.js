@@ -1,21 +1,26 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase } from '../../services/supabase';
-import { fetchHotelPrice } from '../../services/hotelPrices';
+import { useState, useEffect, useMemo, useRef } from "react";
+import { fetchHotelPrice } from "../../services/hotelPrices";
 
-export function useLivePrices(staysWithKeys, stops) {
+export function useLivePrices(staysWithKeys, stops, updateItem) {
   const [livePrices, setLivePrices] = useState({});
   const fetchedRef = useRef(new Set());
 
-  const stopsDateKey = useMemo(() =>
-    (stops || []).map(s => `${s.id}:${s.start_date}:${s.end_date}`).join(','),
-  [stops]);
+  const stopsDateKey = useMemo(
+    () =>
+      (stops || [])
+        .map((s) => `${s.id}:${s.start_date}:${s.end_date}`)
+        .join(","),
+    [stops],
+  );
 
-  const staysKey = useMemo(() =>
-    staysWithKeys.map(s => `${s.id}:${s.xotelo_key}`).join(','),
-  [staysWithKeys]);
+  const staysKey = useMemo(
+    () => staysWithKeys.map((s) => `${s.id}:${s.xotelo_key}`).join(","),
+    [staysWithKeys],
+  );
 
   useEffect(() => {
-    if (!staysWithKeys.length || !stops.length) return;
+    // M52: stops may be undefined before load — guard before reading .length.
+    if (!staysWithKeys.length || !(stops || []).length) return;
 
     // Reset fetched set when deps change (dates changed, new stays)
     fetchedRef.current = new Set();
@@ -32,7 +37,11 @@ export function useLivePrices(staysWithKeys, stops) {
         try {
           const dates = getStayDates(stay, stops);
           if (!dates) continue;
-          const price = await fetchHotelPrice(stay.xotelo_key, dates.checkIn, dates.checkOut);
+          const price = await fetchHotelPrice(
+            stay.xotelo_key,
+            dates.checkIn,
+            dates.checkOut,
+          );
           if (cancelled) break;
 
           if (price) {
@@ -40,30 +49,48 @@ export function useLivePrices(staysWithKeys, stops) {
             const total = price.total;
             fetchedRef.current.add(fetchKey);
 
-            setLivePrices(prev => ({ ...prev, [stay.id]: {
-              perNight, total, nights: price.nights, source: price.source,
-              allRates: price.all_rates, lastUpdated: new Date().toISOString(),
-            }}));
+            setLivePrices((prev) => ({
+              ...prev,
+              [stay.id]: {
+                perNight,
+                total,
+                nights: price.nights,
+                source: price.source,
+                allRates: price.all_rates,
+                lastUpdated: new Date().toISOString(),
+              },
+            }));
 
-            // Write to DB
+            // Write via updateItem so optimistic state stays in sync.
+            // stampUser:false — this is an automated writeback, not a user edit,
+            // so it must not bump updated_by/updated_at (M41).
             if (total !== Number(stay.estimated_cost || 0)) {
-              const { error } = await supabase.from('items').update({
-                estimated_cost: total,
-                updated_at: new Date().toISOString(),
-                updated_by: 'xotelo-sync',
-              }).eq('id', stay.id);
-              if (error) console.warn('Failed to update estimated_cost for', stay.name, error);
+              try {
+                await updateItem(
+                  stay.id,
+                  { estimated_cost: total },
+                  { stampUser: false },
+                );
+              } catch (err) {
+                console.warn(
+                  "Failed to update estimated_cost for",
+                  stay.name,
+                  err,
+                );
+              }
             }
           }
         } catch (err) {
-          console.warn('Xotelo fetch error for', stay.name, err);
+          console.warn("Xotelo fetch error for", stay.name, err);
         }
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 500));
       }
     }
 
     fetchAll();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [staysKey, stopsDateKey]);
 
   return livePrices;
@@ -72,9 +99,14 @@ export function useLivePrices(staysWithKeys, stops) {
 function getStayDates(stay, stops) {
   const firstStopId = stay.stop_ids?.[0];
   if (firstStopId) {
-    const byId = stops.find(s => s.id === firstStopId);
-    if (byId) return { checkIn: String(byId.start_date).substring(0, 10), checkOut: String(byId.end_date).substring(0, 10) };
+    const byId = (stops || []).find((s) => s.id === firstStopId);
+    // M52/M03: only return when both dates are present, so we never pass
+    // "null" strings downstream (fetchHotelPrice would reject them anyway).
+    if (byId && byId.start_date && byId.end_date)
+      return {
+        checkIn: String(byId.start_date).substring(0, 10),
+        checkOut: String(byId.end_date).substring(0, 10),
+      };
   }
-  if (stops.length > 0) return { checkIn: String(stops[0].start_date).substring(0, 10), checkOut: String(stops[stops.length - 1].end_date).substring(0, 10) };
   return null;
 }
