@@ -36,7 +36,7 @@
   - _Failure:_ `.catch()` is chained on the raw Supabase query builder (`supabase.from('expenses').delete().eq(...).catch(...)`). postgrest-js 2.104.1's builder has `.then` but **no `.catch`/`.finally`** (verified: `typeof proto.catch === 'undefined'`), so it throws `TypeError` synchronously. The item DELETE (line 197) already committed; the throw hits the outer catch (212) which re-adds the deleted item to the UI. Expense/place_cache/storage cleanup never runs → orphaned expense rows permanently inflate BudgetPage "Confirmed"/`confTotal`; item flickers back until reload. Line 205 (`place_cache`) has the same bug.
   - _Fix:_ `try { await supabase.from('expenses').delete().eq('item_id', id) } catch(e){ console.warn(...) }` per cleanup call; drop `.catch` chaining.
 
-- [ ] **C2 · Forms write the read-only `estimated_cost`, racing the Xotelo writeback** — `src/shared/components/DetailModal.jsx:302,461,282`; create-seed `src/shared/hooks/useItems.js:159` · `VERIFIED` `×4` · `DECISION 2`
+- [x] **C2 · Forms write the read-only `estimated_cost`, racing the Xotelo writeback** — `src/shared/components/DetailModal.jsx:302,461,282`; create-seed `src/shared/hooks/useItems.js:159` · `VERIFIED` `×4` · `DECISION 2` · ✅ Slice 2: `isXoteloManaged(item)` helper; DetailModal cost input is read-only ("Managed by live prices") for Xotelo stays and `handleSave` skips `estimated_cost` for them. Tested.
   - _Failure:_ Edit-mode "Estimated cost ($)" input feeds `changes.estimated_cost` (302); `handleTripAdvisorUrl` also sets it (282). `rules/data.md` says `estimated_cost` is read-only and only `useLivePrices` writes it. For a Xotelo-linked stay, a manual edit and the next price refresh clobber each other — last write wins, non-deterministic.
   - _Fix:_ Make the cost input read-only for stays with `xotelo_key`; do not include `estimated_cost` in `changes` for those. (Non-stay items may keep a user-owned cost field — confirm during implementation.)
 
@@ -58,7 +58,7 @@
 
 ### Data integrity
 
-- [ ] **M01 · Max-1-expense-per-item unenforced → double-tap doubles paid total** — `src/shared/hooks/useExpenses.js:39-47`; selectable list `src/shared/modals/AddExpenseModal.jsx:28-49`; sums all in `TripContext.jsx:32` · `×4`
+- [~] **M01 · Max-1-expense-per-item unenforced → double-tap doubles paid total** — `src/shared/hooks/useExpenses.js:39-47`; selectable list `src/shared/modals/AddExpenseModal.jsx:28-49`; sums all in `TripContext.jsx:32` · `×4` · ✅ Slice 2 (code): `itemHasExpense` guard in `addExpense` (single choke point — covers all creation paths); tested. ⏳ PENDING: DB partial unique index — SQL in `M01-expenses-unique-index.sql`, apply via Supabase (has a pre-check for existing dupes).
   - _Fix:_ DB unique constraint on `expenses.item_id` (generated migration) + guard in `addExpense`/`AddExpenseModal` (exclude items that already have an expense; upsert or surface conflict).
 - [ ] **M02 · Realtime DELETE relies on `payload.old.id` (needs REPLICA IDENTITY FULL)** — `useItems.js:85`, `useExpenses.js:25`, `useStops.js:71` · `×2`
   - _Failure:_ Without full replica identity, `payload.old.id` is undefined → deleted rows never removed locally (lingering item double-counts in expenseMap). _Fix:_ verify/set replica identity; guard `if (!payload.old?.id) return`.
@@ -156,7 +156,7 @@
   - _Fix:_ route auth through the hook / a service.
 - [ ] **M40 · Hardcoded `'Lima'` home-city rule** — `MapComponents.jsx:145,174,226` (vs dynamic `stops[0]` in `OverviewView.jsx:49,65`) · `×2`
   - _Failure:_ breaks "no hardcoded data"; map includes origin + filter is dead for any non-Lima trip. _Fix:_ derive home from `stops[0]`/a flag, single source.
-- [ ] **M41 · Live-price writeback stamps `updated_by`/`updated_at` → spurious "X updated" toast + false audit** — `useLivePrices.js:50` → `useItems.js:96,113-114` · `×2`
+- [x] **M41 · Live-price writeback stamps `updated_by`/`updated_at` → spurious "X updated" toast + false audit** — `useLivePrices.js:50` → `useItems.js:96,113-114` · `×2` · ✅ Slice 2: `updateItem(id, changes, { stampUser:false })` for automated writes (no updated_by/at bump); `useLivePrices` uses it; realtime toast gated by `shouldNotifyUpdate` (suppresses updates that don't bump updated_at). Tested.
   - _Fix:_ write `estimated_cost` without touching `updated_by`, or tag automated writes so the toast is suppressed.
 - [ ] **M42 · Directions callbacks race effect cleanup → leaked/duplicate routes** — `MapComponents.jsx:96-108,210-222` · `×2`
   - _Fix:_ per-effect cancelled flag checked before push/render.

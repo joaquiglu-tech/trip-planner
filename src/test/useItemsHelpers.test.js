@@ -3,6 +3,8 @@ import {
   appendOrReplaceById,
   cleanupItemChildren,
   sumItemExpenses,
+  isXoteloManaged,
+  shouldNotifyUpdate,
 } from "../shared/hooks/useItems";
 
 // ─────────────────────────────────────────────────────────────
@@ -145,5 +147,75 @@ describe("sumItemExpenses (M14 + M13 NaN guard)", () => {
       { item_id: "1", amount: 10 },
     ];
     expect(sumItemExpenses(bad, "1")).toBe(10);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// C2 — estimated_cost is read-only for Xotelo-linked stays
+// ─────────────────────────────────────────────────────────────
+describe("isXoteloManaged (C2)", () => {
+  it("is true for a stay with a xotelo_key", () => {
+    expect(isXoteloManaged({ type: "stay", xotelo_key: "g123-d456" })).toBe(
+      true,
+    );
+  });
+  it("is false for a stay without a key", () => {
+    expect(isXoteloManaged({ type: "stay", xotelo_key: "" })).toBe(false);
+    expect(isXoteloManaged({ type: "stay" })).toBe(false);
+  });
+  it("is false for a non-stay even with a key", () => {
+    expect(isXoteloManaged({ type: "food", xotelo_key: "g1" })).toBe(false);
+  });
+  it("is false for null/undefined", () => {
+    expect(isXoteloManaged(null)).toBe(false);
+    expect(isXoteloManaged(undefined)).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// M41 — suppress collaborator toast for automated price writebacks
+// ─────────────────────────────────────────────────────────────
+describe("shouldNotifyUpdate (M41)", () => {
+  const me = "me@x.com";
+  const other = "other@x.com";
+  it("does not notify for my own change", () => {
+    expect(
+      shouldNotifyUpdate(
+        { updated_at: "t0" },
+        { updated_by: me, updated_at: "t1" },
+        me,
+      ),
+    ).toBe(false);
+  });
+  it("does not notify when updated_by is missing", () => {
+    expect(shouldNotifyUpdate(null, { updated_at: "t1" }, me)).toBe(false);
+  });
+  it("notifies for another user's real edit (updated_at bumped)", () => {
+    expect(
+      shouldNotifyUpdate(
+        { updated_at: "t0" },
+        { updated_by: other, updated_at: "t1" },
+        me,
+      ),
+    ).toBe(true);
+  });
+  it("notifies for a brand-new insert from another user (no existing)", () => {
+    expect(
+      shouldNotifyUpdate(
+        undefined,
+        { updated_by: other, updated_at: "t1" },
+        me,
+      ),
+    ).toBe(true);
+  });
+  it("suppresses an automated writeback that did not bump updated_at", () => {
+    // live-price writeback: estimated_cost changed but updated_at/updated_by untouched
+    expect(
+      shouldNotifyUpdate(
+        { updated_at: "t0" },
+        { updated_by: other, updated_at: "t0" },
+        me,
+      ),
+    ).toBe(false);
   });
 });

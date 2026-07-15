@@ -87,6 +87,22 @@ export function appendOrReplaceById(list, item) {
   return next;
 }
 
+// estimated_cost is owned by useLivePrices (Xotelo) for stays with a key —
+// forms must treat it as read-only for those items (C2).
+export function isXoteloManaged(item) {
+  return item?.type === "stay" && !!item?.xotelo_key;
+}
+
+// Decide whether a realtime change from another client warrants a "X updated"
+// toast. Suppresses automated writebacks (e.g. live prices) that don't bump
+// updated_at, so background price refreshes don't spam collaborators (M41).
+export function shouldNotifyUpdate(existing, incoming, currentUserEmail) {
+  if (!incoming.updated_by || incoming.updated_by === currentUserEmail)
+    return false;
+  if (existing && existing.updated_at === incoming.updated_at) return false;
+  return true;
+}
+
 // Best-effort cleanup of an item's child rows/files. Must NOT chain .catch on
 // a Supabase query builder — the builder is a thenable with no .catch, so that
 // would throw synchronously (C1). Awaits each call and swallows errors instead.
@@ -236,10 +252,12 @@ export function useItems(currentUserEmail, showToast) {
               const merged = mergeItem(payload.new, stopName, existingCity);
               return appendOrReplaceById(prev, merged);
             });
+            const existing = itemsRef.current.find(
+              (it) => it.id === payload.new.id,
+            );
             if (
               showToast &&
-              payload.new.updated_by &&
-              payload.new.updated_by !== currentUserEmail
+              shouldNotifyUpdate(existing, payload.new, currentUserEmail)
             ) {
               const who = payload.new.updated_by.split("@")[0];
               const action =
@@ -260,7 +278,7 @@ export function useItems(currentUserEmail, showToast) {
   }, [currentUserEmail, showToast]);
 
   const updateItem = useCallback(
-    async (id, changes) => {
+    async (id, changes, { stampUser = true } = {}) => {
       let prev;
       setItems((p) =>
         p.map((it) => {
@@ -271,13 +289,18 @@ export function useItems(currentUserEmail, showToast) {
           return it;
         }),
       );
+      // Automated writebacks (live prices) pass stampUser:false so they don't
+      // bump updated_at/updated_by — keeps audit honest and toasts quiet (M41).
+      const payload = stampUser
+        ? {
+            ...changes,
+            updated_at: new Date().toISOString(),
+            updated_by: currentUserEmail,
+          }
+        : { ...changes };
       const { error } = await supabase
         .from("items")
-        .update({
-          ...changes,
-          updated_at: new Date().toISOString(),
-          updated_by: currentUserEmail,
-        })
+        .update(payload)
         .eq("id", id);
       if (error) {
         if (prev) setItems((p) => p.map((it) => (it.id === id ? prev : it)));
