@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import AddItemModal from "./AddItemModal";
+import {
+  EXPENSE_CATEGORIES,
+  buildUnlinkedExpensePayload,
+} from "../constants/expenseCategories";
 
 export default function AddExpenseModal({
   items = [],
@@ -11,6 +15,8 @@ export default function AddExpenseModal({
   addItem,
   addExpense,
   setFile,
+  initialMode = "item",
+  defaultStopId = "",
 }) {
   const trapRef = useFocusTrap();
   const [step, setStep] = useState("select"); // 'select' | 'amount'
@@ -20,6 +26,10 @@ export default function AddExpenseModal({
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [mode, setMode] = useState(initialMode); // 'item' | 'stop'
+  const [stopId, setStopId] = useState(defaultStopId);
+  const [category, setCategory] = useState("groceries");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     window.history.pushState({ modal: true }, "", "");
@@ -68,6 +78,30 @@ export default function AddExpenseModal({
     }
   }
 
+  async function handleSaveUnlinked() {
+    if (saving) return;
+    const payload = buildUnlinkedExpensePayload({
+      amount,
+      category,
+      note,
+      stopId,
+      userEmail,
+    });
+    if (!payload) {
+      setError("Enter an amount greater than 0.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await onAdd(payload);
+      onClose();
+    } catch (err) {
+      setError("Error: " + err.message);
+      setSaving(false);
+    }
+  }
+
   return (
     <div
       className="detail-overlay"
@@ -85,7 +119,29 @@ export default function AddExpenseModal({
           ✕
         </button>
         <div className="detail-content">
-          {step === "select" && (
+          <div className="itin-mode-toggle" style={{ marginBottom: 12 }}>
+            <button
+              type="button"
+              className={`fp ${mode === "item" ? "fp-active" : ""}`}
+              onClick={() => {
+                setMode("item");
+                setError("");
+              }}
+            >
+              Link to item
+            </button>
+            <button
+              type="button"
+              className={`fp ${mode === "stop" ? "fp-active" : ""}`}
+              onClick={() => {
+                setMode("stop");
+                setError("");
+              }}
+            >
+              Log to a stop (no item)
+            </button>
+          </div>
+          {mode === "item" && step === "select" && (
             <>
               <h2 className="detail-name" style={{ fontSize: 18 }}>
                 Add Expense
@@ -165,7 +221,7 @@ export default function AddExpenseModal({
             </>
           )}
 
-          {step === "amount" && selectedItem && (
+          {mode === "item" && step === "amount" && selectedItem && (
             <>
               <h2 className="detail-name" style={{ fontSize: 18 }}>
                 How much did you pay?
@@ -214,6 +270,94 @@ export default function AddExpenseModal({
                   {saving ? "Saving..." : "Add Expense"}
                 </button>
               </div>
+            </>
+          )}
+
+          {mode === "stop" && (
+            <>
+              <h2 className="detail-name" style={{ fontSize: 18 }}>
+                Log an expense to a stop
+              </h2>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-muted)",
+                  marginBottom: 12,
+                }}
+              >
+                Not linked to any item (groceries, gas, taxi, tips…)
+              </p>
+              {error && (
+                <div
+                  style={{
+                    color: "var(--error)",
+                    fontSize: 12,
+                    marginBottom: 8,
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+              <label className="itin-general-label" htmlFor="exp-stop">
+                Stop
+              </label>
+              <select
+                id="exp-stop"
+                className="edit-input"
+                value={stopId}
+                onChange={(e) => setStopId(e.target.value)}
+                style={{ marginBottom: 10 }}
+              >
+                <option value="">No stop</option>
+                {stops.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              <label className="itin-general-label" htmlFor="exp-cat">
+                Category
+              </label>
+              <select
+                id="exp-cat"
+                className="edit-input"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                style={{ marginBottom: 10 }}
+              >
+                {EXPENSE_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <div className="cost-input-row" style={{ marginBottom: 10 }}>
+                <span className="cost-input-prefix">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  className="cost-input"
+                  placeholder="0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <input
+                className="edit-input"
+                placeholder="Note (optional)"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                style={{ marginBottom: 12 }}
+              />
+              <button
+                className="detail-btn sel"
+                onClick={handleSaveUnlinked}
+                disabled={saving}
+                style={{ width: "100%" }}
+              >
+                {saving ? "Saving..." : "Add Expense"}
+              </button>
             </>
           )}
         </div>
