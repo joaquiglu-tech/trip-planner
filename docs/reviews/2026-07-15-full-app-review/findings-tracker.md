@@ -32,7 +32,7 @@
 
 ## 🔴 CRITICAL
 
-- [ ] **C1 · `deleteItem` throws on every delete → orphaned expenses + zombie item** — `src/shared/hooks/useItems.js:204-205` · `VERIFIED`
+- [x] **C1 · `deleteItem` throws on every delete → orphaned expenses + zombie item** — `src/shared/hooks/useItems.js:204-205` · `VERIFIED` · ✅ Slice 1: extracted `cleanupItemChildren(client, id)` (awaits + swallows, no `.catch` on builder); tested incl. root-cause repro.
   - _Failure:_ `.catch()` is chained on the raw Supabase query builder (`supabase.from('expenses').delete().eq(...).catch(...)`). postgrest-js 2.104.1's builder has `.then` but **no `.catch`/`.finally`** (verified: `typeof proto.catch === 'undefined'`), so it throws `TypeError` synchronously. The item DELETE (line 197) already committed; the throw hits the outer catch (212) which re-adds the deleted item to the UI. Expense/place_cache/storage cleanup never runs → orphaned expense rows permanently inflate BudgetPage "Confirmed"/`confTotal`; item flickers back until reload. Line 205 (`place_cache`) has the same bug.
   - _Fix:_ `try { await supabase.from('expenses').delete().eq('item_id', id) } catch(e){ console.warn(...) }` per cleanup call; drop `.catch` chaining.
 
@@ -40,11 +40,11 @@
   - _Failure:_ Edit-mode "Estimated cost ($)" input feeds `changes.estimated_cost` (302); `handleTripAdvisorUrl` also sets it (282). `rules/data.md` says `estimated_cost` is read-only and only `useLivePrices` writes it. For a Xotelo-linked stay, a manual edit and the next price refresh clobber each other — last write wins, non-deterministic.
   - _Fix:_ Make the cost input read-only for stays with `xotelo_key`; do not include `estimated_cost` in `changes` for those. (Non-stay items may keep a user-owned cost field — confirm during implementation.)
 
-- [ ] **C3 · `addItem` has no realtime-dedup guard → duplicate item rows** — `src/shared/hooks/useItems.js:179` · `VERIFIED`
+- [x] **C3 · `addItem` has no realtime-dedup guard → duplicate item rows** — `src/shared/hooks/useItems.js:179` · `VERIFIED` · ✅ Slice 1: extracted `appendOrReplaceById(list, item)`; used in `addItem` + realtime handler (also dedups the reverse race). Tested.
   - _Failure:_ Optimistic `setItems(prev => [...prev, merged])` has no `prev.some(id)` check, while the realtime INSERT echo (89-95) also appends when the id isn't found. If the realtime event lands first, the row is added twice and persists (findIndex only updates the first copy) → duplicated card + double-counted cost. `addExpense` (useExpenses.js:43) guards correctly; `addItem` doesn't.
   - _Fix:_ Guard `if (prev.some(it => it.id === data.id)) return prev;` before appending.
 
-- [ ] **C4 · Budget math duplicated AND already drifted** — `src/features/itinerary/OverviewView.jsx:13-26` vs `src/features/expenses/BudgetSummary.jsx:10-47` · `VERIFIED` `×3`
+- [x] **C4 · Budget math duplicated AND already drifted** — `src/features/itinerary/OverviewView.jsx:13-26` vs `src/features/expenses/BudgetSummary.jsx:10-47` · `VERIFIED` `×3` · ✅ Slice 1: extracted `computeBudgetTotals(items, expenses)`; both consumers call it. Canonical rule = confirmed sums positive expenses only (refunds/zero excluded), consistently. `budgetSummary.test.js` now imports the real fn.
   - _Failure:_ OverviewView `confTotal` sums **all** expenses (`:24`); BudgetSummary skips `amt <= 0` (`:38`). A refund/negative or zero expense makes the Home "Confirmed" and Budget-tab "Confirmed" disagree for the same trip. Comment at OverviewView.jsx:12 admits it's a copy. Violates single-source-of-truth.
   - _Fix:_ Extract one aggregator (e.g. `computeBudgetTotals(items, expenses)`) into `utils`; call from both. Fold in USD rounding (DECISION 1) and the `sumItemExpenses` helper (see M14).
 
@@ -83,11 +83,11 @@
 
 - [ ] **M11 · Mixed currencies summed as raw numbers** — `BudgetSummary`, `OverviewView`, `useItems.js:5` (`$f`) · `×2`
   - _Fix (per DECISION 1):_ enforce USD-only; no conversion. Remove any implicit multi-currency assumption.
-- [ ] **M12 · Money not rounded to 2 decimals** — `src/shared/hooks/useItems.js:5` (`$f = '$'+(n||0).toLocaleString()`)
+- [x] **M12 · Money not rounded to 2 decimals** — `src/shared/hooks/useItems.js:5` (`$f = '$'+(n||0).toLocaleString()`) · ✅ Slice 1: `$f` now `Number(n)`-coerced + `{ maximumFractionDigits: 2 }`. Tested.
   - _Failure:_ float sums render `$1,234.567`. _Fix:_ `toLocaleString(undefined,{maximumFractionDigits:2})` or round at aggregation. Also handles negative `$-5` (see L-fmt).
-- [ ] **M13 · Budget aggregation NaN-poisoning from non-numeric amount** — `BudgetSummary.jsx:24,42`, `OverviewView.jsx:24`
+- [x] **M13 · Budget aggregation NaN-poisoning from non-numeric amount** — `BudgetSummary.jsx:24,42`, `OverviewView.jsx:24` · ✅ Slice 1: `computeBudgetTotals`/`sumItemExpenses` use `Number(x) || 0`. Tested.
   - _Failure:_ `Number(e.amount||0)` on a non-numeric string → NaN poisons totals → whole budget shows `$NaN`. _Fix:_ `Number(e.amount)||0`.
-- [ ] **M14 · "Sum expenses for an item" reimplemented in 3 places** — `BudgetSummary.jsx:24`, `BudgetPage.jsx:131`, DetailModal
+- [x] **M14 · "Sum expenses for an item" reimplemented in 3 places** — `BudgetSummary.jsx:24`, `BudgetPage.jsx:131`, DetailModal · ✅ Slice 1: extracted `sumItemExpenses(expenses, itemId)`; adopted by `computeBudgetTotals` + `BudgetPage`. DetailModal call site migrates in Slice 5.
   - _Fix:_ extract `sumItemExpenses(expenses, itemId)` into the shared cost module (couples with C4).
 - [ ] **M15 · `detectConflicts` false-positives on bare time strings across different days** — `src/features/itinerary/utils.js:120`
   - _Failure:_ raw string compare of `start_time`/`end_time`; `mergeItem` mixes full datetime-local and bare `HH:MM`, so different-day items on a multi-day stop flag as conflicting. _Fix:_ normalize to comparable datetimes (attach date) before comparing.
@@ -168,7 +168,7 @@
 ### Services / external API robustness
 
 - [ ] **M45 · `googlePlaces` cache-read outside try + `.single()` on multi-row** — `src/services/googlePlaces.js:6`
-  - _Failure:_ `.single()` network error escapes (unhandled rejection); multiple place_cache rows → `.single()` errors → cache always misses → Places re-fetch + quota burn. _Fix:_ move select into try; use `.maybeSingle()`/`.limit(1)`.
+  - _Failure:_ `.single()` network error escapes (unhandled rejection); multiple place*cache rows → `.single()` errors → cache always misses → Places re-fetch + quota burn. \_Fix:* move select into try; use `.maybeSingle()`/`.limit(1)`.
 - [ ] **M46 · `/api/xotelo` has no timeout + no dev proxy; failures swallowed** — `src/services/hotelPrices.js:7-8`
   - _Failure:_ no AbortController → hang; no `server.proxy` in vite.config → 404 under `npm run dev`, silently returns null. _Fix:_ AbortController+timeout; wire dev proxy or document; log diagnostics. Also URL-encode query params (`:7`).
 - [ ] **M47 · Places 429/quota not distinguished from other failures** — `src/services/googlePlaces.js:27`
