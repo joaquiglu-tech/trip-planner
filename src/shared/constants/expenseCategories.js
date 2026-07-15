@@ -91,9 +91,3 @@ export function buildUnlinkedExpenseChanges(draft, expense) {
   if (stopId !== (expense.stop_id || "")) changes.stop_id = stopId;
   return changes;
 }
-
-export function validateUnlinkedExpenseDraft(draft) {
-  const val = parseFloat(draft.amount);
-  if (isNaN(val) || val <= 0) return "Enter an amount greater than 0.";
-  return null;
-}

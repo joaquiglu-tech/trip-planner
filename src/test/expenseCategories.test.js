@@ -6,7 +6,6 @@ import {
   orderBudgetTypeKeys,
   buildUnlinkedExpensePayload,
   buildUnlinkedExpenseChanges,
-  validateUnlinkedExpenseDraft,
 } from "../shared/constants/expenseCategories";
 
 describe("expense category constant", () => {
@@ -127,19 +126,5 @@ describe("buildUnlinkedExpenseChanges", () => {
         expense,
       ),
     ).toEqual({});
-  });
-});
-
-describe("validateUnlinkedExpenseDraft", () => {
-  it("rejects a non-positive amount", () => {
-    expect(validateUnlinkedExpenseDraft({ amount: "0" })).toMatch(
-      /greater than 0/,
-    );
-    expect(validateUnlinkedExpenseDraft({ amount: "" })).toMatch(
-      /greater than 0/,
-    );
-  });
-  it("accepts a positive amount", () => {
-    expect(validateUnlinkedExpenseDraft({ amount: "3.5" })).toBeNull();
   });
 });
