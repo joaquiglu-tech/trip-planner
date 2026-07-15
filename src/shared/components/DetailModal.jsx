@@ -731,13 +731,18 @@ function EditMode({
   const [xoteloStatus, setXoteloStatus] = useState(
     it.xotelo_key ? "found" : "",
   );
+  // M25: debounce + request counter so keystrokes don't fire overlapping
+  // fetches and a stale response can't overwrite a newer estimate.
+  const xoteloReqRef = useRef(0);
+  const xoteloTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(xoteloTimerRef.current), []);
 
-  async function handleTripAdvisorUrl(url) {
+  function handleTripAdvisorUrl(url) {
     setTripadvisorUrl(url);
+    clearTimeout(xoteloTimerRef.current);
     const key = extractXoteloKey(url);
     if (!key) {
-      if (url.length > 10) setXoteloStatus("not_found");
-      else setXoteloStatus("");
+      setXoteloStatus(url.length > 10 ? "not_found" : "");
       return;
     }
     u("xotelo_key", key);
@@ -749,13 +754,22 @@ function EditMode({
     const checkOut = firstStop
       ? String(firstStop.end_date).substring(0, 10)
       : null;
-    if (checkIn && checkOut) {
-      const estimate = await fetchStayEstimate(key, checkIn, checkOut);
-      if (estimate) {
-        u("estimated_cost", String(estimate.estimated_cost));
+    if (!checkIn || !checkOut) {
+      setXoteloStatus("found"); // key valid, assign a stop to get rates
+      return;
+    }
+    const reqId = ++xoteloReqRef.current;
+    xoteloTimerRef.current = setTimeout(async () => {
+      try {
+        const estimate = await fetchStayEstimate(key, checkIn, checkOut);
+        if (reqId !== xoteloReqRef.current) return; // superseded
+        if (estimate) u("estimated_cost", String(estimate.estimated_cost));
         setXoteloStatus("found");
-      } else setXoteloStatus("found"); // key valid but no rates for these dates
-    } else setXoteloStatus("found"); // key valid, assign stop to get rates
+      } catch (err) {
+        console.warn("Xotelo estimate failed:", err);
+        if (reqId === xoteloReqRef.current) setXoteloStatus("found");
+      }
+    }, 400);
   }
   const [saving, setSaving] = useState(false);
 

@@ -19,7 +19,8 @@ export function useLivePrices(staysWithKeys, stops, updateItem) {
   );
 
   useEffect(() => {
-    if (!staysWithKeys.length || !stops.length) return;
+    // M52: stops may be undefined before load — guard before reading .length.
+    if (!staysWithKeys.length || !(stops || []).length) return;
 
     // Reset fetched set when deps change (dates changed, new stays)
     fetchedRef.current = new Set();
@@ -98,8 +99,10 @@ export function useLivePrices(staysWithKeys, stops, updateItem) {
 function getStayDates(stay, stops) {
   const firstStopId = stay.stop_ids?.[0];
   if (firstStopId) {
-    const byId = stops.find((s) => s.id === firstStopId);
-    if (byId)
+    const byId = (stops || []).find((s) => s.id === firstStopId);
+    // M52/M03: only return when both dates are present, so we never pass
+    // "null" strings downstream (fetchHotelPrice would reject them anyway).
+    if (byId && byId.start_date && byId.end_date)
       return {
         checkIn: String(byId.start_date).substring(0, 10),
         checkOut: String(byId.end_date).substring(0, 10),

@@ -48,7 +48,7 @@
   - _Failure:_ OverviewView `confTotal` sums **all** expenses (`:24`); BudgetSummary skips `amt <= 0` (`:38`). A refund/negative or zero expense makes the Home "Confirmed" and Budget-tab "Confirmed" disagree for the same trip. Comment at OverviewView.jsx:12 admits it's a copy. Violates single-source-of-truth.
   - _Fix:_ Extract one aggregator (e.g. `computeBudgetTotals(items, expenses)`) into `utils`; call from both. Fold in USD rounding (DECISION 1) and the `sumItemExpenses` helper (see M14).
 
-- [~] **C5 · Receipts/reservations stored in a PUBLIC bucket with guessable paths (PII)** — `src/services/storage.js:10-11,23` (reached via `useItemFiles`, DetailModal upload) · `×2` · `DECISION 3` · ✅ Slice 3 (code): `storage.js` now issues signed URLs (`createSignedUrl`/`createSignedUrls`, 24h TTL) instead of `getPublicUrl`. ⏳ PENDING: flip bucket to private + add RLS in Supabase — steps in `C5-private-reservations-bucket.md`.
+- [~] **C5 · Receipts/reservations stored in a PUBLIC bucket with guessable paths (PII)** — `src/services/storage.js:10-11,23` (reached via `useItemFiles`, DetailModal upload) · `×2` · `DECISION 3` · ✅ Slice 3 (code): `storage.js` now issues signed URLs (`createSignedUrl`/`createSignedUrls`, 24h TTL) instead of `getPublicUrl`. ⏳ PENDING (DB): flip bucket to private + add RLS — steps in `C5-private-reservations-bucket.md`. **Deliberately NOT applied yet**: the signed-URL code is only on this branch, not in production `main`; flipping the bucket before that code deploys would 404 live receipts. Apply right after this branch merges + Vercel deploys.
   - _Failure:_ `getPublicUrl` on the `reservations` bucket + path `${itemId}/${Date.now()}` → reservation docs/receipts are world-readable to anyone with/guessing the URL (stable item id + enumerable timestamp), no auth. RLS on Storage doesn't gate public URLs.
   - _Fix:_ Private bucket + `createSignedUrl` for reads; generated migration/RLS as needed (do not hand-edit migrations). Own slice.
 
@@ -58,11 +58,11 @@
 
 ### Data integrity
 
-- [~] **M01 · Max-1-expense-per-item unenforced → double-tap doubles paid total** — `src/shared/hooks/useExpenses.js:39-47`; selectable list `src/shared/modals/AddExpenseModal.jsx:28-49`; sums all in `TripContext.jsx:32` · `×4` · ✅ Slice 2 (code): `itemHasExpense` guard in `addExpense` (single choke point — covers all creation paths); tested. ⏳ PENDING: DB partial unique index — SQL in `M01-expenses-unique-index.sql`, apply via Supabase (has a pre-check for existing dupes).
+- [x] **M01 · Max-1-expense-per-item unenforced → double-tap doubles paid total** — `src/shared/hooks/useExpenses.js:39-47`; selectable list `src/shared/modals/AddExpenseModal.jsx:28-49`; sums all in `TripContext.jsx:32` · `×4` · ✅ Slice 2 (code): `itemHasExpense` guard in `addExpense`. ✅ **DB applied 2026-07-15** via Supabase MCP (project `eestsuywkpxddjvyqers`, migration `expenses_max_one_per_item`) — pre-check found 0 dupes; partial unique index `expenses_item_id_unique` verified live.
   - _Fix:_ DB unique constraint on `expenses.item_id` (generated migration) + guard in `addExpense`/`AddExpenseModal` (exclude items that already have an expense; upsert or surface conflict).
 - [x] **M02 · Realtime DELETE relies on `payload.old.id` (needs REPLICA IDENTITY FULL)** — `useItems.js:85`, `useExpenses.js:25`, `useStops.js:71` · `×2` · ✅ Slice 4: `if (!payload.old?.id) return` guard in useItems + useStops DELETE handlers (useExpenses already dedups by id). Default replica identity includes the PK, so this is belt-and-suspenders.
   - _Failure:_ Without full replica identity, `payload.old.id` is undefined → deleted rows never removed locally (lingering item double-counts in expenseMap). _Fix:_ verify/set replica identity; guard `if (!payload.old?.id) return`.
-- [ ] **M03 · `estimated_cost` written as `NaN` from bad/missing dates** — `src/services/hotelPrices.js:15-17` (also `:14` rate missing `.rate`; checkOut≤checkIn → negative/zero nights), `src/shared/hooks/useLivePrices.js:74` (null dates → `"null"` string to Xotelo) · `×3`
+- [x] **M03 · `estimated_cost` written as `NaN` from bad/missing dates** — `src/services/hotelPrices.js:15-17` (also `:14` rate missing `.rate`; checkOut≤checkIn → negative/zero nights), `src/shared/hooks/useLivePrices.js:74` (null dates → `"null"` string to Xotelo) · `×3` · ✅ Slice 7: `nightsBetween` returns null for missing/unparseable/reversed dates; `computeHotelPrice` filters non-finite rates; `getStayDates` guards null dates. Also URL-encoded the query params (bonus). Tested.
   - _Fix:_ validate both dates parse + finite and `nights > 0` before computing; filter rates to finite `rate`; return null otherwise.
 - [x] **M04 · `setStatus` partial failure → stop left with no selected stay, no rollback** — `src/shared/hooks/useItems.js:126-148` (deselect at 132 commits, target update at 148 throws) · `×2` · ✅ Slice 4: reordered — target update runs FIRST (self-rolling-back), then best-effort deselect of `conflictingStays()` with its own rollback. A failed change never leaves 0 stays selected.
   - _Fix:_ only deselect others after the target update succeeds, or roll back deselects in a catch.
@@ -108,14 +108,14 @@
   - _Fix:_ reconcile draft against the new baseline or warn on external change.
 - [x] **M22 · Clearing `estimated_cost`/`hrs` to empty can never unset the value** — `src/shared/components/DetailModal.jsx:301-302,311-312` · `×2` · ✅ Slice 5: `buildItemChanges` treats an empty string as an explicit `null` (unset). Tested.
   - _Failure:_ `parseFloat('')` → NaN → guard skips the diff; the field can't be set back to empty/null (and a genuine `0` is skipped by `ec !== (Number(it.estimated_cost)||0)`). _Fix:_ treat empty string as explicit `null` change. (Largely moot for stays once C2 makes it read-only.)
-- [~] **M23 · Negative cost/hrs accepted and persisted** — `DetailModal.jsx:301-302,311-312`, `AddItemModal.jsx:124` · ✅ Slice 5 (DetailModal): `buildItemChanges` clamps to `Math.max(0, …)` + `min="0"` inputs. Tested. ⏳ AddItemModal create-path clamp lands with Slice 7 (AddItemModal work).
+- [x] **M23 · Negative cost/hrs accepted and persisted** — `DetailModal.jsx:301-302,311-312`, `AddItemModal.jsx:124` · ✅ Slice 5 (DetailModal): `buildItemChanges` clamps + `min="0"`. ✅ Slice 7 (AddItemModal): `handleSave` clamps estimated_cost/hrs with `Math.max(0, …)` + `min="0"` on the confirmed-cost and hrs inputs.
   - _Fix:_ clamp `>= 0` before writing.
 - [x] **M24 · Whitespace/empty name persisted on save** — `src/shared/components/DetailModal.jsx:293,376` · ✅ Slice 5: `handleSave` blocks with "Name is required" when `!draft.name.trim()`; `buildItemChanges` trims the name.
   - _Fix:_ block save if `!draft.name.trim()`.
 
 ### Xotelo / search UX
 
-- [ ] **M25 · Xotelo lookup fires per keystroke (no debounce/await/catch)** — `DetailModal.jsx:271-285,417`, `AddItemModal.jsx:74-79,102-113` · `×2`
+- [x] **M25 · Xotelo lookup fires per keystroke (no debounce/await/catch)** — `DetailModal.jsx:271-285,417`, `AddItemModal.jsx:74-79,102-113` · `×2` · ✅ Slice 7: both handlers debounce (400ms) + use a request counter to drop stale responses + try/catch. AddItemModal's fetch moved OUT of the `setForm` updater (was StrictMode double-firing).
   - _Failure:_ overlapping `fetchStayEstimate` calls race (last-resolved wins, can apply stale estimate); unhandled rejections; `AddItemModal:74-79` runs the fetch inside a `setForm` updater → StrictMode double-fetch. _Fix:_ debounce + seq/request token + try/catch; move fetch out of the updater.
 - [ ] **M26 · PlaceSearch stale-result race + stale results on error** — `PlaceSearch.jsx:24-49` (older fetch resolves after newer), `:36-48` (non-ok/throw leaves previous results); same in `AddStopModal.jsx:47-57`
   - _Fix:_ AbortController/seq token; `setResults([])` in else/catch.
@@ -181,7 +181,7 @@
   - _Failure:_ `>100` files no pagination (`:19`); no-extension filename → whole name as ext / malformed path (`:6`); null `file` → raw TypeError (`:5`). _Fix:_ paginate list; guard extension parsing; early-guard null file.
 - [ ] **M51 · App-shell null guards** — `src/main.jsx:10` (`getElementById('root')` null → `createRoot` throws), `src/App.jsx:28` (empty `user.email` → trip scoped to `''`)
   - _Fix:_ assert root exists; handle/flag missing email before scoping trip data.
-- [ ] **M52 · `useLivePrices` input/type gaps** — `useLivePrices.js:17` (`stops` undefined → `.length` throws), `:48` (`price.total` string → `!== Number(estimated_cost)` always true → redundant writes/type drift)
+- [x] **M52 · `useLivePrices` input/type gaps** — `useLivePrices.js:17` (`stops` undefined → `.length` throws), `:48` (`price.total` string → `!== Number(estimated_cost)` always true → redundant writes/type drift) · ✅ Slice 7: `(stops || []).length` guard; `getStayDates` guards null dates; `computeHotelPrice` returns a numeric `total`, so the writeback compare is number-vs-number.
   - _Fix:_ `(stops||[]).length`; `Number(price.total)` before compare/write.
 - [ ] **M53 · Orphaned storage files on item delete / status downgrade** — `DetailModal.jsx:143-146,232`, `useItemFiles`
   - _Failure:_ files never removed; since files load only for conf items they become unreachable but still stored. _Fix:_ delete the item's storage folder on item delete; decide policy on downgrade. (Interacts with C1 cleanup.)
