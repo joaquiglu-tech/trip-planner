@@ -23,13 +23,17 @@ export function formatStopDate(stop) {
     "Nov",
     "Dec",
   ];
-  const [, smn, sdy] = sd.split("-").map(Number);
-  const [, emn, edy] = ed.split("-").map(Number);
-  const sm = months[smn - 1],
-    em = months[emn - 1];
+  const [sy, smn, sdy] = sd.split("-").map(Number);
+  const sm = months[smn - 1];
+  // No valid end date → single day (L25, was "… – undefined undefined").
+  if (!ed) return `${sm} ${sdy}`;
+  const [ey, emn, edy] = ed.split("-").map(Number);
+  const em = months[emn - 1];
+  // Different years → show years so "Dec 30 – Jan 2" isn't ambiguous (L26).
+  if (sy !== ey) return `${sm} ${sdy}, ${sy} – ${em} ${edy}, ${ey}`;
   if (smn === emn && sdy !== edy) return `${sm} ${sdy}–${edy}`;
-  if (smn !== emn) return `${sm} ${sdy} – ${em} ${edy}`;
-  return `${sm} ${sdy}`;
+  if (smn === emn) return `${sm} ${sdy}`;
+  return `${sm} ${sdy} – ${em} ${edy}`;
 }
 
 export function calcNights(stop) {
@@ -51,11 +55,12 @@ export function formatTime(t) {
   // Handle datetime-local format "2026-07-20T14:00"
   const timePart = t.includes("T") ? t.split("T")[1] : t;
   const [h, m] = timePart.split(":");
-  const hour = parseInt(h);
+  const hour = parseInt(h, 10);
   if (isNaN(hour)) return t;
+  const min = (m || "00").padStart(2, "0"); // L27: default/pad missing minutes
   const ampm = hour >= 12 ? "PM" : "AM";
   const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${h12}:${m} ${ampm}`;
+  return `${h12}:${min} ${ampm}`;
 }
 
 export const TYPE_LABEL_SHORT = {
@@ -67,7 +72,9 @@ export const TYPE_LABEL_SHORT = {
 
 export function formatRelativeTime(ts) {
   if (!ts) return "";
-  const diff = Date.now() - new Date(ts).getTime();
+  const t = new Date(ts).getTime();
+  if (isNaN(t)) return ""; // L28: was "NaNd ago" for unparseable timestamps
+  const diff = Date.now() - t;
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
@@ -81,11 +88,18 @@ export function itemInStop(it, stopId) {
 }
 
 export function getStay(items, stopId) {
-  return items.find(
+  const stays = (items || []).filter(
     (it) =>
       it.type === "stay" &&
       itemInStop(it, stopId) &&
       (it.status === "sel" || it.status === "conf"),
+  );
+  // L24: deterministic pick — confirmed first, then stable by id.
+  return (
+    stays.sort((a, b) => {
+      const conf = (b.status === "conf") - (a.status === "conf");
+      return conf !== 0 ? conf : String(a.id).localeCompare(String(b.id));
+    })[0] || null
   );
 }
 
@@ -258,9 +272,13 @@ export function groupScheduleItems(items, dateLabels) {
 
 export function getCalendarDates(stops) {
   if (!stops.length) return [];
-  const startStr = toDateStr(stops[0].start_date);
-  const endStr = toDateStr(stops[stops.length - 1].end_date);
-  if (!startStr || !endStr) return [];
+  // L22: span earliest start .. latest end, not stops[0]/stops[last] — the
+  // stops array isn't guaranteed sorted.
+  const starts = stops.map((s) => toDateStr(s.start_date)).filter(Boolean);
+  const ends = stops.map((s) => toDateStr(s.end_date)).filter(Boolean);
+  if (!starts.length || !ends.length) return [];
+  const startStr = starts.reduce((a, b) => (a < b ? a : b));
+  const endStr = ends.reduce((a, b) => (a > b ? a : b));
   const dates = [];
   const months = [
     "Jan",

@@ -66,7 +66,7 @@ export default function AddItemModal({
   onAdd,
   addExpense,
   setFile,
-  stops,
+  stops = [],
   userEmail,
   defaultStopId,
 }) {
@@ -381,10 +381,16 @@ export default function AddItemModal({
                 accept="image/*,.pdf,.doc,.docx"
                 className="hidden-input"
                 onChange={(e) => {
-                  if (e.target.files[0]) {
-                    setPendingFiles((prev) => [...prev, e.target.files[0]]);
+                  const f = e.target.files[0];
+                  if (!f) return;
+                  // M33: reject oversize files at add time, not after save.
+                  if (f.size > 5 * 1024 * 1024) {
+                    alert("File too large (max 5MB)");
                     e.target.value = "";
+                    return;
                   }
+                  setPendingFiles((prev) => [...prev, f]);
+                  e.target.value = "";
                 }}
               />
             </label>

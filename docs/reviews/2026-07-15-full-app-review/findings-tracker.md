@@ -81,7 +81,7 @@
 
 ### Money / currency (DECISION 1 = USD)
 
-- [ ] **M11 · Mixed currencies summed as raw numbers** — `BudgetSummary`, `OverviewView`, `useItems.js:5` (`$f`) · `×2`
+- [x] **M11 · Mixed currencies summed as raw numbers** — `BudgetSummary`, `OverviewView`, `useItems.js:5` (`$f`) · `×2` · ✅ Resolved by DECISION 1 (USD-only): the app stores no currency field — amounts are dollars by definition, so there is nothing to convert.
   - _Fix (per DECISION 1):_ enforce USD-only; no conversion. Remove any implicit multi-currency assumption.
 - [x] **M12 · Money not rounded to 2 decimals** — `src/shared/hooks/useItems.js:5` (`$f = '$'+(n||0).toLocaleString()`) · ✅ Slice 1: `$f` now `Number(n)`-coerced + `{ maximumFractionDigits: 2 }`. Tested.
   - _Failure:_ float sums render `$1,234.567`. _Fix:_ `toLocaleString(undefined,{maximumFractionDigits:2})` or round at aggregation. Also handles negative `$-5` (see L-fmt).
@@ -126,15 +126,15 @@
 
 ### Crash / robustness (props & inputs)
 
-- [ ] **M29 · Undefined `items`/`stops` props → crash on first render** — `TopBar.jsx:2`, `AddExpenseModal.jsx:30`, `AddItemModal.jsx:195`
+- [x] **M29 · Undefined `items`/`stops` props → crash on first render** — `TopBar.jsx:2`, `AddExpenseModal.jsx:30`, `AddItemModal.jsx:195` · ✅ Slice 10: default `= []` params on TopBar/AddExpenseModal/AddItemModal.
   - _Fix:_ default `= []` on the props.
-- [ ] **M30 · `SelectPage` name sort crashes on nameless item** — `src/features/plan/SelectPage.jsx:57`
+- [x] **M30 · `SelectPage` name sort crashes on nameless item** — `src/features/plan/SelectPage.jsx:57` · ✅ Slice 10: `(a.name||"").localeCompare(...)`.
   - _Fix:_ `(a.name||'').localeCompare(b.name||'')`.
-- [ ] **M31 · `ExpenseCard` empty/NaN amount → silent no-op; `isNew && item==null` → expense silently not created** — `src/shared/components/ExpenseCard.jsx:17-19,23-29`
+- [x] **M31 · `ExpenseCard` empty/NaN amount → silent no-op; `isNew && item==null` → expense silently not created** — `src/shared/components/ExpenseCard.jsx:17-19,23-29` · ✅ Slice 10: ExpenseCard surfaces "enter an amount > 0" and guards `isNew && !item`.
   - _Fix:_ show error instead of silent `return`; guard/disable when no item.
-- [ ] **M32 · Conf with blank/negative `confirmed_cost` marked confirmed silently** — `AddItemModal.jsx:136`, `ExpenseCard.jsx:23`
+- [-] **M32 · Conf with blank/negative `confirmed_cost` marked confirmed silently** — `AddItemModal.jsx:136`, `ExpenseCard.jsx:23` · ACCEPTED: confirming without a logged expense is a valid state (now shown in Budget → Planned as "Booked · no expense logged").
   - _Fix:_ surface a message or block confirm.
-- [ ] **M33 · Oversize attachment only fails after save** — `AddItemModal.jsx:244` (DetailModal checks `f.size > 5MB` at add time)
+- [x] **M33 · Oversize attachment only fails after save** — `AddItemModal.jsx:244` (DetailModal checks `f.size > 5MB` at add time) · ✅ Slice 10: AddItemModal rejects >5MB at add time (mirrors DetailModal).
   - _Fix:_ mirror the 5MB check at add time.
 
 ### Timezone / dates
@@ -143,7 +143,7 @@
   - _Fix:_ one consistent local-date formatter; compare via `toDateStr` strings.
 - [x] **M35 · `StopSection` dates can't be cleared; inverted range accepted** — `src/features/itinerary/StopSection.jsx:21-29` · ✅ Slice 6: `saveEdit` runs `validateStopDates` — both dates required, inverted range rejected with a message. (Stops require dates by design, so "clear" is intentionally disallowed.) Tested.
   - _Fix:_ allow explicit clear; validate `end >= start`.
-- [ ] **M36 · Multi `stop_ids`: only `[0]` used** — `ExpenseCard.jsx:15`, `AddExpenseModal.jsx:46,81`, `DetailModal.jsx:239`
+- [-] **M36 · Multi `stop_ids`: only `[0]` used** — `ExpenseCard.jsx:15`, `AddExpenseModal.jsx:46,81`, `DetailModal.jsx:239` · ACCEPTED: no per-stop budget breakdown exists, so tagging the expense to the first stop is cosmetic metadata; multi-stop items are rare.
   - _Failure:_ expense hard-bound to first stop; other stops ignored. _Fix:_ decide/display across all stops.
 - [x] **M37 · `ScheduleList`: item dated outside stop range dumped onto day one** — `src/features/itinerary/ScheduleList.jsx:28-34` · ✅ Slice 6: extracted `groupScheduleItems`; out-of-range/undated items go to a trailing "Unscheduled" group, not day one. Tested.
   - _Fix:_ keep out-of-range items in an explicit "unscheduled" group.
@@ -158,7 +158,7 @@
   - _Failure:_ breaks "no hardcoded data"; map includes origin + filter is dead for any non-Lima trip. _Fix:_ derive home from `stops[0]`/a flag, single source.
 - [x] **M41 · Live-price writeback stamps `updated_by`/`updated_at` → spurious "X updated" toast + false audit** — `useLivePrices.js:50` → `useItems.js:96,113-114` · `×2` · ✅ Slice 2: `updateItem(id, changes, { stampUser:false })` for automated writes (no updated_by/at bump); `useLivePrices` uses it; realtime toast gated by `shouldNotifyUpdate` (suppresses updates that don't bump updated_at). Tested.
   - _Fix:_ write `estimated_cost` without touching `updated_by`, or tag automated writes so the toast is suppressed.
-- [ ] **M42 · Directions callbacks race effect cleanup → leaked/duplicate routes** — `MapComponents.jsx:96-108,210-222` · `×2`
+- [x] **M42 · Directions callbacks race effect cleanup → leaked/duplicate routes** — `MapComponents.jsx:96-108,210-222` · `×2` · ✅ Slice 10: both route-drawing effects use a per-run `cancelled` flag so async Directions callbacks after cleanup no longer leak renderers.
   - _Fix:_ per-effect cancelled flag checked before push/render.
 - [x] **M43 · Service worker caches private Supabase REST data 1h, not purged on logout** — `vite.config.js:47-50` · ✅ Slice 3: `purgeDataCache()` (`src/services/swCache.js`) deletes the `supabase-api` cache; `useAuth` calls it on `SIGNED_OUT`. Tested.
   - _Failure:_ previously-fetched trip/expense data served from cache after sign-out/offline. _Fix:_ scope/purge data cache on sign-out (auth endpoints already NetworkOnly).
@@ -192,55 +192,55 @@
 
 ### setState-after-unmount / lifecycle
 
-- [ ] **L01 · `useToast` timer never cleared on unmount** — `useToast.js:9-10` (no `clearTimeout`) · `×2`
-- [ ] **L02 · `useAuth` `getSession` setState after unmount** — `useAuth.jsx:10`
-- [ ] **L03 · `useItemFiles` no cancel guard + stale entries never pruned** — `useItemFiles.js:13-19` (also double-filters per render, no eviction) · `×2`
-- [ ] **L04 · `useConfirm` rapid re-invoke drops pending promise; unmount hangs caller** — `useConfirm.js:6-10` · `×2`
-- [ ] **L05 · `PlaceSearch` blur-timeout setState after unmount** — `PlaceSearch.jsx:96`
-- [ ] **L06 · `DetailModal.getPlaceData` setState after unmount** — `DetailModal.jsx:71-76`
-- [ ] **L07 · `DetailModal.savedTimerRef` not cleared on unmount** — `DetailModal.jsx:61-62`
+- [x] **L01 · `useToast` timer never cleared on unmount** — `useToast.js:9-10` (no `clearTimeout`) · `×2` · ✅ Slice 10
+- [x] **L02 · `useAuth` `getSession` setState after unmount** — `useAuth.jsx:10` · ✅ Slice 10
+- [x] **L03 · `useItemFiles` no cancel guard + stale entries never pruned** — `useItemFiles.js:13-19` (also double-filters per render, no eviction) · `×2` · ✅ Slice 10
+- [x] **L04 · `useConfirm` rapid re-invoke drops pending promise; unmount hangs caller** — `useConfirm.js:6-10` · `×2` · ✅ Slice 10
+- [x] **L05 · `PlaceSearch` blur-timeout setState after unmount** — `PlaceSearch.jsx:96` · ✅ Slice 10
+- [x] **L06 · `DetailModal.getPlaceData` setState after unmount** — `DetailModal.jsx:71-76` · ✅ Slice 10
+- [x] **L07 · `DetailModal.savedTimerRef` not cleared on unmount** — `DetailModal.jsx:61-62` · ✅ Slice 10
 
 ### Focus / a11y / navigation
 
-- [ ] **L08 · Nested focus traps fight; `ConfirmModal` has no trap** — `DetailModal.jsx:116,238,245`, `ConfirmModal.jsx`
-- [ ] **L09 · `useFocusTrap` refocuses a removed trigger** — `useFocusTrap.js:34` (check `isConnected`)
-- [ ] **L10 · `DetailModal` has no Escape-to-close** — `DetailModal.jsx:64-69` (other modals do)
-- [ ] **L11 · Close via ✕/backdrop leaves dangling history entry** — `DetailModal.jsx:64-69,117` (no `history.back()` on programmatic close)
-- [ ] **L12 · Nested modal double history push / stacked Escape** — `AddExpenseModal.jsx:15-25` + `AddItemModal.jsx:50-60`
-- [ ] **L13 · Backdrop/Escape discards a dirty form with no warning** — all Add modals + ExpenseCard (dirty-check before close)
-- [ ] **L14 · Empty search dropdown indistinguishable from loading** — `PlaceSearch.jsx:104`, `AddStopModal.jsx:30,108`
+- [-] **L08 · Nested focus traps fight; `ConfirmModal` has no trap** — `DetailModal.jsx:116,238,245`, `ConfirmModal.jsx` · ACCEPTED: nested focus-trap polish, marginal for a 2-user phone app; risk>value
+- [-] **L09 · `useFocusTrap` refocuses a removed trigger** — `useFocusTrap.js:34` (check `isConnected`) · ACCEPTED: rare focus edge; low value
+- [x] **L10 · `DetailModal` has no Escape-to-close** — `DetailModal.jsx:64-69` (other modals do) · ✅ Slice 10
+- [-] **L11 · Close via ✕/backdrop leaves dangling history entry** — `DetailModal.jsx:64-69,117` (no `history.back()` on programmatic close) · ACCEPTED: back-button history nicety, not data-affecting.
+- [-] **L12 · Nested modal double history push / stacked Escape** — `AddExpenseModal.jsx:15-25` + `AddItemModal.jsx:50-60` · ACCEPTED: nested-modal history nicety
+- [-] **L13 · Backdrop/Escape discards a dirty form with no warning** — all Add modals + ExpenseCard (dirty-check before close) · ACCEPTED: dirty-form confirm across all modals; broad change, low value
+- [-] **L14 · Empty search dropdown indistinguishable from loading** — `PlaceSearch.jsx:104`, `AddStopModal.jsx:30,108` · ACCEPTED: cosmetic empty-vs-loading dropdown
 
 ### Dates / sort / numbering (nits)
 
-- [ ] **L15 · `AddStopModal` date-order check runs before presence check** — `AddStopModal.jsx:70-71`
-- [ ] **L16 · Equal start/end dates → zero-night stop saved** — `AddStopModal.jsx:70`
+- [x] **L15 · `AddStopModal` date-order check runs before presence check** — `AddStopModal.jsx:70-71` · ✅ Slice 10
+- [-] **L16 · Equal start/end dates → zero-night stop saved** — `AddStopModal.jsx:70` · ACCEPTED: same-day (zero-night) stops are legitimate day-trips
 - [x] **L17 · Single-day stop never registers as "today"** — `utils.js:63-69` (exclusive end) · ✅ Slice 6 (bonus): `getTodayDayIndex` now uses an inclusive date-string range, so start===end matches. Tested.
 - [x] **L18 · `ScheduleList` `perDay` divides by `nights`, not `nights+1` → empty trailing day** — `ScheduleList.jsx:44-48` · `×2` · ✅ Slice 6 (bonus): `groupScheduleItems` even-distribution divides by `dateKeys.length`. Tested.
-- [ ] **L19 · Map waypoints `slice(0,8)` silently drops middle stops** — `MapComponents.jsx:78`
-- [ ] **L20 · `allStopItems` useMemo omits `combinedStopIds` (+ statusFilter) from deps** — `StopSection.jsx:63-73` · `×2`
-- [ ] **L21 · NaN-sort tiebreaks** — `OverviewView.jsx:28-31` (missing `updated_at`), `BudgetPage.jsx:23,27` (missing `created_at`), `PlanSection.jsx:11`/`SelectPage.jsx:59` (equal `start_time`, no secondary sort → nondeterministic order)
-- [ ] **L22 · `utils` calendar assumes stops chronologically sorted** — `utils.js:129-148` (compute min-start/max-end instead)
-- [ ] **L23 · Zero-item stop shows green "ready" checkmark** — `utils.js:87-90`
-- [ ] **L24 · Multiple sel/conf stays in one stop → arbitrary first shown/mapped** — `utils.js:59-61` (define tie-break)
+- [x] **L19 · Map waypoints `slice(0,8)` silently drops middle stops** — `MapComponents.jsx:78` · ✅ Slice 10
+- [x] **L20 · `allStopItems` useMemo omits `combinedStopIds` (+ statusFilter) from deps** — `StopSection.jsx:63-73` · `×2` · ✅ Slice 10
+- [x] **L21 · NaN-sort tiebreaks** — `OverviewView.jsx:28-31` (missing `updated_at`), `BudgetPage.jsx:23,27` (missing `created_at`), `PlanSection.jsx:11`/`SelectPage.jsx:59` (equal `start_time`, no secondary sort → nondeterministic order) · ✅ Slice 10
+- [x] **L22 · `utils` calendar assumes stops chronologically sorted** — `utils.js:129-148` (compute min-start/max-end instead) · ✅ Slice 10
+- [-] **L23 · Zero-item stop shows green "ready" checkmark** — `utils.js:87-90` · ACCEPTED: an empty stop having nothing to flag is defensible
+- [x] **L24 · Multiple sel/conf stays in one stop → arbitrary first shown/mapped** — `utils.js:59-61` (define tie-break) · ✅ Slice 10
 
 ### Formatting (nits)
 
-- [ ] **L25 · `formatStopDate` renders "undefined undefined" when `end_date` missing** — `utils.js:14-17`
-- [ ] **L26 · Date range spanning year boundary shows no year ("Dec 30 – Jan 2")** — `utils.js:8-19`
-- [ ] **L27 · Time without minutes renders "2:undefined PM"** — `utils.js:30-40`
-- [ ] **L28 · Invalid timestamp renders "NaNd ago"** — `utils.js:44-53`
-- [ ] **L29 · Negative amount renders "$-5"** — `utils.js:1-5`/`useItems.js:5` (couples with M12)
-- [ ] **L30 · `Toast` object message missing `.message` renders empty** — `Toast.jsx:3`
-- [ ] **L31 · `TopBar` undefined `city`/`name` → skewed ratio + "undefined to undefined"** — `TopBar.jsx:3-6,10`
-- [ ] **L32 · PhotoCarousel: all photos 404 → blank carousel with active dots/arrows** — `DetailModal.jsx:574`
+- [x] **L25 · `formatStopDate` renders "undefined undefined" when `end_date` missing** — `utils.js:14-17` · ✅ Slice 10
+- [x] **L26 · Date range spanning year boundary shows no year ("Dec 30 – Jan 2")** — `utils.js:8-19` · ✅ Slice 10
+- [x] **L27 · Time without minutes renders "2:undefined PM"** — `utils.js:30-40` · ✅ Slice 10
+- [x] **L28 · Invalid timestamp renders "NaNd ago"** — `utils.js:44-53` · ✅ Slice 10
+- [x] **L29 · Negative amount renders "$-5"** — `utils.js:1-5`/`useItems.js:5` (couples with M12) · ✅ Slice 10
+- [x] **L30 · `Toast` object message missing `.message` renders empty** — `Toast.jsx:3` · ✅ Slice 10
+- [x] **L31 · `TopBar` undefined `city`/`name` → skewed ratio + "undefined to undefined"** — `TopBar.jsx:3-6,10` · ✅ Slice 10
+- [x] **L32 · PhotoCarousel: all photos 404 → blank carousel with active dots/arrows** — `DetailModal.jsx:574` · ✅ Slice 10
 
 ### Duplication / dead code / efficiency
 
 - [ ] **L33 · StatusSelector logic duplicated Summary vs Edit** — `DetailModal.jsx:131-152` vs `349-369` (extract `<StatusSelector>`; couples with M18 fix)
 - [ ] **L34 · File-chip list + upload row duplicated between modes** — `DetailModal.jsx:219-226` vs `479-495` (extract `<Attachments>`)
 - [x] **L35 · Dead `|| ''` fallbacks after throw guard** — `supabase.js:6-10` · ✅ Slice 9 (bonus): removed — `createClient(supabaseUrl, supabaseAnonKey)` (the throw guarantees both).
-- [ ] **L36 · Redundant 10-minute session poll duplicates `onAuthStateChange`** — `useAuth.jsx:24-31`
-- [ ] **L37 · `BudgetSummary` O(items×expenses) nested scans** — `BudgetSummary.jsx:24,39` (build Maps once; BudgetPage already has `itemsMap`)
+- [x] **L36 · Redundant 10-minute session poll duplicates `onAuthStateChange`** — `useAuth.jsx:24-31` · ✅ Slice 10
+- [-] **L37 · `BudgetSummary` O(items×expenses) nested scans** — `BudgetSummary.jsx:24,39` (build Maps once; BudgetPage already has `itemsMap`) · ACCEPTED: O(n*m) is negligible at this data scale
 
 ### Auth feedback (borderline MED)
 

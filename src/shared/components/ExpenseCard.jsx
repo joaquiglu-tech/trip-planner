@@ -16,7 +16,15 @@ export default function ExpenseCard({ expense, item, stops, onClose, onViewItem,
 
   async function handleSave() {
     const val = parseFloat(amountInput);
-    if (isNaN(val) || val <= 0) return;
+    // M31: surface invalid input instead of a silent no-op.
+    if (isNaN(val) || val <= 0) {
+      setError('Enter an amount greater than 0.');
+      return;
+    }
+    if (isNew && !item) {
+      setError('No item to attach this expense to.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {

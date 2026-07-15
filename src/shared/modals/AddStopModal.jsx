@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { searchPlaces } from "../../services/googlePlaces";
+import { validateStopDates } from "../../features/itinerary/utils";
 
 export default function AddStopModal({ onAdd, onClose }) {
   const trapRef = useFocusTrap();
@@ -62,11 +63,13 @@ export default function AddStopModal({ onAdd, onClose }) {
   }
 
   async function handleSave() {
-    if (new Date(endDate) < new Date(startDate)) {
-      alert("End date must be after start date");
+    if (!selected) return;
+    // L15: check presence + order together (validateStopDates), before saving.
+    const dateError = validateStopDates(startDate, endDate);
+    if (dateError) {
+      alert(dateError);
       return;
     }
-    if (!selected || !startDate || !endDate) return;
     setSaving(true);
     try {
       await onAdd({

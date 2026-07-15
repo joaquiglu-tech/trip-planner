@@ -8,16 +8,17 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined); // undefined = loading
 
   useEffect(() => {
+    let mounted = true; // L02: don't setState after unmount
     supabase.auth
       .getSession()
-      .then(({ data: { session } }) => setSession(session))
+      .then(({ data: { session } }) => {
+        if (mounted) setSession(session);
+      })
       .catch((err) => {
         console.error("Auth session error:", err);
-        setSession(null);
+        if (mounted) setSession(null);
       });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (event === "TOKEN_REFRESHED") {
         console.log("Session refreshed");
@@ -29,22 +30,12 @@ export function AuthProvider({ children }) {
         purgeDataCache();
       }
     });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(
-      () => {
-        supabase.auth
-          .getSession()
-          .then(({ data: { session } }) => {
-            if (!session) setSession(null);
-          })
-          .catch(() => setSession(null));
-      },
-      10 * 60 * 1000,
-    ); // check every 10 minutes
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      data?.subscription?.unsubscribe(); // guard: may be absent on error
+    };
+    // L36: dropped the 10-min getSession poll — onAuthStateChange already
+    // fires SIGNED_OUT/TOKEN_REFRESHED, and the poll only read local storage.
   }, []);
 
   return (

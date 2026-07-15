@@ -15,6 +15,9 @@ export default function PlaceSearch({
   const [searching, setSearching] = useState(false);
   const [focused, setFocused] = useState(false);
   const debounceRef = useRef(null);
+  const blurRef = useRef(null);
+  // L05: clear the blur timeout on unmount (no setState-after-unmount).
+  useEffect(() => () => clearTimeout(blurRef.current), []);
 
   // Sync external value changes
   useEffect(() => {
@@ -102,7 +105,9 @@ export default function PlaceSearch({
             if (!e.target.value) onChange(null);
           }}
           onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 200)}
+          onBlur={() => {
+            blurRef.current = setTimeout(() => setFocused(false), 200);
+          }}
           placeholder={placeholder || "Search a place..."}
         />
         {value?.name && (

@@ -42,13 +42,13 @@ export default function BudgetPage() {
           : null;
         return { ...e, item, stop };
       })
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      .sort((a, b) => (new Date(b.created_at).getTime() || 0) - (new Date(a.created_at).getTime() || 0));
   }, [expenses, itemsMap, stopsMap]);
 
   const unlinkedExpenses = useMemo(() => {
     return (expenses || [])
       .filter((e) => !e.item_id)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      .sort((a, b) => (new Date(b.created_at).getTime() || 0) - (new Date(a.created_at).getTime() || 0));
   }, [expenses]);
 
   // M06: include confirmed items that have no logged expense — otherwise they

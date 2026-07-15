@@ -105,6 +105,7 @@ function DayMapContent({
   // Draw routes between items (driving) + transport routes
   useEffect(() => {
     if (!map || !routesLib) return;
+    let cancelled = false; // M42: ignore async route callbacks after cleanup
     // Clean up previous renderers
     renderersRef.current.forEach((r) => {
       if (r.setMap) r.setMap(null);
@@ -115,6 +116,12 @@ function DayMapContent({
     // Route between non-transport items with coords
     const withCoords = mapItems.filter((it) => it.coord);
     if (withCoords.length >= 2) {
+      // L19: Google caps waypoints; log when middle stops are dropped from the route.
+      if (withCoords.length - 2 > 8) {
+        console.warn(
+          `Route has ${withCoords.length - 2} waypoints; only the first 8 are drawn.`,
+        );
+      }
       const routeKey = withCoords
         .map((e) => `${e.coord.lat},${e.coord.lng}`)
         .join("|");
@@ -147,6 +154,7 @@ function DayMapContent({
             optimizeWaypoints: false,
           },
           (result, status) => {
+            if (cancelled) return; // M42
             if (status === "OK") {
               directionsCache[routeKey] = result;
               render(result);
@@ -192,6 +200,7 @@ function DayMapContent({
             travelMode: window.google.maps.TravelMode[travelMode],
           },
           (result, status) => {
+            if (cancelled) return; // M42
             if (status === "OK") {
               const dr = new window.google.maps.DirectionsRenderer({
                 map,
@@ -221,6 +230,7 @@ function DayMapContent({
     });
 
     return () => {
+      cancelled = true; // M42
       renderersRef.current.forEach((r) => {
         if (r.setMap) r.setMap(null);
         else if (r.setDirections) r.setDirections({ routes: [] });
@@ -362,6 +372,7 @@ function RouteMapContent({ points, items, homeName }) {
   // Draw transport routes + fallback polyline
   useEffect(() => {
     if (!map || !routesLib) return;
+    let cancelled = false; // M42: ignore async route callbacks after cleanup
     renderersRef.current.forEach((r) => {
       if (r.setMap) r.setMap(null);
       else if (r.setDirections) r.setDirections({ routes: [] });
@@ -412,6 +423,7 @@ function RouteMapContent({ points, items, homeName }) {
             travelMode: window.google.maps.TravelMode[travelMode],
           },
           (result, status) => {
+            if (cancelled) return; // M42
             if (status === "OK") {
               const dr = new window.google.maps.DirectionsRenderer({
                 map,
@@ -463,6 +475,7 @@ function RouteMapContent({ points, items, homeName }) {
     }
 
     return () => {
+      cancelled = true; // M42
       renderersRef.current.forEach((r) => {
         if (r.setMap) r.setMap(null);
         else if (r.setDirections) r.setDirections({ routes: [] });

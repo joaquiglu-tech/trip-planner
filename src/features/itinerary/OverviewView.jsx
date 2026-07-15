@@ -25,7 +25,11 @@ export default function OverviewView({ items, stops, expenses, onDaySelect }) {
     () =>
       items
         .filter((it) => it.status && it.updated_by)
-        .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+        .sort(
+          (a, b) =>
+            (new Date(b.updated_at).getTime() || 0) -
+            (new Date(a.updated_at).getTime() || 0),
+        ) // L21: missing/invalid dates → 0, stable order
         .slice(0, 8),
     [items],
   );

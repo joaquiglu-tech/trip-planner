@@ -36,6 +36,10 @@ describe("$f", () => {
   it("collapses float noise", () => {
     expect($f(30.299999999)).toBe("$30.3");
   });
+  // L29 — negatives read "-$5", not "$-5"
+  it("formats negatives with the sign before the dollar", () => {
+    expect($f(-5)).toBe("-$5");
+  });
 });
 
 describe("priceLabel", () => {

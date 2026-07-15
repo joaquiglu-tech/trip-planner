@@ -3,10 +3,14 @@ import { supabase } from "../../services/supabase";
 import { enrichItem } from "../../services/enrichItem";
 
 // Format a dollar amount. USD-only; rounded to at most 2 decimals so float
-// sums never surface as e.g. $1,234.567 (M12).
-export const $f = (n) =>
-  "$" +
-  (Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+// sums never surface as e.g. $1,234.567 (M12). Negatives read "-$5", not "$-5" (L29).
+export const $f = (n) => {
+  const v = Number(n) || 0;
+  return (
+    (v < 0 ? "-$" : "$") +
+    Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 2 })
+  );
+};
 
 export function itemCost(it) {
   return Number(it.estimated_cost) || 0;

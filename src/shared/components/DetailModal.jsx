@@ -141,14 +141,24 @@ export default function DetailModal({
     clearTimeout(savedTimerRef.current);
     savedTimerRef.current = setTimeout(() => setSaved(""), 1500);
   }
+  // L07: clear the "Saved" timer on unmount.
+  useEffect(() => () => clearTimeout(savedTimerRef.current), []);
 
   useEffect(() => {
     window.history.pushState({ modal: true }, "", "");
     function handlePop() {
       onClose();
     }
+    // L10: close on Escape, consistent with the Add modals.
+    function handleKey(e) {
+      if (e.key === "Escape") onClose();
+    }
     window.addEventListener("popstate", handlePop);
-    return () => window.removeEventListener("popstate", handlePop);
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      window.removeEventListener("popstate", handlePop);
+      window.removeEventListener("keydown", handleKey);
+    };
   }, [onClose]);
 
   useEffect(() => {
@@ -1306,6 +1316,8 @@ function PricingBlock({ it, livePrice, expenseAmount, onExpenseClick }) {
 function PhotoCarousel({ photos, name }) {
   const trackRef = useRef(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  // L32: track failed image loads to hide the carousel if all fail.
+  const [failed, setFailed] = useState(0);
 
   const scroll = useCallback((dir) => {
     const el = trackRef.current;
@@ -1325,6 +1337,9 @@ function PhotoCarousel({ photos, name }) {
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // After hooks (rules-of-hooks): if every photo 404'd, render nothing.
+  if (photos.length > 0 && failed >= photos.length) return null;
+
   return (
     <div className="detail-carousel">
       <div ref={trackRef} className="detail-carousel-track">
@@ -1336,6 +1351,7 @@ function PhotoCarousel({ photos, name }) {
               loading={i === 0 ? "eager" : "lazy"}
               onError={(e) => {
                 e.target.style.display = "none";
+                setFailed((n) => n + 1);
               }}
             />
           </div>
