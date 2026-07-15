@@ -111,15 +111,16 @@ src/
 
 ## The build workflow (per feature / per fix)
 
-The **execution layer is Superpowers** (a plugin — declared in `.claude/settings.json`, not
-bundled as files). Not every step every time — scale to the change.
+The **execution layer is Superpowers**, bundled as repo files under `.claude/skills/` (same
+mechanism as the `bmad-*` skills). Invoke each by its bare skill name. Not every step every
+time — scale to the change.
 
-1. **Brainstorm** (`superpowers:brainstorming`) — refine a rough idea through questions, explore alternatives.
-2. **Plan** (`superpowers:writing-plans`) — break work into small tasks with exact file paths and verification. Plans land in `docs/superpowers/plans/`.
-3. **Build** (`superpowers:subagent-driven-development`) — fresh subagent per task with two-stage review. `superpowers:executing-plans` is the batched alternative.
-4. **TDD** (`superpowers:test-driven-development`) — RED → GREEN → REFACTOR.
-5. **Debug** (`superpowers:systematic-debugging`) — four-phase root-cause analysis.
-6. **Review** (built-in `/code-review` + `superpowers:requesting-code-review`) — adversarial pass before merge. Add `/security-review` for risky areas (auth, expense math, PII).
+1. **Brainstorm** (`brainstorming`) — refine a rough idea through questions, explore alternatives.
+2. **Plan** (`writing-plans`) — break work into small tasks with exact file paths and verification. Plans land in `docs/superpowers/plans/`.
+3. **Build** (`subagent-driven-development`) — fresh subagent per task with two-stage review. `executing-plans` is the batched alternative.
+4. **TDD** (`test-driven-development`) — RED → GREEN → REFACTOR.
+5. **Debug** (`systematic-debugging`) — four-phase root-cause analysis.
+6. **Review** (built-in `/code-review` + `requesting-code-review`) — adversarial pass before merge. Add `/security-review` for risky areas (auth, expense math, PII).
 
 BMAD skills complement this loop: `bmad-spec` (formal spec contract), `bmad-investigate` (deep
 forensic tracing when a bug outgrows systematic-debugging), `bmad-correct-course` (scope changed
@@ -127,10 +128,14 @@ mid-flight), `bmad-retrospective`, plus doc utilities.
 
 ## Frameworks & skills
 
-- **Superpowers** (PLUGIN — declared in `.claude/settings.json`, not bundled as files): the
-  execution loop above. It's obra's marketplace plugin; `.claude/settings.json` registers
-  `obra/superpowers-marketplace` and enables `superpowers@superpowers-marketplace`, so it
-  auto-installs at session start (web included). To manage it locally: `/plugin`.
+- **Superpowers** (BUNDLED under `.claude/skills/`, vendored from obra/superpowers-marketplace):
+  the execution loop above — `brainstorming`, `writing-plans`, `subagent-driven-development`,
+  `executing-plans`, `test-driven-development`, `systematic-debugging`, `requesting-code-review`,
+  `receiving-code-review`, `verification-before-completion`, `using-git-worktrees`,
+  `dispatching-parallel-agents`, `finishing-a-development-branch`, `using-superpowers`,
+  `writing-skills`. Bundled as repo files (not a plugin) so they load at every session start on
+  web/mobile — the plugin path doesn't reliably load in fresh cloud sessions. To update: re-vendor
+  the folders from the marketplace and commit.
 - **BMAD** (bundled under `.claude/skills/bmad-*`, config in `_bmad/`) — 10 skills that don't
   overlap Superpowers: `bmad-spec`, `bmad-investigate`, `bmad-correct-course`, `bmad-retrospective`,
   `bmad-document-project`, `bmad-generate-project-context`, `bmad-shard-doc`, `bmad-index-docs`,
