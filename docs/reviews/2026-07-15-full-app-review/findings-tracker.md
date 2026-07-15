@@ -48,7 +48,7 @@
   - _Failure:_ OverviewView `confTotal` sums **all** expenses (`:24`); BudgetSummary skips `amt <= 0` (`:38`). A refund/negative or zero expense makes the Home "Confirmed" and Budget-tab "Confirmed" disagree for the same trip. Comment at OverviewView.jsx:12 admits it's a copy. Violates single-source-of-truth.
   - _Fix:_ Extract one aggregator (e.g. `computeBudgetTotals(items, expenses)`) into `utils`; call from both. Fold in USD rounding (DECISION 1) and the `sumItemExpenses` helper (see M14).
 
-- [ ] **C5 · Receipts/reservations stored in a PUBLIC bucket with guessable paths (PII)** — `src/services/storage.js:10-11,23` (reached via `useItemFiles`, DetailModal upload) · `×2` · `DECISION 3`
+- [~] **C5 · Receipts/reservations stored in a PUBLIC bucket with guessable paths (PII)** — `src/services/storage.js:10-11,23` (reached via `useItemFiles`, DetailModal upload) · `×2` · `DECISION 3` · ✅ Slice 3 (code): `storage.js` now issues signed URLs (`createSignedUrl`/`createSignedUrls`, 24h TTL) instead of `getPublicUrl`. ⏳ PENDING: flip bucket to private + add RLS in Supabase — steps in `C5-private-reservations-bucket.md`.
   - _Failure:_ `getPublicUrl` on the `reservations` bucket + path `${itemId}/${Date.now()}` → reservation docs/receipts are world-readable to anyone with/guessing the URL (stable item id + enumerable timestamp), no auth. RLS on Storage doesn't gate public URLs.
   - _Fix:_ Private bucket + `createSignedUrl` for reads; generated migration/RLS as needed (do not hand-edit migrations). Own slice.
 
@@ -160,7 +160,7 @@
   - _Fix:_ write `estimated_cost` without touching `updated_by`, or tag automated writes so the toast is suppressed.
 - [ ] **M42 · Directions callbacks race effect cleanup → leaked/duplicate routes** — `MapComponents.jsx:96-108,210-222` · `×2`
   - _Fix:_ per-effect cancelled flag checked before push/render.
-- [ ] **M43 · Service worker caches private Supabase REST data 1h, not purged on logout** — `vite.config.js:47-50`
+- [x] **M43 · Service worker caches private Supabase REST data 1h, not purged on logout** — `vite.config.js:47-50` · ✅ Slice 3: `purgeDataCache()` (`src/services/swCache.js`) deletes the `supabase-api` cache; `useAuth` calls it on `SIGNED_OUT`. Tested.
   - _Failure:_ previously-fetched trip/expense data served from cache after sign-out/offline. _Fix:_ scope/purge data cache on sign-out (auth endpoints already NetworkOnly).
 - [ ] **M44 · `AddItemModal` spreads UI-only fields into the item insert** — `AddItemModal.jsx:121-131`
   - _Failure:_ forwards non-column keys (`tripadvisor_url`, `confirmed_cost`, `expense_note`, raw `origin`/`dest`); relies on unstated column-stripping downstream. _Fix:_ whitelist columns before insert. (Also orphaned-storage-on-delete: see M-storage below.)
