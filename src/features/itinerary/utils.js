@@ -100,6 +100,12 @@ function dateStrToUTC(s) {
   return Date.UTC(y, m - 1, d);
 }
 
+// The trip's "home" city is the first stop by convention (used to exclude it
+// from route centering and the trip-name label). Single source (M40).
+export function homeCityName(stops) {
+  return stops?.[0]?.name || "";
+}
+
 export function getTodayDayIndex(stops, today = todayStr()) {
   for (let i = 0; i < stops.length; i++) {
     const s = toDateStr(stops[i].start_date);

@@ -1,23 +1,43 @@
-import { useEffect, useRef } from 'react';
-import { Map, useMap, useMapsLibrary, Marker } from '@vis.gl/react-google-maps';
-import { itemInStop, getStay } from './utils';
+import { useEffect, useRef } from "react";
+import { Map, useMap, useMapsLibrary, Marker } from "@vis.gl/react-google-maps";
+import { itemInStop, getStay, homeCityName } from "./utils";
 
 const TRANSPORT_TRAVEL_MODE = {
-  drive: 'DRIVING', taxi: 'DRIVING',
-  train: 'TRANSIT', bus: 'TRANSIT', ferry: 'TRANSIT',
-  walk: 'WALKING', bicycle: 'BICYCLING',
+  drive: "DRIVING",
+  taxi: "DRIVING",
+  train: "TRANSIT",
+  bus: "TRANSIT",
+  ferry: "TRANSIT",
+  walk: "WALKING",
+  bicycle: "BICYCLING",
 };
 const TRANSPORT_ROUTE_COLOR = {
-  flight: '#2563EB', drive: '#7C3AED', train: '#0891B2', bus: '#0891B2',
-  walk: '#16A34A', bicycle: '#D97706', ferry: '#0891B2', taxi: '#D97706',
+  flight: "#2563EB",
+  drive: "#7C3AED",
+  train: "#0891B2",
+  bus: "#0891B2",
+  walk: "#16A34A",
+  bicycle: "#D97706",
+  ferry: "#0891B2",
+  taxi: "#D97706",
 };
 
 const directionsCache = {};
 
 // ═══ DAY MAP — per-stop map with item markers + routes + transport ═══
-export function DayMap({ stop, mapItems, transportItems, stayCoord, itemNumberMap }) {
-  const stopCoord = (stop.lat && stop.lng) ? { lat: Number(stop.lat), lng: Number(stop.lng) } : null;
-  const center = stayCoord || stopCoord || (mapItems.find(it => it.coord)?.coord) || null;
+export function DayMap({
+  stop,
+  mapItems,
+  transportItems,
+  stayCoord,
+  itemNumberMap,
+}) {
+  const stopCoord =
+    stop.lat && stop.lng
+      ? { lat: Number(stop.lat), lng: Number(stop.lng) }
+      : null;
+  const center =
+    stayCoord || stopCoord || mapItems.find((it) => it.coord)?.coord || null;
   if (!center) return null;
 
   return (
@@ -29,17 +49,29 @@ export function DayMap({ stop, mapItems, transportItems, stayCoord, itemNumberMa
         gestureHandling="cooperative"
         disableDefaultUI
         fullscreenControl
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: "100%", height: "100%" }}
       >
-        <DayMapContent mapItems={mapItems} transportItems={transportItems} stayCoord={stayCoord} stopName={stop.name} itemNumberMap={itemNumberMap} />
+        <DayMapContent
+          mapItems={mapItems}
+          transportItems={transportItems}
+          stayCoord={stayCoord}
+          stopName={stop.name}
+          itemNumberMap={itemNumberMap}
+        />
       </Map>
     </div>
   );
 }
 
-function DayMapContent({ mapItems, transportItems, stayCoord, stopName, itemNumberMap }) {
+function DayMapContent({
+  mapItems,
+  transportItems,
+  stayCoord,
+  stopName,
+  itemNumberMap,
+}) {
   const map = useMap();
-  const routesLib = useMapsLibrary('routes');
+  const routesLib = useMapsLibrary("routes");
   const renderersRef = useRef([]);
 
   // Fit bounds to all items
@@ -47,11 +79,25 @@ function DayMapContent({ mapItems, transportItems, stayCoord, stopName, itemNumb
     if (!map || !window.google?.maps) return;
     const bounds = new window.google.maps.LatLngBounds();
     let hasPoints = false;
-    if (stayCoord) { bounds.extend(stayCoord); hasPoints = true; }
-    mapItems.filter(it => it.coord).forEach(it => { bounds.extend(it.coord); hasPoints = true; });
-    (transportItems || []).forEach(ti => {
-      if (ti.originCoord) { bounds.extend(ti.originCoord); hasPoints = true; }
-      if (ti.destCoord) { bounds.extend(ti.destCoord); hasPoints = true; }
+    if (stayCoord) {
+      bounds.extend(stayCoord);
+      hasPoints = true;
+    }
+    mapItems
+      .filter((it) => it.coord)
+      .forEach((it) => {
+        bounds.extend(it.coord);
+        hasPoints = true;
+      });
+    (transportItems || []).forEach((ti) => {
+      if (ti.originCoord) {
+        bounds.extend(ti.originCoord);
+        hasPoints = true;
+      }
+      if (ti.destCoord) {
+        bounds.extend(ti.destCoord);
+        hasPoints = true;
+      }
     });
     if (hasPoints) map.fitBounds(bounds, 40);
   }, [map, mapItems, transportItems, stayCoord]);
@@ -60,70 +106,185 @@ function DayMapContent({ mapItems, transportItems, stayCoord, stopName, itemNumb
   useEffect(() => {
     if (!map || !routesLib) return;
     // Clean up previous renderers
-    renderersRef.current.forEach(r => { if (r.setMap) r.setMap(null); else if (r.setDirections) r.setDirections({ routes: [] }); });
+    renderersRef.current.forEach((r) => {
+      if (r.setMap) r.setMap(null);
+      else if (r.setDirections) r.setDirections({ routes: [] });
+    });
     renderersRef.current = [];
 
     // Route between non-transport items with coords
-    const withCoords = mapItems.filter(it => it.coord);
+    const withCoords = mapItems.filter((it) => it.coord);
     if (withCoords.length >= 2) {
-      const routeKey = withCoords.map(e => `${e.coord.lat},${e.coord.lng}`).join('|');
+      const routeKey = withCoords
+        .map((e) => `${e.coord.lat},${e.coord.lng}`)
+        .join("|");
       const render = (result) => {
-        const dr = new window.google.maps.DirectionsRenderer({ map, directions: result, suppressMarkers: true, preserveViewport: true, polylineOptions: { strokeColor: '#7C3AED', strokeOpacity: 0.7, strokeWeight: 3 } });
+        const dr = new window.google.maps.DirectionsRenderer({
+          map,
+          directions: result,
+          suppressMarkers: true,
+          preserveViewport: true,
+          polylineOptions: {
+            strokeColor: "#7C3AED",
+            strokeOpacity: 0.7,
+            strokeWeight: 3,
+          },
+        });
         renderersRef.current.push(dr);
       };
-      if (directionsCache[routeKey]) { render(directionsCache[routeKey]); }
-      else {
-        new routesLib.DirectionsService().route({
-          origin: withCoords[0].coord, destination: withCoords[withCoords.length - 1].coord,
-          waypoints: withCoords.slice(1, -1).map(e => ({ location: e.coord, stopover: true })).slice(0, 8),
-          travelMode: window.google.maps.TravelMode.DRIVING, optimizeWaypoints: false,
-        }, (result, status) => { if (status === 'OK') { directionsCache[routeKey] = result; render(result); } });
+      if (directionsCache[routeKey]) {
+        render(directionsCache[routeKey]);
+      } else {
+        new routesLib.DirectionsService().route(
+          {
+            origin: withCoords[0].coord,
+            destination: withCoords[withCoords.length - 1].coord,
+            waypoints: withCoords
+              .slice(1, -1)
+              .map((e) => ({ location: e.coord, stopover: true }))
+              .slice(0, 8),
+            travelMode: window.google.maps.TravelMode.DRIVING,
+            optimizeWaypoints: false,
+          },
+          (result, status) => {
+            if (status === "OK") {
+              directionsCache[routeKey] = result;
+              render(result);
+            }
+          },
+        );
       }
     }
 
     // Transport routes on this stop's map
-    (transportItems || []).forEach(ti => {
+    (transportItems || []).forEach((ti) => {
       if (!ti.originCoord || !ti.destCoord) return;
-      const color = TRANSPORT_ROUTE_COLOR[ti.transport_mode] || '#2563EB';
-      if (ti.transport_mode === 'flight') {
+      const color = TRANSPORT_ROUTE_COLOR[ti.transport_mode] || "#2563EB";
+      if (ti.transport_mode === "flight") {
         const line = new window.google.maps.Polyline({
-          path: [ti.originCoord, ti.destCoord], geodesic: true, strokeColor: color, strokeOpacity: 0, strokeWeight: 3, map,
-          icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.8, strokeColor: color, scale: 3 }, offset: '0', repeat: '12px' }],
+          path: [ti.originCoord, ti.destCoord],
+          geodesic: true,
+          strokeColor: color,
+          strokeOpacity: 0,
+          strokeWeight: 3,
+          map,
+          icons: [
+            {
+              icon: {
+                path: "M 0,-1 0,1",
+                strokeOpacity: 0.8,
+                strokeColor: color,
+                scale: 3,
+              },
+              offset: "0",
+              repeat: "12px",
+            },
+          ],
         });
         renderersRef.current.push(line);
       } else {
-        const travelMode = TRANSPORT_TRAVEL_MODE[ti.transport_mode] || 'DRIVING';
-        new routesLib.DirectionsService().route({
-          origin: ti.originCoord, destination: ti.destCoord,
-          travelMode: window.google.maps.TravelMode[travelMode],
-        }, (result, status) => {
-          if (status === 'OK') {
-            const dr = new window.google.maps.DirectionsRenderer({ map, directions: result, suppressMarkers: true, preserveViewport: true, polylineOptions: { strokeColor: color, strokeOpacity: 0.8, strokeWeight: 3 } });
-            renderersRef.current.push(dr);
-          } else {
-            const line = new window.google.maps.Polyline({ path: [ti.originCoord, ti.destCoord], strokeColor: color, strokeOpacity: 0.5, strokeWeight: 2, map });
-            renderersRef.current.push(line);
-          }
-        });
+        const travelMode =
+          TRANSPORT_TRAVEL_MODE[ti.transport_mode] || "DRIVING";
+        new routesLib.DirectionsService().route(
+          {
+            origin: ti.originCoord,
+            destination: ti.destCoord,
+            travelMode: window.google.maps.TravelMode[travelMode],
+          },
+          (result, status) => {
+            if (status === "OK") {
+              const dr = new window.google.maps.DirectionsRenderer({
+                map,
+                directions: result,
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                  strokeColor: color,
+                  strokeOpacity: 0.8,
+                  strokeWeight: 3,
+                },
+              });
+              renderersRef.current.push(dr);
+            } else {
+              const line = new window.google.maps.Polyline({
+                path: [ti.originCoord, ti.destCoord],
+                strokeColor: color,
+                strokeOpacity: 0.5,
+                strokeWeight: 2,
+                map,
+              });
+              renderersRef.current.push(line);
+            }
+          },
+        );
       }
     });
 
-    return () => { renderersRef.current.forEach(r => { if (r.setMap) r.setMap(null); else if (r.setDirections) r.setDirections({ routes: [] }); }); renderersRef.current = []; };
+    return () => {
+      renderersRef.current.forEach((r) => {
+        if (r.setMap) r.setMap(null);
+        else if (r.setDirections) r.setDirections({ routes: [] });
+      });
+      renderersRef.current = [];
+    };
   }, [map, routesLib, mapItems, transportItems]);
 
-  const withCoords = mapItems.filter(it => it.coord);
+  const withCoords = mapItems.filter((it) => it.coord);
   return (
     <>
-      {stayCoord && <Marker position={stayCoord} title={`Stay: ${stopName}`} label={{ text: 'H', color: '#fff', fontSize: '10px', fontWeight: '700' }} />}
-      {withCoords.map(it => {
+      {stayCoord && (
+        <Marker
+          position={stayCoord}
+          title={`Stay: ${stopName}`}
+          label={{
+            text: "H",
+            color: "#fff",
+            fontSize: "10px",
+            fontWeight: "700",
+          }}
+        />
+      )}
+      {withCoords.map((it) => {
         const num = itemNumberMap?.[it.id];
-        return <Marker key={it.id} position={it.coord} title={`${num || ''}. ${it.name}`}
-          label={num ? { text: String(num), color: '#fff', fontSize: '10px', fontWeight: '700' } : undefined} />;
+        return (
+          <Marker
+            key={it.id}
+            position={it.coord}
+            title={`${num || ""}. ${it.name}`}
+            label={
+              num
+                ? {
+                    text: String(num),
+                    color: "#fff",
+                    fontSize: "10px",
+                    fontWeight: "700",
+                  }
+                : undefined
+            }
+          />
+        );
       })}
-      {(transportItems || []).map(ti => {
+      {(transportItems || []).map((ti) => {
         const num = itemNumberMap?.[ti.id];
-        return ti.originCoord && <Marker key={`t-${ti.id}`} position={ti.originCoord} title={ti.routeLabel || ti.name}
-          label={num ? { text: String(num), color: '#fff', fontSize: '10px', fontWeight: '700' } : undefined} />;
+        return (
+          ti.originCoord && (
+            <Marker
+              key={`t-${ti.id}`}
+              position={ti.originCoord}
+              title={ti.routeLabel || ti.name}
+              label={
+                num
+                  ? {
+                      text: String(num),
+                      color: "#fff",
+                      fontSize: "10px",
+                      fontWeight: "700",
+                    }
+                  : undefined
+              }
+            />
+          )
+        );
       })}
     </>
   );
@@ -131,21 +292,28 @@ function DayMapContent({ mapItems, transportItems, stayCoord, stopName, itemNumb
 
 // ═══ ROUTE MAP — full trip overview with transport routes ═══
 export function RouteMap({ stops, items }) {
-  const points = stops.map(s => {
-    if (s.lat && s.lng) return { stop: s, coord: { lat: Number(s.lat), lng: Number(s.lng) } };
-    const stay = getStay(items, s.id);
-    if (stay?.coord) return { stop: s, coord: stay.coord };
-    const anyItem = items.find(it => itemInStop(it, s.id) && it.coord);
-    if (anyItem?.coord) return { stop: s, coord: anyItem.coord };
-    return { stop: s, coord: null };
-  }).filter(p => p.coord);
+  const points = stops
+    .map((s) => {
+      if (s.lat && s.lng)
+        return { stop: s, coord: { lat: Number(s.lat), lng: Number(s.lng) } };
+      const stay = getStay(items, s.id);
+      if (stay?.coord) return { stop: s, coord: stay.coord };
+      const anyItem = items.find((it) => itemInStop(it, s.id) && it.coord);
+      if (anyItem?.coord) return { stop: s, coord: anyItem.coord };
+      return { stop: s, coord: null };
+    })
+    .filter((p) => p.coord);
 
   if (!points.length) return <div className="map-wrap" />;
 
-  const tripPoints = points.filter(p => p.stop.name !== 'Lima');
+  // M40: exclude the home city (first stop) from centering, not a literal "Lima".
+  const homeName = homeCityName(stops);
+  const tripPoints = points.filter((p) => p.stop.name !== homeName);
   const mapPoints = tripPoints.length > 0 ? tripPoints : points;
-  const cLat = mapPoints.reduce((s, p) => s + p.coord.lat, 0) / mapPoints.length;
-  const cLng = mapPoints.reduce((s, p) => s + p.coord.lng, 0) / mapPoints.length;
+  const cLat =
+    mapPoints.reduce((s, p) => s + p.coord.lat, 0) / mapPoints.length;
+  const cLng =
+    mapPoints.reduce((s, p) => s + p.coord.lng, 0) / mapPoints.length;
 
   return (
     <div className="map-wrap">
@@ -156,29 +324,34 @@ export function RouteMap({ stops, items }) {
         gestureHandling="cooperative"
         disableDefaultUI
         fullscreenControl
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: "100%", height: "100%" }}
       >
-        <RouteMapContent points={points} items={items} />
+        <RouteMapContent points={points} items={items} homeName={homeName} />
       </Map>
     </div>
   );
 }
 
-function RouteMapContent({ points, items }) {
+function RouteMapContent({ points, items, homeName }) {
   const map = useMap();
-  const routesLib = useMapsLibrary('routes');
+  const routesLib = useMapsLibrary("routes");
   const renderersRef = useRef([]);
 
   useEffect(() => {
     if (!map || !window.google?.maps) return;
-    const tripPoints = points.filter(p => p.stop.name !== 'Lima');
+    const tripPoints = points.filter((p) => p.stop.name !== homeName);
     const boundsPoints = tripPoints.length > 0 ? tripPoints : points;
     const bounds = new window.google.maps.LatLngBounds();
-    boundsPoints.forEach(p => bounds.extend(p.coord));
+    boundsPoints.forEach((p) => bounds.extend(p.coord));
 
     // Transport routes
-    const transportItems = items.filter(it => it.type === 'transport' && !it.is_rental && (it.status === 'sel' || it.status === 'conf'));
-    transportItems.forEach(ti => {
+    const transportItems = items.filter(
+      (it) =>
+        it.type === "transport" &&
+        !it.is_rental &&
+        (it.status === "sel" || it.status === "conf"),
+    );
+    transportItems.forEach((ti) => {
       if (ti.originCoord) bounds.extend(ti.originCoord);
       if (ti.destCoord) bounds.extend(ti.destCoord);
     });
@@ -189,56 +362,118 @@ function RouteMapContent({ points, items }) {
   // Draw transport routes + fallback polyline
   useEffect(() => {
     if (!map || !routesLib) return;
-    renderersRef.current.forEach(r => { if (r.setMap) r.setMap(null); else if (r.setDirections) r.setDirections({ routes: [] }); });
+    renderersRef.current.forEach((r) => {
+      if (r.setMap) r.setMap(null);
+      else if (r.setDirections) r.setDirections({ routes: [] });
+    });
     renderersRef.current = [];
 
-    const transportItems = items.filter(it => it.type === 'transport' && !it.is_rental && (it.status === 'sel' || it.status === 'conf'));
+    const transportItems = items.filter(
+      (it) =>
+        it.type === "transport" &&
+        !it.is_rental &&
+        (it.status === "sel" || it.status === "conf"),
+    );
     let hasRoutes = false;
 
-    transportItems.forEach(ti => {
+    transportItems.forEach((ti) => {
       if (!ti.originCoord || !ti.destCoord) return;
       hasRoutes = true;
-      const color = TRANSPORT_ROUTE_COLOR[ti.transport_mode] || '#7C3AED';
-      if (ti.transport_mode === 'flight') {
+      const color = TRANSPORT_ROUTE_COLOR[ti.transport_mode] || "#7C3AED";
+      if (ti.transport_mode === "flight") {
         const line = new window.google.maps.Polyline({
-          path: [ti.originCoord, ti.destCoord], geodesic: true, strokeColor: color, strokeOpacity: 0, strokeWeight: 3, map,
-          icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.8, strokeColor: color, scale: 3 }, offset: '0', repeat: '12px' }],
+          path: [ti.originCoord, ti.destCoord],
+          geodesic: true,
+          strokeColor: color,
+          strokeOpacity: 0,
+          strokeWeight: 3,
+          map,
+          icons: [
+            {
+              icon: {
+                path: "M 0,-1 0,1",
+                strokeOpacity: 0.8,
+                strokeColor: color,
+                scale: 3,
+              },
+              offset: "0",
+              repeat: "12px",
+            },
+          ],
         });
         renderersRef.current.push(line);
       } else {
-        const travelMode = TRANSPORT_TRAVEL_MODE[ti.transport_mode] || 'DRIVING';
-        new routesLib.DirectionsService().route({
-          origin: ti.originCoord, destination: ti.destCoord,
-          travelMode: window.google.maps.TravelMode[travelMode],
-        }, (result, status) => {
-          if (status === 'OK') {
-            const dr = new window.google.maps.DirectionsRenderer({ map, directions: result, suppressMarkers: true, preserveViewport: true, polylineOptions: { strokeColor: color, strokeOpacity: 0.8, strokeWeight: 3 } });
-            renderersRef.current.push(dr);
-          } else {
-            const line = new window.google.maps.Polyline({ path: [ti.originCoord, ti.destCoord], strokeColor: color, strokeOpacity: 0.5, strokeWeight: 2, map });
-            renderersRef.current.push(line);
-          }
-        });
+        const travelMode =
+          TRANSPORT_TRAVEL_MODE[ti.transport_mode] || "DRIVING";
+        new routesLib.DirectionsService().route(
+          {
+            origin: ti.originCoord,
+            destination: ti.destCoord,
+            travelMode: window.google.maps.TravelMode[travelMode],
+          },
+          (result, status) => {
+            if (status === "OK") {
+              const dr = new window.google.maps.DirectionsRenderer({
+                map,
+                directions: result,
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                  strokeColor: color,
+                  strokeOpacity: 0.8,
+                  strokeWeight: 3,
+                },
+              });
+              renderersRef.current.push(dr);
+            } else {
+              const line = new window.google.maps.Polyline({
+                path: [ti.originCoord, ti.destCoord],
+                strokeColor: color,
+                strokeOpacity: 0.5,
+                strokeWeight: 2,
+                map,
+              });
+              renderersRef.current.push(line);
+            }
+          },
+        );
       }
     });
 
     // Fallback: dashed stop-to-stop line if no transport items
-    const tripPoints = points.filter(p => p.stop.name !== 'Lima');
+    const tripPoints = points.filter((p) => p.stop.name !== homeName);
     const mapPoints = tripPoints.length > 0 ? tripPoints : points;
     if (!hasRoutes && mapPoints.length > 1) {
       const line = new window.google.maps.Polyline({
-        path: mapPoints.map(p => p.coord), geodesic: true, strokeColor: '#7C3AED', strokeOpacity: 0.4, strokeWeight: 2, map,
-        icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.6, scale: 2 }, offset: '0', repeat: '10px' }],
+        path: mapPoints.map((p) => p.coord),
+        geodesic: true,
+        strokeColor: "#7C3AED",
+        strokeOpacity: 0.4,
+        strokeWeight: 2,
+        map,
+        icons: [
+          {
+            icon: { path: "M 0,-1 0,1", strokeOpacity: 0.6, scale: 2 },
+            offset: "0",
+            repeat: "10px",
+          },
+        ],
       });
       renderersRef.current.push(line);
     }
 
-    return () => { renderersRef.current.forEach(r => { if (r.setMap) r.setMap(null); else if (r.setDirections) r.setDirections({ routes: [] }); }); renderersRef.current = []; };
+    return () => {
+      renderersRef.current.forEach((r) => {
+        if (r.setMap) r.setMap(null);
+        else if (r.setDirections) r.setDirections({ routes: [] });
+      });
+      renderersRef.current = [];
+    };
   }, [map, routesLib, points, items]);
 
   return (
     <>
-      {points.map(p => (
+      {points.map((p) => (
         <Marker key={p.stop.id} position={p.coord} title={p.stop.name} />
       ))}
     </>

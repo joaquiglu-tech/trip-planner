@@ -8,6 +8,7 @@ import {
   getStay,
   getStopStats,
   getDaysUntilTrip,
+  homeCityName,
 } from "./utils";
 
 export default function OverviewView({ items, stops, expenses, onDaySelect }) {
@@ -46,7 +47,7 @@ export default function OverviewView({ items, stops, expenses, onDaySelect }) {
         <div className="home-header">
           <div className="home-trip-name">
             {(() => {
-              const homeCity = stops.length > 0 ? stops[0].name : "";
+              const homeCity = homeCityName(stops);
               const tripStops = stops.filter((s) => s.name !== homeCity);
               return tripStops.length > 1
                 ? `${tripStops[0]?.name} to ${tripStops[tripStops.length - 1]?.name}`
@@ -75,7 +76,7 @@ export default function OverviewView({ items, stops, expenses, onDaySelect }) {
               Route
             </div>
             {(() => {
-              const homeCity = stops.length > 0 ? stops[0].name : "";
+              const homeCity = homeCityName(stops);
               const tripStops = stops.filter(
                 (s) => s.lat && s.lng && s.name !== homeCity,
               );

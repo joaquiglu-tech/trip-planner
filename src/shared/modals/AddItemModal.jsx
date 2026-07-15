@@ -3,6 +3,7 @@ import { useFocusTrap } from "../hooks/useFocusTrap";
 import PlaceSearch from "../components/PlaceSearch";
 import { extractXoteloKey, fetchStayEstimate } from "../../services/xotelo";
 import { uploadFile } from "../../services/storage";
+import { buildItemPayload } from "./addItemLogic";
 
 const TYPES = [
   { value: "food", label: "Food" },
@@ -184,23 +185,8 @@ export default function AddItemModal({
     if (!form.name.trim() || saving) return;
     setSaving(true);
     try {
-      const originName = form.origin?.name || "";
-      const destName = form.dest?.name || "";
-      const newItem = await onAdd({
-        ...form,
-        status: form.status,
-        estimated_cost: Math.max(0, parseFloat(form.estimated_cost) || 0), // M23: no negatives
-        hrs: form.hrs ? Math.max(0, parseFloat(form.hrs) || 0) : null,
-        stop_ids: form.stop_ids,
-        xotelo_key: form.xotelo_key || null,
-        origin_name: originName,
-        origin_lat: form.origin?.lat || null,
-        origin_lng: form.origin?.lng || null,
-        dest_name: destName,
-        dest_lat: form.dest?.lat || null,
-        dest_lng: form.dest?.lng || null,
-        route: [originName, destName].filter(Boolean).join(" \u2192 "),
-      });
+      // M44: only real item columns (no UI-only keys), clamped + coord-safe.
+      const newItem = await onAdd(buildItemPayload(form));
 
       // Create expense if confirmed with a cost
       const errors = [];

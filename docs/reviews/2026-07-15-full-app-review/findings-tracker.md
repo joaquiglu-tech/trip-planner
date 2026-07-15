@@ -152,9 +152,9 @@
 
 - [x] **M38 · Direct `fetch()` to Google Places inside presentational components (duplicated)** — `PlaceSearch.jsx:27`, `AddStopModal.jsx:35` · ✅ Slice 8a: extracted `searchPlaces()` + `parsePlaceResults()` into `services/googlePlaces.js`; both components call the service (API key/request shape no longer in the view layer, dedup'd). Tested.
   - _Fix:_ move into `services/googlePlaces`; components call the service/hook.
-- [ ] **M39 · Inline `supabase.auth.*` in page components (bypasses `useAuth`)** — `Login.jsx:16-17`, `ProfilePage.jsx:21,30` · `×2`
+- [x] **M39 · Inline `supabase.auth.*` in page components (bypasses `useAuth`)** — `Login.jsx:16-17`, `ProfilePage.jsx:21,30` · `×2` · ✅ Slice 8b: new `services/auth.js` (signIn/signUp/signOut/updateDisplayName); Login + ProfilePage call it, no direct supabase in the pages.
   - _Fix:_ route auth through the hook / a service.
-- [ ] **M40 · Hardcoded `'Lima'` home-city rule** — `MapComponents.jsx:145,174,226` (vs dynamic `stops[0]` in `OverviewView.jsx:49,65`) · `×2`
+- [x] **M40 · Hardcoded `'Lima'` home-city rule** — `MapComponents.jsx:145,174,226` (vs dynamic `stops[0]` in `OverviewView.jsx:49,65`) · `×2` · ✅ Slice 8b: new `homeCityName(stops)` util; MapComponents excludes the home city dynamically (all 3 filters) and OverviewView uses the same helper (dedup). Tested.
   - _Failure:_ breaks "no hardcoded data"; map includes origin + filter is dead for any non-Lima trip. _Fix:_ derive home from `stops[0]`/a flag, single source.
 - [x] **M41 · Live-price writeback stamps `updated_by`/`updated_at` → spurious "X updated" toast + false audit** — `useLivePrices.js:50` → `useItems.js:96,113-114` · `×2` · ✅ Slice 2: `updateItem(id, changes, { stampUser:false })` for automated writes (no updated_by/at bump); `useLivePrices` uses it; realtime toast gated by `shouldNotifyUpdate` (suppresses updates that don't bump updated_at). Tested.
   - _Fix:_ write `estimated_cost` without touching `updated_by`, or tag automated writes so the toast is suppressed.
@@ -162,7 +162,7 @@
   - _Fix:_ per-effect cancelled flag checked before push/render.
 - [x] **M43 · Service worker caches private Supabase REST data 1h, not purged on logout** — `vite.config.js:47-50` · ✅ Slice 3: `purgeDataCache()` (`src/services/swCache.js`) deletes the `supabase-api` cache; `useAuth` calls it on `SIGNED_OUT`. Tested.
   - _Failure:_ previously-fetched trip/expense data served from cache after sign-out/offline. _Fix:_ scope/purge data cache on sign-out (auth endpoints already NetworkOnly).
-- [ ] **M44 · `AddItemModal` spreads UI-only fields into the item insert** — `AddItemModal.jsx:121-131`
+- [x] **M44 · `AddItemModal` spreads UI-only fields into the item insert** — `AddItemModal.jsx:121-131` · ✅ Slice 8b: `buildItemPayload(form)` (`addItemLogic.js`) returns only real columns — tripadvisor_url/confirmed_cost/expense_note/raw origin+dest no longer passed; clamps + coord-safe. Tested.
   - _Failure:_ forwards non-column keys (`tripadvisor_url`, `confirmed_cost`, `expense_note`, raw `origin`/`dest`); relies on unstated column-stripping downstream. _Fix:_ whitelist columns before insert. (Also orphaned-storage-on-delete: see M-storage below.)
 
 ### Services / external API robustness
@@ -244,8 +244,8 @@
 
 ### Auth feedback (borderline MED)
 
-- [ ] **L38 · Login sign-up gives no confirmation/next-step feedback** — `Login.jsx:11-20` (show "check your email")
-- [ ] **L39 · ProfilePage swallows save errors** — `ProfilePage.jsx:19-27` · `×2` (surface `error.message`)
+- [x] **L38 · Login sign-up gives no confirmation/next-step feedback** — `Login.jsx:11-20` (show "check your email") · ✅ Slice 8b (bonus): sign-up with no returned session shows "Check your email to confirm…".
+- [x] **L39 · ProfilePage swallows save errors** — `ProfilePage.jsx:19-27` · `×2` (surface `error.message`) · ✅ Slice 8b (bonus): `saveError` state surfaces the failure under the Save button.
 
 ---
 
