@@ -94,23 +94,23 @@
 
 ### DetailModal / expense flow
 
-- [ ] **M16 · DetailModal shows the WRONG item's photo when reused for a linked item** — `src/shared/components/DetailModal.jsx:56,71-76`
+- [x] **M16 · DetailModal shows the WRONG item's photo when reused for a linked item** — `src/shared/components/DetailModal.jsx:56,71-76` · ✅ Slice 5: the place-fetch effect now `setPlace(placeData || null)` on `it.id` change (+ cancel guard), so a reused modal never shows the previous item's photo.
   - _Failure:_ `place` seeded once via `useState(placeData)`; fetch guard `if (place?.photo_url) return` never refetches when `it.id` changes while the sheet stays mounted (opening an item from the Expenses tab) → item B renders item A's image/address/hours. _Fix:_ `setPlace(null)` at top of the `[it?.id]` effect, or key the modal by `it.id`.
-- [ ] **M17 · Edits silently lost tapping the pricing/expense row in Edit mode** — `src/shared/components/DetailModal.jsx:107,462,532`
+- [x] **M17 · Edits silently lost tapping the pricing/expense row in Edit mode** — `src/shared/components/DetailModal.jsx:107,462,532` · ✅ Slice 5: `handleExpenseClick` confirms "leave without saving?" (via `buildItemChanges` dirty check) before exiting Edit to the expense card.
   - _Failure:_ `onExpenseClick` runs `setEditing(false); setShowExpenseCard(true)` → unmounts EditMode, discards unsaved `draft`, no warning. _Fix:_ save (or confirm-discard) before leaving edit mode.
-- [ ] **M18 · Partial expense-deletion leaves data inconsistent on status downgrade** — `src/shared/components/DetailModal.jsx:140-146` (dup 357-363) · `×3`
+- [x] **M18 · Partial expense-deletion leaves data inconsistent on status downgrade** — `src/shared/components/DetailModal.jsx:140-146` (dup 357-363) · `×3` · ✅ Slice 5: shared `clearExpensesForDowngrade` (Promise.allSettled) surfaces a partial-failure alert and does NOT change status. (Fully atomic delete would need a batched DB call — noted.) Tested.
   - _Failure:_ deletes expenses one-by-one; on mid-loop failure sets `failed` and returns without `setStatus` → some expenses gone while item still "Confirmed". _Fix:_ delete atomically / re-check + roll back on partial failure.
-- [ ] **M19 · Status downgrade gates expense deletion on `expenseAmount`, not `itemExpenses.length`** — `src/shared/components/DetailModal.jsx:137`
+- [x] **M19 · Status downgrade gates expense deletion on `expenseAmount`, not `itemExpenses.length`** — `src/shared/components/DetailModal.jsx:137` · ✅ Slice 5: `clearExpensesForDowngrade` gates on `itemExpenses?.length`. Tested.
   - _Failure:_ status conf→sel/'' with a zero/undefined-amount expense → status changes, expenses orphaned, payment state contradicts status. _Fix:_ gate on `itemExpenses?.length`.
-- [ ] **M20 · `setStatus(conf)` not awaited before ExpenseCard opens** — `src/shared/components/DetailModal.jsx:136`
+- [x] **M20 · `setStatus(conf)` not awaited before ExpenseCard opens** — `src/shared/components/DetailModal.jsx:136` · ✅ Slice 5: both status selectors `await setStatus(...)` with a catch + error alert before opening the card.
   - _Fix:_ await + catch before opening the card (else card opens against an unconfirmed item on write failure).
-- [ ] **M21 · Realtime update to the item during Edit → concurrent edit silently lost** — `src/shared/components/DetailModal.jsx:254-267`
+- [x] **M21 · Realtime update to the item during Edit → concurrent edit silently lost** — `src/shared/components/DetailModal.jsx:254-267` · ✅ Slice 5: EditMode tracks `it.updated_at` vs the edit-start snapshot and shows a "updated elsewhere — saving will overwrite" banner.
   - _Fix:_ reconcile draft against the new baseline or warn on external change.
-- [ ] **M22 · Clearing `estimated_cost`/`hrs` to empty can never unset the value** — `src/shared/components/DetailModal.jsx:301-302,311-312` · `×2`
+- [x] **M22 · Clearing `estimated_cost`/`hrs` to empty can never unset the value** — `src/shared/components/DetailModal.jsx:301-302,311-312` · `×2` · ✅ Slice 5: `buildItemChanges` treats an empty string as an explicit `null` (unset). Tested.
   - _Failure:_ `parseFloat('')` → NaN → guard skips the diff; the field can't be set back to empty/null (and a genuine `0` is skipped by `ec !== (Number(it.estimated_cost)||0)`). _Fix:_ treat empty string as explicit `null` change. (Largely moot for stays once C2 makes it read-only.)
-- [ ] **M23 · Negative cost/hrs accepted and persisted** — `DetailModal.jsx:301-302,311-312`, `AddItemModal.jsx:124`
+- [~] **M23 · Negative cost/hrs accepted and persisted** — `DetailModal.jsx:301-302,311-312`, `AddItemModal.jsx:124` · ✅ Slice 5 (DetailModal): `buildItemChanges` clamps to `Math.max(0, …)` + `min="0"` inputs. Tested. ⏳ AddItemModal create-path clamp lands with Slice 7 (AddItemModal work).
   - _Fix:_ clamp `>= 0` before writing.
-- [ ] **M24 · Whitespace/empty name persisted on save** — `src/shared/components/DetailModal.jsx:293,376`
+- [x] **M24 · Whitespace/empty name persisted on save** — `src/shared/components/DetailModal.jsx:293,376` · ✅ Slice 5: `handleSave` blocks with "Name is required" when `!draft.name.trim()`; `buildItemChanges` trims the name.
   - _Fix:_ block save if `!draft.name.trim()`.
 
 ### Xotelo / search UX

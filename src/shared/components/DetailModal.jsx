@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import { $f, isXoteloManaged } from "../hooks/useItems";
+import {
+  buildItemChanges,
+  clearExpensesForDowngrade,
+} from "./detailModalLogic";
 import { useTripData } from "../hooks/TripContext";
 import { uploadFile, deleteFile } from "../../services/storage";
 import { extractXoteloKey, fetchStayEstimate } from "../../services/xotelo";
@@ -148,15 +152,25 @@ export default function DetailModal({
   }, [onClose]);
 
   useEffect(() => {
-    if (!it || place?.photo_url) return;
-    if (!getPlaceData) return;
-    setLoadingPlace(true);
-    getPlaceData(it.id, it.name, it.city)
-      .then((result) => {
-        if (result) setPlace(result);
-      })
-      .catch((err) => console.warn("getPlaceData failed:", err))
-      .finally(() => setLoadingPlace(false));
+    if (!it) return;
+    let cancelled = false;
+    // M16: reset to this item's own place data so a reused modal never shows
+    // the previous item's photo/address while (or instead of) refetching.
+    setPlace(placeData || null);
+    if (!placeData?.photo_url && getPlaceData) {
+      setLoadingPlace(true);
+      getPlaceData(it.id, it.name, it.city)
+        .then((result) => {
+          if (!cancelled && result) setPlace(result);
+        })
+        .catch((err) => console.warn("getPlaceData failed:", err))
+        .finally(() => {
+          if (!cancelled) setLoadingPlace(false);
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
   }, [it?.id]);
 
   if (!it) return null;
@@ -295,34 +309,32 @@ export default function DetailModal({
                       if (opt.value === st) return;
                       if (navigator.vibrate) navigator.vibrate(15);
                       if (opt.value === "conf" && st !== "conf") {
-                        setStatus(it.id, "conf");
+                        try {
+                          await setStatus(it.id, "conf"); // M20: await
+                        } catch (err) {
+                          console.warn("Failed to set status:", err);
+                          alert("Failed to update status.");
+                          return;
+                        }
                         setShowExpenseCard(true);
                         return;
                       }
-                      if (
-                        st === "conf" &&
-                        opt.value !== "conf" &&
-                        expenseAmount > 0
-                      ) {
-                        const confirmed = await confirm(
-                          `This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`,
-                          { destructive: true, confirmLabel: "Continue" },
-                        );
-                        if (!confirmed) return;
-                        if (itemExpenses?.length > 0) {
-                          let failed = false;
-                          for (const exp of itemExpenses) {
-                            try {
-                              await deleteExpense(exp.id);
-                            } catch (err) {
-                              console.warn("Failed to delete expense:", err);
-                              failed = true;
-                            }
-                          }
-                          if (failed) return;
-                        }
+                      const res = await clearExpensesForDowngrade({
+                        current: st,
+                        next: opt.value,
+                        itemExpenses,
+                        expenseAmount,
+                        confirm,
+                        deleteExpense,
+                      });
+                      if (res.error) alert(res.error); // M18
+                      if (!res.proceed) return;
+                      try {
+                        await setStatus(it.id, opt.value); // M20
+                      } catch (err) {
+                        console.warn("Failed to set status:", err);
+                        alert("Failed to update status.");
                       }
-                      setStatus(it.id, opt.value);
                     }}
                   >
                     {opt.value === "conf"
@@ -749,62 +761,35 @@ function EditMode({
 
   const u = (key, val) => setDraft((d) => ({ ...d, [key]: val }));
 
+  // M21: warn if the item was changed elsewhere (realtime) while editing, so a
+  // save doesn't silently clobber the other change.
+  const initialUpdatedAt = useRef(it.updated_at);
+  const [externallyChanged, setExternallyChanged] = useState(false);
+  useEffect(() => {
+    if (it.updated_at !== initialUpdatedAt.current) setExternallyChanged(true);
+  }, [it.updated_at]);
+
+  // M17: opening the expense card leaves Edit mode and discards the draft —
+  // confirm first when there are unsaved changes.
+  async function handleExpenseClick() {
+    if (Object.keys(buildItemChanges(draft, it)).length > 0) {
+      const ok = await confirm(
+        "You have unsaved edits. Leave without saving them?",
+        { destructive: true, confirmLabel: "Leave" },
+      );
+      if (!ok) return;
+    }
+    onExpenseClick();
+  }
+
   async function handleSave() {
+    // M24: a name is required — don't persist an empty/whitespace one.
+    if (!draft.name.trim()) {
+      alert("Name is required.");
+      return;
+    }
     setSaving(true);
-    const changes = {};
-    if (draft.name !== (it.name || "")) changes.name = draft.name;
-    if (draft.type !== (it.type || "food")) changes.type = draft.type;
-    if (draft.description !== (it.description || ""))
-      changes.description = draft.description;
-    if (draft.dish !== (it.dish || "")) changes.dish = draft.dish;
-    if (draft.link !== (it.link || "")) changes.link = draft.link;
-    if (draft.notes !== (it.notes || "")) changes.notes = draft.notes;
-    if (draft.src !== (it.src || "")) changes.src = draft.src;
-    if (draft.reserve_note !== (it.reserve_note || ""))
-      changes.reserve_note = draft.reserve_note;
-    // C2: estimated_cost is read-only for Xotelo-linked stays — only
-    // useLivePrices may write it. Never persist a form value for those.
-    const ec = parseFloat(draft.estimated_cost);
-    if (
-      !isXoteloManaged(draft) &&
-      !isNaN(ec) &&
-      ec !== (Number(it.estimated_cost) || 0)
-    )
-      changes.estimated_cost = ec;
-    if (draft.start_time !== (it.start_time || ""))
-      changes.start_time = draft.start_time || null;
-    if (draft.end_time !== (it.end_time || ""))
-      changes.end_time = draft.end_time || null;
-    if (JSON.stringify(draft.stop_ids) !== JSON.stringify(it.stop_ids || []))
-      changes.stop_ids = draft.stop_ids;
-    if (draft.subcat !== (it.subcat || "")) changes.subcat = draft.subcat;
-    if (draft.tier !== (it.tier || "")) changes.tier = draft.tier;
-    if (draft.xotelo_key !== (it.xotelo_key || ""))
-      changes.xotelo_key = draft.xotelo_key;
-    if (draft.transport_mode !== (it.transport_mode || ""))
-      changes.transport_mode = draft.transport_mode;
-    if (draft.is_rental !== !!it.is_rental) changes.is_rental = draft.is_rental;
-    const hrs = parseFloat(draft.hrs);
-    if (!isNaN(hrs) && hrs !== (Number(it.hrs) || 0)) changes.hrs = hrs;
-    // Origin/dest
-    const newOriginName = draft.origin?.name || "";
-    const newDestName = draft.dest?.name || "";
-    if (newOriginName !== (it.origin_name || "")) {
-      changes.origin_name = newOriginName;
-      // ?? not || so a real 0 coordinate is preserved (M05)
-      changes.origin_lat = draft.origin?.lat ?? null;
-      changes.origin_lng = draft.origin?.lng ?? null;
-    }
-    if (newDestName !== (it.dest_name || "")) {
-      changes.dest_name = newDestName;
-      changes.dest_lat = draft.dest?.lat ?? null;
-      changes.dest_lng = draft.dest?.lng ?? null;
-    }
-    const derivedRoute = [newOriginName, newDestName]
-      .filter(Boolean)
-      .join(" \u2192 ");
-    if (derivedRoute && derivedRoute !== (it.route || ""))
-      changes.route = derivedRoute;
+    const changes = buildItemChanges(draft, it);
 
     if (Object.keys(changes).length > 0) {
       try {
@@ -841,6 +826,15 @@ function EditMode({
         </div>
         <div className="detail-content">
           {saved && <div className="detail-saved">{saved}</div>}
+          {externallyChanged && (
+            <div
+              className="detail-saved"
+              style={{ background: "var(--warning, #b45309)" }}
+            >
+              This item was updated elsewhere. Saving will overwrite that
+              change.
+            </div>
+          )}
 
           {/* Status — saves immediately, not batched */}
           {setStatus && (
@@ -856,30 +850,22 @@ function EditMode({
                   onClick={async () => {
                     if (opt.value === (status || "")) return;
                     if (navigator.vibrate) navigator.vibrate(15);
-                    if (
-                      (status || "") === "conf" &&
-                      opt.value !== "conf" &&
-                      expenseAmount > 0
-                    ) {
-                      const confirmed = await confirm(
-                        `This item has ${$f(expenseAmount)} in expenses. Changing status will delete the expenses. Continue?`,
-                        { destructive: true, confirmLabel: "Continue" },
-                      );
-                      if (!confirmed) return;
-                      if (itemExpenses?.length > 0) {
-                        let failed = false;
-                        for (const exp of itemExpenses) {
-                          try {
-                            await deleteExpense(exp.id);
-                          } catch (err) {
-                            console.warn("Failed to delete expense:", err);
-                            failed = true;
-                          }
-                        }
-                        if (failed) return;
-                      }
+                    const res = await clearExpensesForDowngrade({
+                      current: status || "",
+                      next: opt.value,
+                      itemExpenses,
+                      expenseAmount,
+                      confirm,
+                      deleteExpense,
+                    });
+                    if (res.error) alert(res.error); // M18
+                    if (!res.proceed) return;
+                    try {
+                      await setStatus(it.id, opt.value); // M20
+                    } catch (err) {
+                      console.warn("Failed to set status:", err);
+                      alert("Failed to update status.");
                     }
-                    setStatus(it.id, opt.value);
                   }}
                 >
                   {opt.value === "conf"
@@ -1079,6 +1065,7 @@ function EditMode({
                 value={draft.hrs}
                 onChange={(e) => u("hrs", e.target.value)}
                 type="number"
+                min="0"
                 step="0.5"
                 placeholder="2"
               />
@@ -1133,6 +1120,7 @@ function EditMode({
               value={draft.estimated_cost}
               onChange={(e) => u("estimated_cost", e.target.value)}
               type="number"
+              min="0"
               step="0.01"
               placeholder="0"
             />
@@ -1146,7 +1134,7 @@ function EditMode({
             }}
             livePrice={livePrice}
             expenseAmount={expenseAmount}
-            onExpenseClick={onExpenseClick}
+            onExpenseClick={handleExpenseClick}
           />
 
           {/* Links */}
