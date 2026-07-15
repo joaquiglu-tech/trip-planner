@@ -102,6 +102,51 @@ function formatDatetime(dt) {
   }
 }
 
+// L33: presentational 3-button status selector, shared by Summary and Edit.
+// Each parent supplies its own async onSelect (Summary opens the expense card
+// on conf; Edit doesn't) — the button rendering is what was duplicated.
+const STATUS_OPTIONS = [
+  { value: "", label: "Not added", cls: "", icon: "○" },
+  { value: "sel", label: "Selected", cls: "sel", icon: "●" },
+  { value: "conf", label: "Confirmed", cls: "conf", icon: "✓" },
+];
+
+function StatusSelector({ current, onSelect, style }) {
+  return (
+    <div className="status-selector" style={style}>
+      {STATUS_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          className={`status-option ${opt.cls} ${current === opt.value ? "active" : ""}`}
+          onClick={() => onSelect(opt.value)}
+        >
+          {opt.icon} {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// L34: the file-chip list rendered identically in both modes.
+function FileChipList({ files, onRemove }) {
+  return files.map((f, i) => (
+    <div key={i} className="file-chip mb-2">
+      <span className="file-chip-name">{f.name}</span>
+      <a
+        href={f.url}
+        target="_blank"
+        rel="noopener"
+        className="file-action-link"
+      >
+        Open
+      </a>
+      <button onClick={() => onRemove(f.path)} className="file-remove-btn">
+        x
+      </button>
+    </div>
+  ));
+}
+
 export default function DetailModal({
   it,
   status,
@@ -306,56 +351,40 @@ export default function DetailModal({
         <div className="detail-action-top">
           <div className="flex-center gap-2">
             <div className="flex-1">
-              <div className="status-selector">
-                {[
-                  { value: "", label: "Not added", cls: "" },
-                  { value: "sel", label: "Selected", cls: "sel" },
-                  { value: "conf", label: "Confirmed", cls: "conf" },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    className={`status-option ${opt.cls} ${st === opt.value ? "active" : ""}`}
-                    onClick={async () => {
-                      if (opt.value === st) return;
-                      if (navigator.vibrate) navigator.vibrate(15);
-                      if (opt.value === "conf" && st !== "conf") {
-                        try {
-                          await setStatus(it.id, "conf"); // M20: await
-                        } catch (err) {
-                          console.warn("Failed to set status:", err);
-                          alert("Failed to update status.");
-                          return;
-                        }
-                        setShowExpenseCard(true);
-                        return;
-                      }
-                      const res = await clearExpensesForDowngrade({
-                        current: st,
-                        next: opt.value,
-                        itemExpenses,
-                        expenseAmount,
-                        confirm,
-                        deleteExpense,
-                      });
-                      if (res.error) alert(res.error); // M18
-                      if (!res.proceed) return;
-                      try {
-                        await setStatus(it.id, opt.value); // M20
-                      } catch (err) {
-                        console.warn("Failed to set status:", err);
-                        alert("Failed to update status.");
-                      }
-                    }}
-                  >
-                    {opt.value === "conf"
-                      ? "✓"
-                      : opt.value === "sel"
-                        ? "●"
-                        : "○"}{" "}
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+              <StatusSelector
+                current={st}
+                onSelect={async (value) => {
+                  if (value === st) return;
+                  if (navigator.vibrate) navigator.vibrate(15);
+                  if (value === "conf" && st !== "conf") {
+                    try {
+                      await setStatus(it.id, "conf"); // M20: await
+                    } catch (err) {
+                      console.warn("Failed to set status:", err);
+                      alert("Failed to update status.");
+                      return;
+                    }
+                    setShowExpenseCard(true);
+                    return;
+                  }
+                  const res = await clearExpensesForDowngrade({
+                    current: st,
+                    next: value,
+                    itemExpenses,
+                    expenseAmount,
+                    confirm,
+                    deleteExpense,
+                  });
+                  if (res.error) alert(res.error); // M18
+                  if (!res.proceed) return;
+                  try {
+                    await setStatus(it.id, value); // M20
+                  } catch (err) {
+                    console.warn("Failed to set status:", err);
+                    alert("Failed to update status.");
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
@@ -598,25 +627,7 @@ export default function DetailModal({
               <div className="detail-section-title">
                 Attachments ({itemFiles.length})
               </div>
-              {itemFiles.map((f, i) => (
-                <div key={i} className="file-chip mb-2">
-                  <span className="file-chip-name">{f.name}</span>
-                  <a
-                    href={f.url}
-                    target="_blank"
-                    rel="noopener"
-                    className="file-action-link"
-                  >
-                    Open
-                  </a>
-                  <button
-                    onClick={() => handleRemoveFile(f.path)}
-                    className="file-remove-btn"
-                  >
-                    x
-                  </button>
-                </div>
-              ))}
+              <FileChipList files={itemFiles} onRemove={handleRemoveFile} />
             </div>
           )}
           {(st === "sel" || st === "conf") && (
@@ -862,45 +873,30 @@ function EditMode({
 
           {/* Status — saves immediately, not batched */}
           {setStatus && (
-            <div className="status-selector" style={{ margin: "12px 0" }}>
-              {[
-                { value: "", label: "Not added", cls: "" },
-                { value: "sel", label: "Selected", cls: "sel" },
-                { value: "conf", label: "Confirmed", cls: "conf" },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  className={`status-option ${opt.cls} ${(status || "") === opt.value ? "active" : ""}`}
-                  onClick={async () => {
-                    if (opt.value === (status || "")) return;
-                    if (navigator.vibrate) navigator.vibrate(15);
-                    const res = await clearExpensesForDowngrade({
-                      current: status || "",
-                      next: opt.value,
-                      itemExpenses,
-                      expenseAmount,
-                      confirm,
-                      deleteExpense,
-                    });
-                    if (res.error) alert(res.error); // M18
-                    if (!res.proceed) return;
-                    try {
-                      await setStatus(it.id, opt.value); // M20
-                    } catch (err) {
-                      console.warn("Failed to set status:", err);
-                      alert("Failed to update status.");
-                    }
-                  }}
-                >
-                  {opt.value === "conf"
-                    ? "\u2713"
-                    : opt.value === "sel"
-                      ? "\u25CF"
-                      : "\u25CB"}{" "}
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <StatusSelector
+              current={status || ""}
+              style={{ margin: "12px 0" }}
+              onSelect={async (value) => {
+                if (value === (status || "")) return;
+                if (navigator.vibrate) navigator.vibrate(15);
+                const res = await clearExpensesForDowngrade({
+                  current: status || "",
+                  next: value,
+                  itemExpenses,
+                  expenseAmount,
+                  confirm,
+                  deleteExpense,
+                });
+                if (res.error) alert(res.error); // M18
+                if (!res.proceed) return;
+                try {
+                  await setStatus(it.id, value); // M20
+                } catch (err) {
+                  console.warn("Failed to set status:", err);
+                  alert("Failed to update status.");
+                }
+              }}
+            />
           )}
 
           {/* Basic */}
@@ -1200,25 +1196,7 @@ function EditMode({
           <div className="edit-section-title">Attachments</div>
           {(itemFiles || []).length > 0 && (
             <div className="mb-3">
-              {itemFiles.map((f, i) => (
-                <div key={i} className="file-chip mb-2">
-                  <span className="file-chip-name">{f.name}</span>
-                  <a
-                    href={f.url}
-                    target="_blank"
-                    rel="noopener"
-                    className="file-action-link"
-                  >
-                    Open
-                  </a>
-                  <button
-                    onClick={() => handleRemoveFile(f.path)}
-                    className="file-remove-btn"
-                  >
-                    x
-                  </button>
-                </div>
-              ))}
+              <FileChipList files={itemFiles} onRemove={handleRemoveFile} />
             </div>
           )}
           <div className="detail-upload-row">

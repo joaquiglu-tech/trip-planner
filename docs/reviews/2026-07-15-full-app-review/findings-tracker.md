@@ -236,8 +236,8 @@
 
 ### Duplication / dead code / efficiency
 
-- [ ] **L33 · StatusSelector logic duplicated Summary vs Edit** — `DetailModal.jsx:131-152` vs `349-369` (extract `<StatusSelector>`; couples with M18 fix)
-- [ ] **L34 · File-chip list + upload row duplicated between modes** — `DetailModal.jsx:219-226` vs `479-495` (extract `<Attachments>`)
+- [x] **L33 · StatusSelector logic duplicated Summary vs Edit** — `DetailModal.jsx:131-152` vs `349-369` (extract `<StatusSelector>`; couples with M18 fix) · ✅ Slice 10b: extracted presentational `<StatusSelector>` (parents keep their own async onSelect) — dedups both modes.
+- [x] **L34 · File-chip list + upload row duplicated between modes** — `DetailModal.jsx:219-226` vs `479-495` (extract `<Attachments>`) · ✅ Slice 10b: extracted `<FileChipList>`; both modes render it.
 - [x] **L35 · Dead `|| ''` fallbacks after throw guard** — `supabase.js:6-10` · ✅ Slice 9 (bonus): removed — `createClient(supabaseUrl, supabaseAnonKey)` (the throw guarantees both).
 - [x] **L36 · Redundant 10-minute session poll duplicates `onAuthStateChange`** — `useAuth.jsx:24-31` · ✅ Slice 10
 - [-] **L37 · `BudgetSummary` O(items×expenses) nested scans** — `BudgetSummary.jsx:24,39` (build Maps once; BudgetPage already has `itemsMap`) · ACCEPTED: O(n*m) is negligible at this data scale
