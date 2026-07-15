@@ -1,10 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
-import { GOOGLE_MAPS_API_KEY as API_KEY } from '../../services/supabase';
+import { useState, useRef, useEffect } from "react";
+import { searchPlaces } from "../../services/googlePlaces";
 
 // Reusable place search with Google Places + optional stops list
 // Returns: { name, lat, lng, placeId, address }
-export default function PlaceSearch({ value, onChange, stops, placeholder, label }) {
-  const [query, setQuery] = useState(value?.name || '');
+export default function PlaceSearch({
+  value,
+  onChange,
+  stops,
+  placeholder,
+  label,
+}) {
+  const [query, setQuery] = useState(value?.name || "");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -12,56 +18,56 @@ export default function PlaceSearch({ value, onChange, stops, placeholder, label
 
   // Sync external value changes
   useEffect(() => {
-    setQuery(value?.name || '');
+    setQuery(value?.name || "");
   }, [value?.name]);
 
   // Debounced Google Places search
   useEffect(() => {
-    if (!query.trim() || query.length < 2 || !focused) { setResults([]); return; }
+    if (!query.trim() || query.length < 2 || !focused) {
+      setResults([]);
+      return;
+    }
     // Don't search if query matches current selection
-    if (value?.name === query) { setResults([]); return; }
+    if (value?.name === query) {
+      setResults([]);
+      return;
+    }
     clearTimeout(debounceRef.current);
+    let active = true; // M26: ignore a stale response if the query moved on
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Goog-Api-Key': API_KEY,
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
-          },
-          body: JSON.stringify({ textQuery: query, maxResultCount: 5 }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setResults((data.places || []).map(p => ({
-            placeId: p.id,
-            name: p.displayName?.text || '',
-            address: p.formattedAddress || '',
-            lat: p.location?.latitude,
-            lng: p.location?.longitude,
-            isStop: false,
-          })));
-        }
-      } catch (err) { console.warn('Place search failed:', err); }
-      setSearching(false);
+        const places = await searchPlaces(query);
+        if (active) setResults(places.map((p) => ({ ...p, isStop: false })));
+      } catch (err) {
+        console.warn("Place search failed:", err);
+        if (active) setResults([]); // M26: clear stale results on failure
+      } finally {
+        if (active) setSearching(false);
+      }
     }, 400);
-    return () => clearTimeout(debounceRef.current);
+    return () => {
+      active = false;
+      clearTimeout(debounceRef.current);
+    };
   }, [query, focused, value?.name]);
 
   // Filter matching stops
-  const matchingStops = (stops || []).filter(s =>
-    query.length >= 1 && s.name.toLowerCase().includes(query.toLowerCase())
-  ).map(s => ({
-    placeId: s.google_place_id || s.id,
-    name: s.name,
-    address: `Stop: ${s.start_date || ''} — ${s.end_date || ''}`,
-    lat: s.lat,
-    lng: s.lng,
-    isStop: true,
-    stopId: s.id,
-  }));
+  const matchingStops = (stops || [])
+    .filter(
+      (s) =>
+        query.length >= 1 &&
+        (s.name || "").toLowerCase().includes(query.toLowerCase()),
+    )
+    .map((s) => ({
+      placeId: s.google_place_id || s.id,
+      name: s.name,
+      address: `Stop: ${s.start_date || ""} — ${s.end_date || ""}`,
+      lat: s.lat,
+      lng: s.lng,
+      isStop: true,
+      stopId: s.id,
+    }));
 
   const allResults = [...matchingStops, ...results];
 
@@ -80,39 +86,77 @@ export default function PlaceSearch({ value, onChange, stops, placeholder, label
   }
 
   function handleClear() {
-    setQuery('');
+    setQuery("");
     onChange(null);
   }
 
   return (
     <div className="place-search-wrap">
       {label && <label className="edit-label">{label}</label>}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: "relative" }}>
         <input
           className="edit-input"
           value={query}
-          onChange={e => { setQuery(e.target.value); if (!e.target.value) onChange(null); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (!e.target.value) onChange(null);
+          }}
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 200)}
-          placeholder={placeholder || 'Search a place...'}
+          placeholder={placeholder || "Search a place..."}
         />
         {value?.name && (
-          <button onClick={handleClear} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>x</button>
+          <button
+            onClick={handleClear}
+            style={{
+              position: "absolute",
+              right: 8,
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "none",
+              border: "none",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              fontSize: 14,
+            }}
+          >
+            x
+          </button>
         )}
       </div>
-      {searching && <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '2px 0' }}>Searching...</div>}
+      {searching && (
+        <div
+          style={{ fontSize: 11, color: "var(--text-muted)", padding: "2px 0" }}
+        >
+          Searching...
+        </div>
+      )}
       {allResults.length > 0 && focused && (
         <div className="place-results">
           {allResults.map((r, i) => (
-            <div key={r.placeId + i} className="place-result" onMouseDown={e => { e.preventDefault(); selectPlace(r); }}>
-              <div className="place-result-name">{r.isStop ? '📍 ' : ''}{r.name}</div>
+            <div
+              key={r.placeId + i}
+              className="place-result"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                selectPlace(r);
+              }}
+            >
+              <div className="place-result-name">
+                {r.isStop ? "📍 " : ""}
+                {r.name}
+              </div>
               <div className="place-result-addr">{r.address}</div>
             </div>
           ))}
         </div>
       )}
       {value?.address && !focused && (
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '2px 0' }}>{value.address}</div>
+        <div
+          style={{ fontSize: 11, color: "var(--text-muted)", padding: "2px 0" }}
+        >
+          {value.address}
+        </div>
       )}
     </div>
   );

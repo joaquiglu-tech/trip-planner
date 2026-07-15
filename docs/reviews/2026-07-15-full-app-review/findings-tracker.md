@@ -117,11 +117,11 @@
 
 - [x] **M25 · Xotelo lookup fires per keystroke (no debounce/await/catch)** — `DetailModal.jsx:271-285,417`, `AddItemModal.jsx:74-79,102-113` · `×2` · ✅ Slice 7: both handlers debounce (400ms) + use a request counter to drop stale responses + try/catch. AddItemModal's fetch moved OUT of the `setForm` updater (was StrictMode double-firing).
   - _Failure:_ overlapping `fetchStayEstimate` calls race (last-resolved wins, can apply stale estimate); unhandled rejections; `AddItemModal:74-79` runs the fetch inside a `setForm` updater → StrictMode double-fetch. _Fix:_ debounce + seq/request token + try/catch; move fetch out of the updater.
-- [ ] **M26 · PlaceSearch stale-result race + stale results on error** — `PlaceSearch.jsx:24-49` (older fetch resolves after newer), `:36-48` (non-ok/throw leaves previous results); same in `AddStopModal.jsx:47-57`
+- [x] **M26 · PlaceSearch stale-result race + stale results on error** — `PlaceSearch.jsx:24-49` (older fetch resolves after newer), `:36-48` (non-ok/throw leaves previous results); same in `AddStopModal.jsx:47-57` · ✅ Slice 8a: both search effects use an `active` flag (cleanup) to drop stale responses and `setResults([])` on error; `searchPlaces` throws on non-ok so the catch clears.
   - _Fix:_ AbortController/seq token; `setResults([])` in else/catch.
-- [ ] **M27 · Selected place missing `location` → undefined coords saved** — `PlaceSearch.jsx:68-80`, `AddStopModal.jsx:63-67`
+- [x] **M27 · Selected place missing `location` → undefined coords saved** — `PlaceSearch.jsx:68-80`, `AddStopModal.jsx:63-67` · ✅ Slice 8a: `parsePlaceResults` normalizes coords to `null` (never undefined), and downstream write sites already coerce `?? null`. Tested.
   - _Fix:_ reject/flag results without lat/lng before select (breaks map routing otherwise).
-- [ ] **M28 · `PlaceSearch` crashes on a stop with null `name`** — `src/shared/components/PlaceSearch.jsx:54-55`
+- [x] **M28 · `PlaceSearch` crashes on a stop with null `name`** — `src/shared/components/PlaceSearch.jsx:54-55` · ✅ Slice 8a: `(s.name || "").toLowerCase()`.
   - _Failure:_ `.toLowerCase()` on undefined throws, crashes the modal. _Fix:_ `(s.name||'').toLowerCase()`.
 
 ### Crash / robustness (props & inputs)
@@ -150,7 +150,7 @@
 
 ### Architecture / project rules
 
-- [ ] **M38 · Direct `fetch()` to Google Places inside presentational components (duplicated)** — `PlaceSearch.jsx:27`, `AddStopModal.jsx:35`
+- [x] **M38 · Direct `fetch()` to Google Places inside presentational components (duplicated)** — `PlaceSearch.jsx:27`, `AddStopModal.jsx:35` · ✅ Slice 8a: extracted `searchPlaces()` + `parsePlaceResults()` into `services/googlePlaces.js`; both components call the service (API key/request shape no longer in the view layer, dedup'd). Tested.
   - _Fix:_ move into `services/googlePlaces`; components call the service/hook.
 - [ ] **M39 · Inline `supabase.auth.*` in page components (bypasses `useAuth`)** — `Login.jsx:16-17`, `ProfilePage.jsx:21,30` · `×2`
   - _Fix:_ route auth through the hook / a service.

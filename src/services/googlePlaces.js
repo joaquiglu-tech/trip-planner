@@ -1,5 +1,40 @@
 import { supabase, GOOGLE_MAPS_API_KEY as API_KEY } from "./supabase";
 
+const PLACES_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
+const PLACES_FIELD_MASK =
+  "places.id,places.displayName,places.formattedAddress,places.location";
+
+// Pure: map a Places searchText response to the app's result shape. Coords
+// normalize to null (never undefined) so callers never persist undefined.
+export function parsePlaceResults(data) {
+  return (data?.places || []).map((p) => ({
+    placeId: p.id,
+    name: p.displayName?.text || "",
+    address: p.formattedAddress || "",
+    lat: p.location?.latitude ?? null,
+    lng: p.location?.longitude ?? null,
+  }));
+}
+
+// Text search for places. Single source for the Places call so components stay
+// presentational and the API key/request shape live in one place (M38).
+export async function searchPlaces(query, { signal } = {}) {
+  const q = (query || "").trim();
+  if (q.length < 2) return [];
+  const res = await fetch(PLACES_SEARCH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": API_KEY,
+      "X-Goog-FieldMask": PLACES_FIELD_MASK,
+    },
+    body: JSON.stringify({ textQuery: q, maxResultCount: 5 }),
+    signal,
+  });
+  if (!res.ok) throw new Error(`Places search failed: ${res.status}`);
+  return parsePlaceResults(await res.json());
+}
+
 // Search for a place by name + city, return place details
 export async function fetchPlaceData(itemId, name, city) {
   // Check cache first
