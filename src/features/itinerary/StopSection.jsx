@@ -11,6 +11,7 @@ import { DayMap } from "./MapComponents";
 import ScheduleList from "./ScheduleList";
 import PlanSection from "./PlanSection";
 import AddItemModal from "../../shared/modals/AddItemModal";
+import AddExpenseModal from "../../shared/modals/AddExpenseModal";
 
 // Helper: extract date part from datetime-local string
 function getItemDate(startTime) {
@@ -42,6 +43,7 @@ export default function StopSection({
 }) {
   const [editing, setEditing] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [showAddExpense, setShowAddExpense] = useState(false);
   const [draft, setDraft] = useState({});
 
   function startEdit() {
@@ -403,6 +405,15 @@ export default function StopSection({
           + Add item to {stop.name}
         </button>
       )}
+      {addExpense && (
+        <button
+          className="itin-add-item-btn"
+          onClick={() => setShowAddExpense(true)}
+          style={{ marginTop: 8 }}
+        >
+          + Add expense to {stop.name}
+        </button>
+      )}
       {showAddItem && (
         <AddItemModal
           onClose={() => setShowAddItem(false)}
@@ -417,6 +428,20 @@ export default function StopSection({
           stops={stops}
           userEmail={userEmail || ""}
           defaultStopId={stop.id}
+        />
+      )}
+      {showAddExpense && (
+        <AddExpenseModal
+          items={items}
+          stops={stops}
+          onAdd={addExpense}
+          addExpense={addExpense}
+          addItem={addItem}
+          setFile={setFile}
+          userEmail={userEmail || ""}
+          initialMode="stop"
+          defaultStopId={stop.id}
+          onClose={() => setShowAddExpense(false)}
         />
       )}
     </div>
