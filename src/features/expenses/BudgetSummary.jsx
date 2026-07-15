@@ -1,13 +1,9 @@
 import { useState, useMemo } from "react";
 import { $f, computeBudgetTotals } from "../../shared/hooks/useItems";
-
-const TYPE_LABELS = {
-  stay: "Stays",
-  activity: "Activities",
-  food: "Food",
-  transport: "Transport",
-};
-const TYPE_ORDER = ["stay", "activity", "food", "transport"];
+import {
+  categoryLabel,
+  orderBudgetTypeKeys,
+} from "../../shared/constants/expenseCategories";
 
 export default function BudgetSummary({ items, expenses }) {
   const [expanded, setExpanded] = useState(false);
@@ -63,14 +59,12 @@ export default function BudgetSummary({ items, expenses }) {
               <span>Selected</span>
               <span>Confirmed</span>
             </div>
-            {[...TYPE_ORDER, "other"].map((key) => {
+            {orderBudgetTypeKeys(Object.keys(data.byType)).map((key) => {
               const row = data.byType[key];
               if (!row) return null;
               return (
                 <div key={key} className="summary-bd-row">
-                  <span className="summary-bd-label">
-                    {TYPE_LABELS[key] || "Other"}
-                  </span>
+                  <span className="summary-bd-label">{categoryLabel(key)}</span>
                   <span className="summary-bd-val">
                     {row.sel > 0 ? $f(row.sel) : "—"}
                   </span>

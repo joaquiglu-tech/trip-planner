@@ -72,7 +72,7 @@ export function computeBudgetTotals(items, expenses) {
       ? item.type === "food"
         ? "food"
         : item.type
-      : "other";
+      : e.category || "other"; // unlinked: group by its own category (stop-level expenses)
     if (!byType[typeKey]) byType[typeKey] = { sel: 0, conf: 0 };
     confTotal += amt;
     byType[typeKey].conf += amt;
