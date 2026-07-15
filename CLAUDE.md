@@ -1,12 +1,26 @@
 # Anisita — Trip Planner PWA
 
 ## What this is
+
 A personal PWA (Android, browser-based — no app-store build) for planning a trip and
 tracking everything about it in one place: expenses, itinerary, receipts, and reservations.
 Solo project. Work happens as **new features and fixes** on an already-built app, often
 driven from a phone.
 
+> **Working context — phone-first (non-negotiable).** This project is driven almost entirely
+> from an Android phone via Claude Code on the web/mobile. Every choice must assume that:
+>
+> - No in-session browser — no Playwright/e2e here. Claude runs unit/integration tests + lint;
+>   smoketests happen in the real app on the phone. Don't ask the human to run desktop-only tooling.
+> - Keep work reviewable on a small screen: small diffs, small commits, small PRs, clear summaries.
+> - **New sessions start on `main`** (the default branch). Anything that must be available in the
+>   next session — tooling, `.claude/` config, plugins — has to be **merged to `main`**, not left on
+>   a feature branch (the phone UI can't reliably check out an arbitrary branch).
+> - Prefer doing the mergeable, low-friction thing over multi-step flows that are painful to drive
+>   from a phone.
+
 ## Tech Stack
+
 - React 19 + Vite 8 (JavaScript, no TypeScript)
 - Supabase (Postgres + Auth + Storage + Realtime)
 - Vercel (auto-deploys from main)
@@ -15,6 +29,7 @@ driven from a phone.
 - Xotelo API (live hotel prices from Booking.com/Expedia/Agoda)
 
 ## How we work (non-negotiable)
+
 - **Plan before code.** Anything bigger than a one-sentence diff: explore → plan → code → verify → commit.
 - **Build in vertical slices.** One complete end-to-end capability at a time; finish and commit before the next.
 - **Verify every change.** End each task with the checks the environment can run — tests + lint passing. "Looks done" is not done.
@@ -24,6 +39,7 @@ driven from a phone.
 - **Phone-driven reality:** no browser is available in-session, so no Playwright/e2e here. Claude runs unit/integration tests + lint; the human runs smoketests in a real browser.
 
 ## Guardrails (always)
+
 - **Never commit directly to `main`.** `main` is production (Vercel auto-deploys it) — see Git Workflow.
 - Never hand-edit database migrations. Generate them (Supabase) and review the SQL.
 - Do not edit `.env`, secrets, or files under `supabase/migrations/` directly.
@@ -31,14 +47,16 @@ driven from a phone.
 - Quality gates (tests + lint) must pass before a task is "done" — the Stop hook enforces this.
 
 ## Commands
+
 - Run app (dev): `npm run dev`
 - Build: `npm run build`
-- Run all tests: `npm test`  (vitest run)
+- Run all tests: `npm test` (vitest run)
 - Watch tests: `npm run test:watch`
 - Run a single test: `npx vitest run src/test/utils.test.js`
-- Lint: `npm run lint`  (eslint)
+- Lint: `npm run lint` (eslint)
 
 ## Project Structure
+
 ```
 src/
   features/         — Feature modules
@@ -57,18 +75,21 @@ src/
 ```
 
 ## State Management
+
 - Dual TripContext: TripDataContext (data) + TripActionsContext (stable callbacks)
 - Pages consume via useTrip(), useTripData(), or useTripActions()
 - Focused hooks: useItems (CRUD+realtime), useLivePrices (Xotelo→DB writeback),
   useItemFiles, useToast, useStops, useExpenses (incremental realtime), usePlaceData
 
 ## Database (Supabase)
+
 - **stops** — Trip stops with dates, coords, google_place_id
 - **items** — 46 columns: type-specific fields, transport origin/dest, xotelo_key
 - **expenses** — Payments linked to items (1:1 relationship)
 - **place_cache** — Google Places photos/ratings/addresses
 
 ## Key Architecture Decisions
+
 - All data from database — no hardcoded data files
 - Items link to stops via stop_ids TEXT[] (one-to-many)
 - Expenses are source of truth for payments. 1 expense per item max.
@@ -89,6 +110,7 @@ src/
 - PWA cache: Supabase API 1h, Google Maps 7d, Places 30d
 
 ## The build workflow (per feature / per fix)
+
 The **execution layer is Superpowers** (a plugin — declared in `.claude/settings.json`, not
 bundled as files). Not every step every time — scale to the change.
 
@@ -104,6 +126,7 @@ forensic tracing when a bug outgrows systematic-debugging), `bmad-correct-course
 mid-flight), `bmad-retrospective`, plus doc utilities.
 
 ## Frameworks & skills
+
 - **Superpowers** (PLUGIN — declared in `.claude/settings.json`, not bundled as files): the
   execution loop above. It's obra's marketplace plugin; `.claude/settings.json` registers
   `obra/superpowers-marketplace` and enables `superpowers@superpowers-marketplace`, so it
@@ -118,6 +141,7 @@ mid-flight), `bmad-retrospective`, plus doc utilities.
   so Claude has an accurate model of the existing code.
 
 ## Conventions
+
 - **Data access:** goes through `src/services/` (supabase, googlePlaces, hotelPrices, xotelo, enrichItem, storage) — keep queries out of components.
 - **Components** stay presentational; data flows in via props or the `useTrip*` hooks. No direct DB calls in components.
 - **Shared domain logic** (cost/currency, date/itinerary math) lives in one place — never duplicate a rule across files.
@@ -125,6 +149,7 @@ mid-flight), `bmad-retrospective`, plus doc utilities.
 - **Component reuse:** before creating any UI element, check existing components and reuse the pattern. Keep spacing/typography consistent. Mobile-first — the app runs in a phone browser.
 
 ## Git Workflow
+
 - **`main` = production.** Never committed to directly; only updated by merging a PR. Vercel auto-deploys `main`.
 - **`dev` = integration branch.** Day-to-day work lands here. Small/safe changes can go straight to `dev`; anything non-trivial gets a short feature branch (`feat/…`, `fix/…`) → PR **into `dev`**.
 - **Release = PR from `dev` → `main`.** That's the only path to production, so every prod change is reviewed and green before it deploys.
@@ -132,5 +157,6 @@ mid-flight), `bmad-retrospective`, plus doc utilities.
 - Build: `npm run build` | Test: `npm test` (vitest run)
 
 ## Compaction policy
+
 When compacting, always preserve: the list of modified files, the current spec/task, the test
 commands, and any decision not yet written to `docs/`.
