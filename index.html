@@ -20,7 +20,28 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div
+        id="boot-fallback"
+        style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: #eee; font-family: system-ui, sans-serif"
+      >
+        Loading…
+      </div>
+    </div>
+    <script>
+      // Boot safety net: if the app bundle fails at startup (e.g. missing env
+      // vars → services/supabase.js throws at module load), React never mounts
+      // and #root stays as this fallback. Surface a readable message instead of
+      // a blank/black screen. main.jsx sets window.__APP_MOUNTED__ on success.
+      setTimeout(function () {
+        if (!window.__APP_MOUNTED__) {
+          var f = document.getElementById("boot-fallback");
+          if (f)
+            f.textContent =
+              "Couldn't load the app. Check your connection and reload — if this keeps happening, the app may be misconfigured.";
+        }
+      }, 10000);
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

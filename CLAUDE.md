@@ -43,6 +43,7 @@ driven from a phone.
 - **Never commit directly to `main`.** `main` is production (Vercel auto-deploys it) — see Git Workflow.
 - Never hand-edit database migrations. Generate them (Supabase) and review the SQL.
 - Do not edit `.env`, secrets, or files under `supabase/migrations/` directly.
+- **Vercel env vars** (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) must stay set for **Production AND Preview** — a missing one crashes the bundle at startup (blank screen before login). See `docs/ops/vercel-environment.md`.
 - Every non-trivial diff gets an adversarial review (built-in `/code-review`); risky areas (auth, expense/currency math, PII, data model) also get a careful human read.
 - Quality gates (tests + lint) must pass before a task is "done" — the Stop hook enforces this.
 
