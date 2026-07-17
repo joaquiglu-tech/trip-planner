@@ -93,6 +93,6 @@ export function buildUnlinkedExpenseChanges(draft, expense) {
   if (stopId !== (expense.stop_id || "")) changes.stop_id = stopId;
   const expenseDate = draft.expense_date || "";
   if (expenseDate !== (expense.expense_date || ""))
-    changes.expense_date = expenseDate;
+    changes.expense_date = expenseDate || null; // "" (cleared) → null; DATE column rejects ""
   return changes;
 }

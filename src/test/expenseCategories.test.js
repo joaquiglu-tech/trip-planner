@@ -158,4 +158,18 @@ describe("buildUnlinkedExpenseChanges", () => {
       ),
     ).toEqual({});
   });
+  it("clears a date to null (not '') so the DATE column accepts it", () => {
+    expect(
+      buildUnlinkedExpenseChanges(
+        {
+          amount: "10",
+          category: "food",
+          note: "lunch",
+          stop_id: "s1",
+          expense_date: "",
+        },
+        { ...expense, expense_date: "2026-07-20" },
+      ),
+    ).toEqual({ expense_date: null });
+  });
 });
