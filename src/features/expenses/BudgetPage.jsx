@@ -6,10 +6,6 @@ import DetailModal from "../../shared/components/DetailModal";
 import ExpenseCard from "../../shared/components/ExpenseCard";
 import BudgetSummary from "./BudgetSummary";
 import { categoryLabel } from "../../shared/constants/expenseCategories";
-import {
-  expenseSortValue,
-  expenseDisplayDate,
-} from "../../shared/constants/expenseDate";
 
 export default function BudgetPage() {
   const { items, stops, livePrices, expenses, files, places } = useTripData();
@@ -47,14 +43,22 @@ export default function BudgetPage() {
           : null;
         return { ...e, item, stop };
       })
-      .sort((a, b) => expenseSortValue(b) - expenseSortValue(a));
+      .sort(
+        (a, b) =>
+          (new Date(b.created_at).getTime() || 0) -
+          (new Date(a.created_at).getTime() || 0),
+      );
   }, [expenses, itemsMap, stopsMap]);
 
   const unlinkedExpenses = useMemo(() => {
     return (expenses || [])
       .filter((e) => !e.item_id)
       .map((e) => ({ ...e, stop: e.stop_id ? stopsMap.get(e.stop_id) : null }))
-      .sort((a, b) => expenseSortValue(b) - expenseSortValue(a));
+      .sort(
+        (a, b) =>
+          (new Date(b.created_at).getTime() || 0) -
+          (new Date(a.created_at).getTime() || 0),
+      );
   }, [expenses, stopsMap]);
 
   // M06: include confirmed items that have no logged expense — otherwise they
@@ -93,8 +97,11 @@ export default function BudgetPage() {
                     <span className="bi-type">{e.item.type}</span>
                   )}
                   {e.stop?.name && <span> · {e.stop.name}</span>}
-                  {expenseDisplayDate(e) && (
-                    <span> · {expenseDisplayDate(e)}</span>
+                  {e.created_at && (
+                    <span>
+                      {" "}
+                      · {new Date(e.created_at).toLocaleDateString()}
+                    </span>
                   )}
                 </div>
               </div>
@@ -129,8 +136,11 @@ export default function BudgetPage() {
                   <div className="bi-meta">
                     <span className="bi-type">{categoryLabel(e.category)}</span>
                     {e.stop?.name && <span> · {e.stop.name}</span>}
-                    {expenseDisplayDate(e) && (
-                      <span> · {expenseDisplayDate(e)}</span>
+                    {e.created_at && (
+                      <span>
+                        {" "}
+                        · {new Date(e.created_at).toLocaleDateString()}
+                      </span>
                     )}
                   </div>
                 </div>

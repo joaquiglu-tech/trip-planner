@@ -4,7 +4,6 @@ import PlaceSearch from "../components/PlaceSearch";
 import { extractXoteloKey, fetchStayEstimate } from "../../services/xotelo";
 import { uploadFile } from "../../services/storage";
 import { buildItemPayload } from "./addItemLogic";
-import { itemStartDate } from "../constants/expenseDate";
 
 const TYPES = [
   { value: "food", label: "Food" },
@@ -201,7 +200,6 @@ export default function AddItemModal({
             item_id: newItem.id,
             stop_id: form.stop_ids[0] || "",
             created_by: userEmail,
-            expense_date: itemStartDate(form) || null,
           });
         } catch (err) {
           console.warn("Expense creation failed:", err);

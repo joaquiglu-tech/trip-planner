@@ -7,7 +7,6 @@ import {
   categoryLabel,
   buildUnlinkedExpenseChanges,
 } from "../constants/expenseCategories";
-import { itemStartDate, expenseDisplayDate } from "../constants/expenseDate";
 
 // Shared expense card — used from BudgetPage and DetailModal
 // mode: 'edit' (existing expense) or 'create' (new expense for an item)
@@ -39,7 +38,6 @@ export default function ExpenseCard({
   const [category, setCategory] = useState(expense?.category || "other");
   const [note, setNote] = useState(expense?.note || "");
   const [stopId, setStopId] = useState(expense?.stop_id || "");
-  const [dateInput, setDateInput] = useState(expense?.expense_date || "");
 
   async function handleSave() {
     const val = parseFloat(amountInput);
@@ -63,19 +61,12 @@ export default function ExpenseCard({
           item_id: item.id,
           stop_id: item.stop_ids?.[0] || "",
           created_by: email || "",
-          expense_date: itemStartDate(item) || null,
         });
         if (item.status !== "conf" && setStatus)
           await setStatus(item.id, "conf");
       } else if (expense && isUnlinked) {
         const changes = buildUnlinkedExpenseChanges(
-          {
-            amount: amountInput,
-            category,
-            note,
-            stop_id: stopId,
-            expense_date: dateInput,
-          },
+          { amount: amountInput, category, note, stop_id: stopId },
           expense,
         );
         if (Object.keys(changes).length > 0)
@@ -165,20 +156,10 @@ export default function ExpenseCard({
                 />
               </div>
             </div>
-            {expense && (
+            {expense?.created_at && (
               <div className="itin-general-row">
                 <span className="itin-general-label">Date</span>
-                {isUnlinked ? (
-                  <input
-                    type="date"
-                    className="edit-input"
-                    value={dateInput}
-                    onChange={(e) => setDateInput(e.target.value)}
-                    style={{ flex: 1 }}
-                  />
-                ) : (
-                  <span>{expenseDisplayDate(expense)}</span>
-                )}
+                <span>{new Date(expense.created_at).toLocaleDateString()}</span>
               </div>
             )}
             {isUnlinked ? (
