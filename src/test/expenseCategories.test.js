@@ -69,6 +69,7 @@ describe("buildUnlinkedExpensePayload", () => {
         note: "  market  ",
         stopId: "s1",
         userEmail: "me@x.com",
+        expenseDate: "2026-07-20",
       }),
     ).toEqual({
       amount: 12.5,
@@ -77,9 +78,10 @@ describe("buildUnlinkedExpensePayload", () => {
       item_id: null,
       stop_id: "s1",
       created_by: "me@x.com",
+      expense_date: "2026-07-20",
     });
   });
-  it("defaults category to other and blanks missing fields", () => {
+  it("defaults category to other and blanks missing fields (null date)", () => {
     expect(buildUnlinkedExpensePayload({ amount: "5" })).toEqual({
       amount: 5,
       category: "other",
@@ -87,6 +89,7 @@ describe("buildUnlinkedExpensePayload", () => {
       item_id: null,
       stop_id: "",
       created_by: "",
+      expense_date: null,
     });
   });
   it("returns null for a non-positive or non-numeric amount", () => {
@@ -124,6 +127,34 @@ describe("buildUnlinkedExpenseChanges", () => {
       buildUnlinkedExpenseChanges(
         { amount: "0", category: "food", note: "lunch", stop_id: "s1" },
         expense,
+      ),
+    ).toEqual({});
+  });
+  it("captures an expense_date edit", () => {
+    expect(
+      buildUnlinkedExpenseChanges(
+        {
+          amount: "10",
+          category: "food",
+          note: "lunch",
+          stop_id: "s1",
+          expense_date: "2026-07-21",
+        },
+        { ...expense, expense_date: "2026-07-20" },
+      ),
+    ).toEqual({ expense_date: "2026-07-21" });
+  });
+  it("does not report an unchanged expense_date", () => {
+    expect(
+      buildUnlinkedExpenseChanges(
+        {
+          amount: "10",
+          category: "food",
+          note: "lunch",
+          stop_id: "s1",
+          expense_date: "2026-07-20",
+        },
+        { ...expense, expense_date: "2026-07-20" },
       ),
     ).toEqual({});
   });

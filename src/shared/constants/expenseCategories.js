@@ -65,6 +65,7 @@ export function buildUnlinkedExpensePayload({
   note,
   stopId,
   userEmail,
+  expenseDate,
 } = {}) {
   const val = parseFloat(amount);
   if (isNaN(val) || val <= 0) return null;
@@ -75,6 +76,7 @@ export function buildUnlinkedExpensePayload({
     item_id: null,
     stop_id: stopId || "",
     created_by: userEmail || "",
+    expense_date: expenseDate || null,
   };
 }
 
@@ -89,5 +91,8 @@ export function buildUnlinkedExpenseChanges(draft, expense) {
   if (note !== (expense.note || "")) changes.note = note;
   const stopId = draft.stop_id || "";
   if (stopId !== (expense.stop_id || "")) changes.stop_id = stopId;
+  const expenseDate = draft.expense_date || "";
+  if (expenseDate !== (expense.expense_date || ""))
+    changes.expense_date = expenseDate;
   return changes;
 }

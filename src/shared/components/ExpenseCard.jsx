@@ -7,6 +7,7 @@ import {
   categoryLabel,
   buildUnlinkedExpenseChanges,
 } from "../constants/expenseCategories";
+import { itemStartDate } from "../constants/expenseDate";
 
 // Shared expense card — used from BudgetPage and DetailModal
 // mode: 'edit' (existing expense) or 'create' (new expense for an item)
@@ -61,6 +62,7 @@ export default function ExpenseCard({
           item_id: item.id,
           stop_id: item.stop_ids?.[0] || "",
           created_by: email || "",
+          expense_date: itemStartDate(item) || null,
         });
         if (item.status !== "conf" && setStatus)
           await setStatus(item.id, "conf");
