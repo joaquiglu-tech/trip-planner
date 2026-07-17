@@ -5,6 +5,8 @@ import {
   EXPENSE_CATEGORIES,
   buildUnlinkedExpensePayload,
 } from "../constants/expenseCategories";
+import { itemStartDate } from "../constants/expenseDate";
+import { todayStr } from "../../features/itinerary/utils";
 
 export default function AddExpenseModal({
   items = [],
@@ -29,6 +31,7 @@ export default function AddExpenseModal({
   const [mode, setMode] = useState(initialMode); // 'item' | 'stop'
   const [stopId, setStopId] = useState(defaultStopId);
   const [category, setCategory] = useState("groceries");
+  const [expenseDate, setExpenseDate] = useState(todayStr());
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -70,6 +73,7 @@ export default function AddExpenseModal({
         item_id: selectedItem.id,
         stop_id: selectedItem.stop_ids?.[0] || "",
         created_by: userEmail,
+        expense_date: itemStartDate(selectedItem) || null,
       });
       onClose();
     } catch (err) {
@@ -86,6 +90,7 @@ export default function AddExpenseModal({
       note,
       stopId,
       userEmail,
+      expenseDate,
     });
     if (!payload) {
       setError("Enter an amount greater than 0.");
@@ -331,6 +336,17 @@ export default function AddExpenseModal({
                   </option>
                 ))}
               </select>
+              <label className="itin-general-label" htmlFor="exp-date">
+                Date
+              </label>
+              <input
+                id="exp-date"
+                type="date"
+                className="edit-input"
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+                style={{ marginBottom: 10 }}
+              />
               <div className="cost-input-row" style={{ marginBottom: 10 }}>
                 <span className="cost-input-prefix">$</span>
                 <input
