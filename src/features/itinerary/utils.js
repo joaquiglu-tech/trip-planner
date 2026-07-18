@@ -91,7 +91,13 @@ export function itemInStop(it, stopId) {
 // and the per-stop expenses list. An expense belongs to the stop if its linked
 // item is in the stop, or it is tagged directly to the stop (stop_id).
 export function stopBudgetSlice(items, expenses, stopId) {
-  const stopItems = (items || []).filter((it) => itemInStop(it, stopId));
+  const stopItems = (items || []).filter((it) => {
+    if (!itemInStop(it, stopId)) return false;
+    // Transport belongs only to its departure stop (matches the schedule),
+    // so a multi-leg trip's cost isn't counted in every stop it touches.
+    if (it.type === "transport" && it.stop_ids?.[0] !== stopId) return false;
+    return true;
+  });
   const itemIds = new Set(stopItems.map((it) => it.id));
   const stopExpenses = (expenses || []).filter(
     (e) => (e.item_id && itemIds.has(e.item_id)) || e.stop_id === stopId,

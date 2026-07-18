@@ -81,3 +81,39 @@ describe("stopBudgetSlice", () => {
     expect(t.confTotal).toBe(105);
   });
 });
+
+describe("stopBudgetSlice — transport scoping", () => {
+  const items = [
+    {
+      id: "t1",
+      type: "transport",
+      status: "conf",
+      estimated_cost: 400,
+      stop_ids: ["s1", "s2"],
+    },
+    {
+      id: "a1",
+      type: "activity",
+      status: "sel",
+      estimated_cost: 50,
+      stop_ids: ["s1", "s2"],
+    },
+  ];
+  const expenses = [
+    { id: "te", item_id: "t1", amount: 400 },
+    { id: "ae", item_id: "a1", amount: 50 },
+  ];
+
+  it("counts transport only in its departure stop (stop_ids[0])", () => {
+    const s1 = stopBudgetSlice(items, expenses, "s1");
+    expect(s1.items.map((i) => i.id).sort()).toEqual(["a1", "t1"]);
+    expect(s1.expenses.map((e) => e.id).sort()).toEqual(["ae", "te"]);
+  });
+
+  it("excludes transport from a non-departure stop it also lists", () => {
+    const s2 = stopBudgetSlice(items, expenses, "s2");
+    // multi-stop activity a1 still appears; transport t1 and its expense do not
+    expect(s2.items.map((i) => i.id).sort()).toEqual(["a1"]);
+    expect(s2.expenses.map((e) => e.id).sort()).toEqual(["ae"]);
+  });
+});
