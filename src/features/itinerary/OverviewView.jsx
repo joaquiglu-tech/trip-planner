@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { $f, computeBudgetTotals } from "../../shared/hooks/useItems";
+import BudgetSummary from "../expenses/BudgetSummary";
 import { RouteMap } from "./MapComponents";
 import {
   formatStopDate,
@@ -14,12 +14,6 @@ import {
 export default function OverviewView({ items, stops, expenses, onDaySelect }) {
   // Single source + timezone-safe day count (M34)
   const daysLeft = useMemo(() => getDaysUntilTrip(stops || []), [stops]);
-
-  // Single source of truth shared with BudgetSummary (C4)
-  const stats = useMemo(() => {
-    const { selTotal, confTotal } = computeBudgetTotals(items, expenses);
-    return { estimated: selTotal, confirmed: confTotal };
-  }, [items, expenses]);
 
   const recentItems = useMemo(
     () =>
@@ -61,18 +55,7 @@ export default function OverviewView({ items, stops, expenses, onDaySelect }) {
           <div className="home-countdown">{daysLeft} days away</div>
         </div>
       )}
-      <div className="home-stats">
-        <div className="home-stat">
-          <div className="home-stat-num">{$f(stats.estimated)}</div>
-          <div className="home-stat-label">Estimated</div>
-        </div>
-        <div className="home-stat">
-          <div className="home-stat-num" style={{ color: "var(--green)" }}>
-            {$f(stats.confirmed)}
-          </div>
-          <div className="home-stat-label">Confirmed</div>
-        </div>
-      </div>
+      <BudgetSummary items={items} expenses={expenses} />
       <div className="itin-map-schedule">
         <div className="itin-map-col">
           <div className="itin-col-header">

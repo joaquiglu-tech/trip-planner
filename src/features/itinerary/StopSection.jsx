@@ -6,21 +6,21 @@ import {
   itemInStop,
   getStay,
   validateStopDates,
+  stopBudgetSlice,
 } from "./utils";
 import { DayMap } from "./MapComponents";
 import ScheduleList from "./ScheduleList";
 import PlanSection from "./PlanSection";
 import AddItemModal from "../../shared/modals/AddItemModal";
 import AddExpenseModal from "../../shared/modals/AddExpenseModal";
+import BudgetSummary from "../expenses/BudgetSummary";
+import { $f } from "../../shared/hooks/useItems";
+import { categoryLabel } from "../../shared/constants/expenseCategories";
+import {
+  expenseSortValue,
+  expenseDisplayDate,
+} from "../../shared/constants/expenseDate";
 
-// Helper: extract date part from datetime-local string
-function getItemDate(startTime) {
-  if (!startTime) return null;
-  return startTime.includes("T") ? startTime.split("T")[0] : null;
-}
-
-// selectedDate: optional YYYY-MM-DD for date-mode filtering
-// combinedStopIds: optional array of stop IDs for date-mode combined view
 export default function StopSection({
   stop,
   items,
@@ -36,10 +36,10 @@ export default function StopSection({
   userEmail,
   stops,
   showTitle,
-  selectedDate,
-  combinedStopIds,
   livePrices,
   expenseMap,
+  expenses,
+  onExpenseTap,
 }) {
   const [editing, setEditing] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -72,22 +72,12 @@ export default function StopSection({
     setEditing(false);
   }
 
-  // Filter items: by stop, by status, by selected date (in date mode), transport in departure stop only
-  // When combinedStopIds is provided, include items from all those stops
-  const stopIdsToMatch = combinedStopIds || [stop.id];
-
   const scheduled = useMemo(() => {
     return items
       .filter((it) => {
-        if (!stopIdsToMatch.some((sid) => itemInStop(it, sid))) return false;
-        if (it.type === "transport") {
-          const depStop = it.stop_ids?.[0];
-          if (!stopIdsToMatch.includes(depStop)) return false;
-        }
-        if (selectedDate) {
-          const itemDate = getItemDate(it.start_time);
-          if (itemDate && itemDate !== selectedDate) return false;
-        }
+        if (!itemInStop(it, stop.id)) return false;
+        if (it.type === "transport" && it.stop_ids?.[0] !== stop.id)
+          return false;
         return true;
       })
       .filter((it) => {
@@ -100,7 +90,24 @@ export default function StopSection({
           (a.start_time || "zz").localeCompare(b.start_time || "zz") ||
           (a.sort_order || 0) - (b.sort_order || 0),
       );
-  }, [items, stop.id, combinedStopIds, statusFilter, selectedDate]);
+  }, [items, stop.id, statusFilter]);
+
+  const budgetSlice = useMemo(
+    () => stopBudgetSlice(items, expenses, stop.id),
+    [items, expenses, stop.id],
+  );
+
+  const stopExpenses = useMemo(() => {
+    return budgetSlice.expenses
+      .map((e) => ({
+        ...e,
+        item: e.item_id
+          ? items.find((it) => it.id === e.item_id) || null
+          : null,
+        stop,
+      }))
+      .sort((a, b) => expenseSortValue(b) - expenseSortValue(a));
+  }, [budgetSlice.expenses, items, stop]);
 
   // Number map: sorted item index for map markers and card numbers
   const itemNumberMap = useMemo(() => {
@@ -121,19 +128,10 @@ export default function StopSection({
     );
   }, [scheduled]);
 
-  const allStopItems = useMemo(() => {
-    let filtered = items.filter((it) =>
-      stopIdsToMatch.some((sid) => itemInStop(it, sid)),
-    );
-    if (selectedDate) {
-      filtered = filtered.filter((it) => {
-        const itemDate = getItemDate(it.start_time);
-        if (itemDate && itemDate !== selectedDate) return false;
-        return true;
-      });
-    }
-    return filtered;
-  }, [items, stop.id, selectedDate]);
+  const allStopItems = useMemo(
+    () => items.filter((it) => itemInStop(it, stop.id)),
+    [items, stop.id],
+  );
 
   const stay = getStay(items, stop.id);
   const stayCoord = stay?.coord || null;
@@ -249,31 +247,8 @@ export default function StopSection({
               onClick={startEdit}
               style={{ cursor: "pointer" }}
             >
-              <span>
-                {selectedDate
-                  ? (() => {
-                      const d = new Date(selectedDate + "T12:00");
-                      const m = [
-                        "Jan",
-                        "Feb",
-                        "Mar",
-                        "Apr",
-                        "May",
-                        "Jun",
-                        "Jul",
-                        "Aug",
-                        "Sep",
-                        "Oct",
-                        "Nov",
-                        "Dec",
-                      ];
-                      return `${m[d.getMonth()]} ${d.getDate()}`;
-                    })()
-                  : formatStopDate(stop)}
-              </span>
-              {!selectedDate && nights > 1 && (
-                <span className="itin-nights">{nights}n</span>
-              )}
+              <span>{formatStopDate(stop)}</span>
+              {nights > 1 && <span className="itin-nights">{nights}n</span>}
               <span className="itin-edit-hint">Edit</span>
             </div>
             {stay && (
@@ -304,6 +279,10 @@ export default function StopSection({
           </div>
         )}
       </div>
+      <BudgetSummary
+        items={budgetSlice.items}
+        expenses={budgetSlice.expenses}
+      />
       <div className="itin-map-schedule">
         <div className="itin-map-col">
           <div className="itin-col-header">
@@ -352,7 +331,6 @@ export default function StopSection({
                 items={scheduled}
                 stop={stop}
                 onItemTap={onItemTap}
-                selectedDate={selectedDate}
                 livePrices={livePrices}
                 expenseMap={expenseMap}
                 itemNumberMap={itemNumberMap}
@@ -360,8 +338,7 @@ export default function StopSection({
             ) : (
               <div className="itin-empty">
                 <div className="itin-empty-text">
-                  No items scheduled
-                  {selectedDate ? " for this date" : ` for ${stop.name}`}.
+                  No items scheduled for {stop.name}.
                 </div>
                 {addItem && (
                   <button
@@ -397,6 +374,44 @@ export default function StopSection({
         livePrices={livePrices}
         expenseMap={expenseMap}
       />
+      <div className="sect-title" style={{ marginTop: 12 }}>
+        Expenses ({stopExpenses.length})
+      </div>
+      {stopExpenses.length > 0 ? (
+        <div className="budget-list">
+          {stopExpenses.map((e) => (
+            <div
+              key={e.id}
+              className="budget-item budget-item-conf"
+              onClick={() => onExpenseTap && onExpenseTap(e)}
+              style={{ cursor: "pointer" }}
+            >
+              <div className="bi-left">
+                <div className="bi-name">
+                  {e.item?.name || e.note || categoryLabel(e.category)}
+                </div>
+                <div className="bi-meta">
+                  <span className="bi-type">
+                    {e.item?.type || categoryLabel(e.category)}
+                  </span>
+                  {expenseDisplayDate(e) && (
+                    <span> · {expenseDisplayDate(e)}</span>
+                  )}
+                </div>
+              </div>
+              <div className="bi-right">
+                <div className="bi-paid">{$f(Number(e.amount))}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="itin-empty">
+          <div className="itin-empty-text">
+            No expenses logged for this stop.
+          </div>
+        </div>
+      )}
       {addItem && (
         <button
           className="itin-add-item-btn"
