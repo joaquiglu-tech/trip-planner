@@ -6,12 +6,14 @@ import {
   itemInStop,
   getStay,
   validateStopDates,
+  stopBudgetSlice,
 } from "./utils";
 import { DayMap } from "./MapComponents";
 import ScheduleList from "./ScheduleList";
 import PlanSection from "./PlanSection";
 import AddItemModal from "../../shared/modals/AddItemModal";
 import AddExpenseModal from "../../shared/modals/AddExpenseModal";
+import BudgetSummary from "../expenses/BudgetSummary";
 
 export default function StopSection({
   stop,
@@ -30,6 +32,7 @@ export default function StopSection({
   showTitle,
   livePrices,
   expenseMap,
+  expenses,
 }) {
   const [editing, setEditing] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -81,6 +84,11 @@ export default function StopSection({
           (a.sort_order || 0) - (b.sort_order || 0),
       );
   }, [items, stop.id, statusFilter]);
+
+  const budgetSlice = useMemo(
+    () => stopBudgetSlice(items, expenses, stop.id),
+    [items, expenses, stop.id],
+  );
 
   // Number map: sorted item index for map markers and card numbers
   const itemNumberMap = useMemo(() => {
@@ -252,6 +260,10 @@ export default function StopSection({
           </div>
         )}
       </div>
+      <BudgetSummary
+        items={budgetSlice.items}
+        expenses={budgetSlice.expenses}
+      />
       <div className="itin-map-schedule">
         <div className="itin-map-col">
           <div className="itin-col-header">

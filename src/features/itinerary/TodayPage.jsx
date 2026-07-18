@@ -123,6 +123,7 @@ export default function TodayPage() {
             key={stop.id}
             stop={stop}
             items={items}
+            expenses={expenses}
             onItemTap={setSelectedItem}
             places={places}
             statusFilter={statusFilter}
