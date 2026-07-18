@@ -87,6 +87,18 @@ export function itemInStop(it, stopId) {
   return it.stop_ids?.includes(stopId) || false;
 }
 
+// Items + expenses belonging to a single stop, for a stop-scoped BudgetSummary
+// and the per-stop expenses list. An expense belongs to the stop if its linked
+// item is in the stop, or it is tagged directly to the stop (stop_id).
+export function stopBudgetSlice(items, expenses, stopId) {
+  const stopItems = (items || []).filter((it) => itemInStop(it, stopId));
+  const itemIds = new Set(stopItems.map((it) => it.id));
+  const stopExpenses = (expenses || []).filter(
+    (e) => (e.item_id && itemIds.has(e.item_id)) || e.stop_id === stopId,
+  );
+  return { items: stopItems, expenses: stopExpenses };
+}
+
 export function getStay(items, stopId) {
   const stays = (items || []).filter(
     (it) =>
