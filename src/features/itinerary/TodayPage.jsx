@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useTripData, useTripActions } from "../../shared/hooks/TripContext";
 import DetailModal from "../../shared/components/DetailModal";
+import ExpenseCard from "../../shared/components/ExpenseCard";
 import OverviewView from "./OverviewView";
 import StopSection from "./StopSection";
 import StatusFilter from "./StatusFilter";
@@ -32,6 +33,7 @@ export default function TodayPage() {
     getPlaceData,
   } = useTripActions();
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedExpense, setSelectedExpense] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const todayIdx = getTodayDayIndex(stops);
   const isDuringTrip = todayIdx !== null;
@@ -138,6 +140,7 @@ export default function TodayPage() {
             showTitle={false}
             livePrices={livePrices}
             expenseMap={expenseMap}
+            onExpenseTap={setSelectedExpense}
           />
         ))
       )}
@@ -145,6 +148,23 @@ export default function TodayPage() {
         <div className="itin-empty">
           <div className="itin-empty-text">No stops for this date.</div>
         </div>
+      )}
+
+      {selectedExpense && (
+        <ExpenseCard
+          expense={selectedExpense}
+          item={selectedExpense.item}
+          stops={stops}
+          onClose={() => setSelectedExpense(null)}
+          onViewItem={() => {
+            const it = selectedExpense.item;
+            setSelectedExpense(null);
+            if (it) setSelectedItem(it);
+          }}
+          addExpense={addExpense}
+          updateExpense={updateExpense}
+          deleteExpense={deleteExpense}
+        />
       )}
 
       {/* DetailModal */}

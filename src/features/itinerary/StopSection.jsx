@@ -14,6 +14,12 @@ import PlanSection from "./PlanSection";
 import AddItemModal from "../../shared/modals/AddItemModal";
 import AddExpenseModal from "../../shared/modals/AddExpenseModal";
 import BudgetSummary from "../expenses/BudgetSummary";
+import { $f } from "../../shared/hooks/useItems";
+import { categoryLabel } from "../../shared/constants/expenseCategories";
+import {
+  expenseSortValue,
+  expenseDisplayDate,
+} from "../../shared/constants/expenseDate";
 
 export default function StopSection({
   stop,
@@ -33,6 +39,7 @@ export default function StopSection({
   livePrices,
   expenseMap,
   expenses,
+  onExpenseTap,
 }) {
   const [editing, setEditing] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -89,6 +96,18 @@ export default function StopSection({
     () => stopBudgetSlice(items, expenses, stop.id),
     [items, expenses, stop.id],
   );
+
+  const stopExpenses = useMemo(() => {
+    return budgetSlice.expenses
+      .map((e) => ({
+        ...e,
+        item: e.item_id
+          ? items.find((it) => it.id === e.item_id) || null
+          : null,
+        stop,
+      }))
+      .sort((a, b) => expenseSortValue(b) - expenseSortValue(a));
+  }, [budgetSlice.expenses, items, stop]);
 
   // Number map: sorted item index for map markers and card numbers
   const itemNumberMap = useMemo(() => {
@@ -355,6 +374,44 @@ export default function StopSection({
         livePrices={livePrices}
         expenseMap={expenseMap}
       />
+      <div className="sect-title" style={{ marginTop: 12 }}>
+        Expenses ({stopExpenses.length})
+      </div>
+      {stopExpenses.length > 0 ? (
+        <div className="budget-list">
+          {stopExpenses.map((e) => (
+            <div
+              key={e.id}
+              className="budget-item budget-item-conf"
+              onClick={() => onExpenseTap && onExpenseTap(e)}
+              style={{ cursor: "pointer" }}
+            >
+              <div className="bi-left">
+                <div className="bi-name">
+                  {e.item?.name || e.note || categoryLabel(e.category)}
+                </div>
+                <div className="bi-meta">
+                  <span className="bi-type">
+                    {e.item?.type || categoryLabel(e.category)}
+                  </span>
+                  {expenseDisplayDate(e) && (
+                    <span> · {expenseDisplayDate(e)}</span>
+                  )}
+                </div>
+              </div>
+              <div className="bi-right">
+                <div className="bi-paid">{$f(Number(e.amount))}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="itin-empty">
+          <div className="itin-empty-text">
+            No expenses logged for this stop.
+          </div>
+        </div>
+      )}
       {addItem && (
         <button
           className="itin-add-item-btn"
